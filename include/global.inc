@@ -9,6 +9,8 @@
 
 #pragma ctrlchar '\'
 #include <amxmodx>
+#include <engine>
+#include <fakemeta>
 
 //#define MAX_PLAYERS 18 // depreciated
 #define MAX_MAP_LEN 32
@@ -46,6 +48,35 @@ stock GetRealPlayerNum()
 			iCount++
 	return iCount
 }
+
+stock bool:equal_vectors(Float:vec1[3], Float:vec2[3]) {
+    return (floatround(vec1[0]) == floatround(vec2[0]) && 
+            floatround(vec1[1]) == floatround(vec2[1]) && 
+            floatround(vec1[2]) == floatround(vec2[2]));
+}
+
+stock GetAimEntity(id)
+{
+	new Float:fPlayerOrigin[3]; pev(id, pev_origin, fPlayerOrigin)
+	new Float:fPlayerViewOff[3]; pev(id, pev_view_ofs, fPlayerViewOff)
+	new Float:fAngles[3]; pev(id, pev_v_angle, fAngles)
+
+	engfunc(EngFunc_MakeVectors, fAngles)
+	global_get(glb_v_forward, fAngles)
+
+	new Float:fEndPos[3]
+	for (new i = 0; i < 3; i++)
+	{
+		fPlayerOrigin[i] += fPlayerViewOff[i] // Calculate view offset from origin
+		fEndPos[i] = fPlayerOrigin[i] + (fAngles[i] * 4096.0) // Scale up normalised vector
+	}
+		
+	engfunc(EngFunc_TraceLine, fPlayerOrigin, fEndPos , 0, id, 0) // Run trace
+	new iEnt = get_tr2(0, TR_pHit) // Get the entity hit
+
+	return iEnt > 0 ? iEnt : 0
+}
+
 
 stock fm_BuildAMXFilePath(const sFile[], sStringOut[], iStringOutLen, const sLocalDir[])
 {
