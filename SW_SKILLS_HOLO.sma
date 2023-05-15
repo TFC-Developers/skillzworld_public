@@ -65,25 +65,18 @@ public timer_FindEntityInSphere()
   {
         //DebugPrintLevel(0, "Checking player %d", i);
         if (is_connected_user(i)) {
-            new solidstate;
-            pev(i,pev_solid,solidstate);
-            DebugPrintLevel(0, "Player %d has solid state %d", i, solidstate);
-            //set_pev(i,pev_solid,5);
             entity_set_int(i, EV_INT_solid, 5);
-            DebugPrintLevel(0, "Player %d has now solid state %d", i, solidstate);
-            //DebugPrintLevel(0, "Player is connected");
             g_bPlayerNearby[i] = false; // Reset the player nearby flag
             ent = -1;
             pev(i, pev_origin, origin);
             while((ent = engfunc(EngFunc_FindEntityInSphere, ent, origin, 150.0)))
             {
-
                 // We don't want our own entity
                 if(ent == i)
                     continue;
                 
                 pev(ent, pev_classname, class, charsmax(class));
-                //DebugPrintLevel(0, "Found entity %d with class %s", ent, class);
+                
                 if(equal(class, "player") && pev(ent, pev_team) >= 1 && pev(ent, pev_team) <= 4) // Check if the entity is a player
                 {                    
                     g_bPlayerNearby[i] = true;
