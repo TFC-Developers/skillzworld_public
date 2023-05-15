@@ -19,6 +19,7 @@ new g_bPlayerNearby[33];
 new g_bPlayerTempNoClip[33];
 new g_fPlayerOrigin[33][3];
 new g_iPlayerTeam[33];
+new g_bPlayerFalling[33];
 
 public plugin_precache() {
 	precache_sound("ambience/thunder_clap.wav");
@@ -27,7 +28,11 @@ public plugin_precache() {
 }
 public plugin_init() {
     RegisterPlugin();
+
     register_forward(FM_AddToFullPack, "Hook_AddToFullPack",1);
+    register_forward(FM_PlayerPreThink, "Hook_PlayerPreThink",0);
+    register_forward(FM_PlayerPostThink, "Hook_PlayerPostThink",0);
+
     register_clcmd("say /clipon", "cmd_tempnoclip");
     register_clcmd("say /clipoff", "cmd_tempnoclip");
     register_clcmd("say /noclip", "cmd_tempnoclip");
@@ -147,6 +152,7 @@ public cmd_tempnoclip(id) {
 
         return PLUGIN_HANDLED;
     }
+    return PLUGIN_CONTINUE;
 }
 
 public client_putinserver(id) {
@@ -156,6 +162,7 @@ public client_putinserver(id) {
     g_fPlayerOrigin[id][1] = 0;
     g_fPlayerOrigin[id][2] = 0;
     g_iPlayerTeam[id] = 0;
+    g_bPlayerFalling[id] = false;
 
 }   
 
@@ -166,8 +173,30 @@ public client_disconnected(id) {
     g_fPlayerOrigin[id][1] = 0;
     g_fPlayerOrigin[id][2] = 0;
     g_iPlayerTeam[id] = 0;
+    g_bPlayerFalling[id] = false;
 
 }   
+
+public Hook_PlayerPostThink(id) {
+    //if user is falling set waterlevel to -3
+    if (g_bPlayerFalling[id]) {
+        entity_set_int(id, EV_INT_watertype, -3);
+    }
+}
+
+//the function Hook_PlayerPreThink checks if the player has a fallvelocity greater than 350
+public Hook_PlayerPreThink(id) {
+    //check the players fallvelocity
+    new Float:vel = entity_get_float(id, EV_FL_flFallVelocity);
+
+    //if velocity is greater than 350 then give him a chat message
+    if (vel > 350) {
+        g_bPlayerFalling[id] = true;
+    } else {
+        g_bPlayerFalling[id] = false;
+    }
+
+}
 
 public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
 
