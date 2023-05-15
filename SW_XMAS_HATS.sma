@@ -58,28 +58,10 @@ public AddSantaHat(id) {
     if (sw_snowballs == 1.0 || (sw_snowballs >= 2.0 && b_itsDecember)) {
         if (!g_bHasHat[id] && g_SnowPreache) {
             console_print(0, "AddHat:  id: %d hashat?! --> %d", id, g_bHasHat[id]);
-            if (is_user_connected(id) || entity_get_int(id, EV_INT_team) >= 1 && entity_get_int(id, EV_INT_team) <= 4) {
+            if ( is_user_connected(id) && is_user_alive(id) && entity_get_int(id, EV_INT_team) >= 1 && entity_get_int(id, EV_INT_team) <= 4 ) {
                 console_print(0, "AddHat - 2 - :  id: %d hashat?! --> %d", id, g_bHasHat[id]);
-/*
-					edict_t *pent;
-					pent = CREATE_NAMED_ENTITY(MAKE_STRING("info_target"));
-					MDLL_Spawn(pent);
-					pent->v.classname = MAKE_STRING("sw_santahat");
-					SET_MODEL(ENT(pent), "models/skillzworld/santa_hat.mdl");
-					pent->v.takedamage = DAMAGE_NO;
-					pent->v.movetype = MOVETYPE_FOLLOW;
-					pent->v.health = 100;
-					pent->v.nextthink = gpGlobals->time + 0.1;
-					pent->v.fuser1 = gpGlobals->time + 2;
-					pent->v.solid = SOLID_NOT;
-					pent->v.owner = pEntity;
-					pent->v.aiment = pEntity;
-					g_bHasHat[ENTINDEX(pEntity)] = true;
-				}*/
-                //new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
-                new entity = CREATE_NAMED_ENTITY()
-                dllfunc(DLLFunc_Spawn, entity);
-                //new entity = create_entity("info_target");
+
+                new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
                 entity_set_string(entity, EV_SZ_classname, "sw_santahat");
                 engfunc(EngFunc_SetModel, entity, "models/skillzworld/santa_hat.mdl");
                 
@@ -89,7 +71,7 @@ public AddSantaHat(id) {
                 entity_set_float(entity, EV_FL_health, 100);
                 entity_set_int(entity, EV_INT_solid, SOLID_NOT);
                 entity_set_int(entity, EV_ENT_owner, id);
-                entity_set_int(entity, EV_ENT_aiment, id);
+                entity_set_edict(entity, EV_ENT_aiment, id);
                 g_bHasHat[id] = true;
                 console_print(0, "AddHat - 3 - :  id: %d hashat?! --> %d", id, g_bHasHat[id]);
             }
