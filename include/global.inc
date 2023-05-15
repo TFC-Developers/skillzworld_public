@@ -40,6 +40,10 @@ stock const FM_AMXX_LOCAL_DATA[] = "amxx_datadir"
 #include "include/debug" // A lot of plugins will use this. Also Required for RegisterPlugin() included below
 #include "include/stock_registerplugin"  // Every plugin will need this, also need SCRIPT_NAME for fm_WarningLog
 
+
+stock bool:is_connected_admin(id){return (is_user_connected(id) && (get_user_flags(id) & ADMIN_KICK) && !is_user_bot(id));}
+stock bool:is_connected_user(id){return (is_user_connected(id) && !is_user_bot(id));}
+
 stock GetRealPlayerNum()
 {
 	new iCount
@@ -78,19 +82,19 @@ stock GetAimEntity(id)
 }
 
 
-stock fm_BuildAMXFilePath(const sFile[], sStringOut[], iStringOutLen, const sLocalDir[])
+stock BuildAMXFilePath(const sFile[], sStringOut[], iStringOutLen, const sLocalDir[])
 {
 	new sDirectory[64]; get_localinfo(sLocalDir, sDirectory, charsmax(sDirectory))
 	formatex(sStringOut, iStringOutLen, "%s/%s", sDirectory, sFile)
 }
 
-stock fm_WarningLog(const sFormat[], any:...)
+stock WarningLog(const sFormat[], any:...)
 {
 	static sMessage[512]; sMessage[0] = '\0'
 	vformat(sMessage, charsmax(sMessage), sFormat, 2)
 
 	new sLogFile[32]; get_time("warning_%Y%m%d.log", sLogFile, charsmax(sLogFile))
-	log_to_file(sLogFile, "[%s] %s", FM_SCRIPT_NAME, sMessage)
+	log_to_file(sLogFile, "[%s] %s", _SCRIPT_NAME, sMessage)
 	return 0
 }
 
