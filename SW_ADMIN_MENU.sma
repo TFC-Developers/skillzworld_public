@@ -26,8 +26,8 @@ bool:is_connected_user(id){return (is_user_connected(id) && !is_user_bot(id));}
 
 public plugin_init( )
 {
-  register_plugin( "EVIL Adminmenu", "1.0", "MrCoala" );
-  register_clcmd( "evil_menu",  "adminmenu_deploy", ADMIN_KICK );
+  register_plugin( "Skillzworld Adminmenu", "1.0", "MrKoala" );
+  register_clcmd( "sw_menu",  "adminmenu_deploy", ADMIN_KICK );
 
   g_msgScreenFade = get_user_msgid( "ScreenFade" );
 
