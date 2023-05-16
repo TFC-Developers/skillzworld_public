@@ -1,11 +1,13 @@
-/*
- * entity use command plugin for SkillzWorld
+/* 
+ * 	Plugin: Temporary noclip
+ *  Author: MrKoala & Ilup
+    *  Version: 1.0
+    *  Description: This plugin allows players to noclip for a short time.
+    *  It also makes the player invisible when he is near another player.
+    *  It also makes the player invincible when he is falling.
  *
- * This plugin will make players non-solid and enables them to walk through other players.
- * Furthermore it will apply a hologram effect to the player if he is near another player.
- *
- * Written for AMX Mod X by skillzworld / MrKoala
- */
+ * 	Changelog:  16.05.2023 Initial release
+*/
 
 #include "include/global"
 #include <engine>
@@ -21,13 +23,14 @@ new g_fPlayerOrigin[33][3];
 new g_iPlayerTeam[33];
 new g_bPlayerFalling[33];
 
+
 public plugin_precache() {
-	precache_sound("ambience/thunder_clap.wav");
-    g_Beamsprite = precache_model(BEAM_SPRITE);
+	precache_sound("ambience/thunder_clap.wav"); //used in stock_slay
+    g_Beamsprite = precache_model(BEAM_SPRITE); //used in cmd_tempnoclip
 
 }
 public plugin_init() {
-    RegisterPlugin();
+    RegisterPlugin(); 
 
     register_forward(FM_AddToFullPack, "Hook_AddToFullPack",1);
     register_forward(FM_PlayerPreThink, "Hook_PlayerPreThink",0);
@@ -39,13 +42,22 @@ public plugin_init() {
     register_clcmd("say /clip", "cmd_tempnoclip");
 
     register_clcmd("say /slaytest", "cmd_slaytest");
-
     set_task(0.5, "timer_FindEntityInSphere",_, _,_,"b");
 }
 
+
 public cmd_slaytest(id) {
+    // check if player is admin
+    if (!is_connected_admin(id)) {
+        client_print(id, print_chat, "> You are not an admin.");
+        return PLUGIN_HANDLED;
+    }
     stock_slay(id);
+    return PLUGIN_HANDLED;
 }
+
+//the function cmd_tempnoclip is called when the player types /noclip or /clip or /clipon or /clipoff
+//it checks if the player has noclip and if not it gives him noclip
 public cmd_tempnoclip(id) {
     if (g_bPlayerTempNoClip[id]) {
 
@@ -148,13 +160,15 @@ public cmd_tempnoclip(id) {
         message_end();
 
 
-        client_print(id, print_chat, "You are now non-solid.");
+        client_print(id, print_chat, "> Noclip enabled. Say /noclip again to disable noclip.");
 
         return PLUGIN_HANDLED;
     }
     return PLUGIN_CONTINUE;
 }
 
+//the function client_putinserver is called when a player connects to the server
+//it resets the global variables for the player
 public client_putinserver(id) {
     g_bPlayerNearby[id] = false;
     g_bPlayerTempNoClip[id] = false;
@@ -166,6 +180,8 @@ public client_putinserver(id) {
 
 }   
 
+//the function client_disconnected is called when a player disconnects from the server
+//it resets the global variables for the player
 public client_disconnected(id) {
     g_bPlayerNearby[id] = false;
     g_bPlayerTempNoClip[id] = false;
@@ -177,8 +193,8 @@ public client_disconnected(id) {
 
 }   
 
+//the function checks if the player is falling and if so it sets his watertype to 3 (water)
 public Hook_PlayerPostThink(id) {
-    //if user is falling set waterlevel to -3
     if (g_bPlayerFalling[id]) {
         entity_set_int(id, EV_INT_watertype, -3);
     }
@@ -230,7 +246,6 @@ public timer_FindEntityInSphere()
 
   for (new i = 1; i <= get_maxplayers(); i++)
   {
-        //DebugPrintLevel(0, "Checking player %d", i);
         if (is_connected_user(i)) {
 
             // set player to not solid if not in temporary noclip
@@ -239,15 +254,15 @@ public timer_FindEntityInSphere()
             }
 
             g_bPlayerNearby[i] = false; // Reset the player nearby flag
-            ent = -1;
-            pev(i, pev_origin, origin);
+            ent = -1;                   // Reset the entity index
+            pev(i, pev_origin, origin); // Get the player origin
             while((ent = engfunc(EngFunc_FindEntityInSphere, ent, origin, 150.0)))
             {
                 // We don't want our own entity
                 if(ent == i)
                     continue;
                 
-                pev(ent, pev_classname, class, charsmax(class));
+                pev(ent, pev_classname, class, charsmax(class)); // Get the entity classname
 
                 if(equal(class, "player") && pev(ent, pev_team) >= 1 && pev(ent, pev_team) <= 4) // Check if the entity is a player
                 {                    
