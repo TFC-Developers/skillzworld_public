@@ -1,5 +1,6 @@
 /* 
- * 	Plugin: Temporary noclip
+ *  Plugin: Handles the player movement and visibility
+ *  This plugin is part of the skillsrun functionality.
  *  Author: MrKoala & Ilup
     *  Version: 1.0
     *  Description: This plugin allows players to noclip for a short time.
@@ -25,7 +26,7 @@ new g_bPlayerFalling[33];
 
 
 public plugin_precache() {
-	precache_sound("ambience/thunder_clap.wav"); //used in stock_slay
+    precache_sound("ambience/thunder_clap.wav"); //used in stock_slay
     g_Beamsprite = precache_model(BEAM_SPRITE); //used in cmd_tempnoclip
 
 }
