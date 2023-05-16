@@ -21,13 +21,14 @@ new g_iReason[33]        // array containing choosen reason
 new Array:g_iReasons    // array with reasons
 new g_msgScreenFade
 
-bool:is_connected_admin(id){return (is_user_connected(id) && (get_user_flags(id) & ADMIN_KICK) && !is_user_bot(id));}
+bool:is_connected_admin(id, privileges){return (is_user_connected(id) && (get_user_flags(id) & privileges) && !is_user_bot(id));}
 bool:is_connected_user(id){return (is_user_connected(id) && !is_user_bot(id));}
 
 public plugin_init( )
 {
   register_plugin( "Skillzworld Adminmenu", "1.0", "MrKoala" );
   register_clcmd( "sw_menu",  "adminmenu_deploy", ADMIN_KICK );
+  register_clcmd( "say /adminmenu",  "adminmenu_deploy", ADMIN_KICK );
 
   g_msgScreenFade = get_user_msgid( "ScreenFade" );
 
@@ -56,6 +57,7 @@ public client_putinserver(id)
 
 public adminmenu_deploy( const id )
 {
+  if (!is_connected_admin(id, ADMIN_KICK)) return PLUGIN_HANDLED
   g_iVictim[id] = -1  // no victim yet
   g_iReason[id] = -1  // no reason yet
   new menu = menu_create( "\yAdmin menu^n^nChoose a player:", "adminmenu_clicked" );
@@ -330,20 +332,20 @@ public util_slap(szID[]) {
   }
 }
 public util_visualwarning(id, reason[]) {
-
   message_begin( MSG_ONE_UNRELIABLE, g_msgScreenFade,{ 0, 0, 0 }, id );
-  write_short( 500 );
-  write_short( 20 );
-  write_short( 0x0001 );
-  write_byte( 255 );
-  write_byte( 0 );
-  write_byte( 0 );
-  write_byte( 200 );
+  {
+    write_short( 500 );
+    write_short( 20 );
+    write_short( 0x0001 );
+    write_byte( 255 );
+    write_byte( 0 );
+    write_byte( 0 );
+    write_byte( 200 );
+  }
   message_end();
 
   set_hudmessage(255, 50, 50, -1.0, -1.0, 0, 0.0, 5.0, 0.0, 0.0, -1)
   show_hudmessage(id, "Adminwarning^n^n%s^n^nPlease play nice and fair",reason)
-
 }
 util_loginformation(adminid, victimid, reason[], duration = 0) {
 
@@ -394,13 +396,11 @@ public util_getactionname(num) {
        default:
         format(szAction,sizeof(szAction)-1,"undefined")
    }
-
    return szAction
 }
 
 public util_explosion( vec1[3] )
 {
-
    //Explosion2
    message_begin( MSG_BROADCAST,SVC_TEMPENTITY)
    write_byte( 12 )
@@ -411,11 +411,12 @@ public util_explosion( vec1[3] )
    write_byte( 10 ) // byte (framerate)
    message_end()
 
-  message_begin( MSG_BROADCAST,SVC_TEMPENTITY,vec1)
- 	write_byte( 10 )
- 	write_coord(vec1[0])
- 	write_coord(vec1[1])
- 	write_coord(vec1[2])
- 	message_end()
-
+   message_begin( MSG_BROADCAST,SVC_TEMPENTITY,vec1)
+   {
+     write_byte( 10 )
+     write_coord(vec1[0])
+     write_coord(vec1[1])
+     write_coord(vec1[2])
+   }
+   message_end()
 }
