@@ -6,8 +6,7 @@
     *  Description: 
  *
  * 	Changelog:  
- *     16.05.2023 Initial release
- *     17.05.2023 Added some stuff
+ *     16.05.2023 Initial release: This plugin will load the checkpoints from a file and spawn them in the world.
 */
 
 #include "include/global"

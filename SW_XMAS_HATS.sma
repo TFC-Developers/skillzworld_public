@@ -4,7 +4,11 @@
  * This plugin adds santa hats to players in Team Fortress Classic
  * during the specified holiday season (December 1st to January 2nd).
  *
- * Written for AMX Mod X by skillzworld / MrKoala
+ * Written for AMX Mod X by skillzworld / MrKoala & Vancold
+ * Changelog:
+ * 14.05.2023: Initial release
+ * 15.05.2023: debugged by Vancold
+ * 16.05.2023: Added candy cane umbrella
  */
 
 #include "include/global"
@@ -39,6 +43,8 @@ public plugin_init() {
 public plugin_precache() {
     // Pre-cache the santa hat model
     precache_model("models/skillzworld/santa_hat.mdl");
+    precache_model("models/skillzworld/p_candy.mdl");
+    precache_model("models/skillzworld/v_candy.mdl");
     g_SnowPreache = true;
 }
 
@@ -50,16 +56,22 @@ public plugin_endmap() {
 // Function to set the global boolean hat variable for that player to false
 public client_putinserver(id) {
     g_bHasHat[id] = false;
-    console_print(0, "Connect:  id: %d hashat?! --> %d", id, g_bHasHat[id]);
 }
+
 // Function to add a santa hat to the specified player if the conditions are met
 public AddSantaHat(id) {
     new Float:sw_snowballs = get_cvar_float("sw_snowballs");
     if (sw_snowballs == 1.0 || (sw_snowballs >= 2.0 && b_itsDecember)) {
+
+        // Candy cane umbrella
+        new szViewModel[64]; entity_get_string(id, EV_SZ_viewmodel, szViewModel, charsmax(szViewModel));
+        if (equali(szViewModel, "models/v_umbrella.mdl")) {
+            entity_set_string(id, EV_SZ_viewmodel, "models/skillzworld/v_candy.mdl");
+            entity_set_string(id, EV_SZ_weaponmodel, "models/skillzworld/p_candy.mdl");
+        }
+
         if (!g_bHasHat[id] && g_SnowPreache) {
-            console_print(0, "AddHat:  id: %d hashat?! --> %d", id, g_bHasHat[id]);
             if ( is_user_connected(id) && is_user_alive(id) && entity_get_int(id, EV_INT_team) >= 1 && entity_get_int(id, EV_INT_team) <= 4 ) {
-                console_print(0, "AddHat - 2 - :  id: %d hashat?! --> %d", id, g_bHasHat[id]);
 
                 new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
                 entity_set_string(entity, EV_SZ_classname, "sw_santahat");
@@ -73,7 +85,6 @@ public AddSantaHat(id) {
                 entity_set_int(entity, EV_ENT_owner, id);
                 entity_set_edict(entity, EV_ENT_aiment, id);
                 g_bHasHat[id] = true;
-                console_print(0, "AddHat - 3 - :  id: %d hashat?! --> %d", id, g_bHasHat[id]);
             }
         }
     }
@@ -82,11 +93,9 @@ public AddSantaHat(id) {
 // Function to handle the santa hat entities and remove them if the player is disconnected or not in a valid team
 public SantaHatThink(entity) {
     new id = entity_get_int(entity, EV_ENT_owner);
-    console_print(0, "Hat is thinking..");
     if (!is_user_connected(id) || entity_get_int(id, EV_INT_team) < 1 || entity_get_int(id, EV_INT_team) > 4  || g_bHasHat[id]) {
         g_bHasHat[id] = false;
         entity_set_int(entity, EV_INT_flags, FL_KILLME);
-        console_print(0, "REMOVEHAT           id: %d hashat?! --> %d", id, g_bHasHat[id]);
     }
     entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.5) )
 }
