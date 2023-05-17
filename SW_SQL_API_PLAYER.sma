@@ -13,14 +13,14 @@
 enum ePlayer_t
 {
     m_iUserID,          // the id stored in the database
-	m_iUserlevel,
-	m_iBanned,
+    m_iUserlevel,
+    m_iBanned,
     m_iFirstconnect,
     m_iTotaltime,
-	m_sAuthid[MAX_AUTHID_LEN],
-	m_iTimer,
-	m_sFirstName[MAX_NAME_LEN],
-	m_sSkin[32],
+    m_sAuthid[MAX_AUTHID_LEN],
+    m_iTimer,
+    m_sFirstName[MAX_NAME_LEN],
+    m_sSkin[32],
     m_iPlayerQueryIndex  
 }
 
@@ -35,11 +35,11 @@ public plugin_natives()
 	/*register_native("fm_AddAdminInfo", "Native_AddAdminInfo")
 	register_native("fm_ClearAdminInfo", "Native_ClearAdminInfo")
 	register_native("fm_InfoAdminUpdated", "Native_InfoAdminUpdated")
-
+	
 	register_native("fm_GetAdminInfoByIndex", "Native_GetAdminInfoByIndex")
 	register_native("fm_GetAdminInfoByIdent", "Native_GetAdminInfoByIdent") 
 	register_native("fm_GetAdminCount", "Native_GetAdminCount") // Returns the number of admins in the array
-    */
+	*/
 
 	register_library("api_player")
 }
@@ -57,7 +57,7 @@ public client_putinserver(id)
 	{
 		return PLUGIN_CONTINUE	
 	}
-
+	
 	new sAuthid[MAX_AUTHID_LEN]; get_user_authid(id, sAuthid, charsmax(sAuthid))
 	if (equal(sAuthid, "STEAM_ID_PENDING"))
 	{
@@ -68,9 +68,9 @@ public client_putinserver(id)
 	new Data[ePlayer_t]; Data[m_iPlayerQueryIndex] = id
 	copy(Data[m_sAuthid], MAX_AUTHID_LEN - 1, sAuthid)
 	formatex(g_sQuery, charsmax(g_sQuery), g_sConnectQuery, sAuthid);
-    //formatex(g_sQuery, charsmax(g_sQuery), "SELECT id,firstnick, from_unixtime(firstconnected,'\%d-\%m-\%Y - \%H:\%i:\%S') AS 'firstcon', TIME_FORMAT(SEC_TO_TIME(totaltime),'\%Hhours \%iminutes') AS 'total' FROM Player WHERE steamid ='%s'", sAuthid);
+	//formatex(g_sQuery, charsmax(g_sQuery), "SELECT id,firstnick, from_unixtime(firstconnected,'\%d-\%m-\%Y - \%H:\%i:\%S') AS 'firstcon', TIME_FORMAT(SEC_TO_TIME(totaltime),'\%Hhours \%iminutes') AS 'total' FROM Player WHERE steamid ='%s'", sAuthid);
 	api_SQLAddThreadedQuery(g_sQuery,"Handle_ConnectQuery", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, ePlayer_t);
-    //api_SQLAddThreadedQuery(g_sQuery, "Handle_ConnectQuery", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, ePlayer_t)
+	//api_SQLAddThreadedQuery(g_sQuery, "Handle_ConnectQuery", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, ePlayer_t)
 
 	return PLUGIN_CONTINUE
 }
@@ -98,29 +98,31 @@ public Handle_ConnectQuery(iFailState, Handle:hQuery, sError[], iError, Data[], 
 
 	if (SQL_NumResults(hQuery) > 0)	
 	{	
-        new sFirstNick[33], sFirstConnect[32], sTotalTime[64];
-        SQL_ReadResult(hQuery,1,sFirstNick,charsmax(sFirstNick));
-        //SQL_ReadResult(hQuery,2,sFirstConnect,charsmax(sFirstConnect));
-        //SQL_ReadResult(hQuery,3,sTotalTime,charsmax(sTotalTime));
-		console_print(0,"DBID: %d, firstnick: %s", SQL_ReadResult(hQuery, 0),sFirstNick);
-		g_ePlayerdata[id][m_iUserID] = SQL_ReadResult(hQuery, 0);
-		SQL_ReadResult(hQuery,1,g_ePlayerdata[id][m_sFirstName],charsmax(g_ePlayerdata[id][m_sFirstName]));
-		//g_ePlayerdata[id][m_sFirstName] = SQL_ReadResult(hQuery, 1);
-		//g_iPlayerIdent[id] = SQL_ReadResult(hQuery, 0)
-		//fm_DebugPrintLevel(2, "Loaded player ident for <%s> from database: #%d", Data[m_sPlayerQueryAuthid], g_iPlayerIdent[id])
+	new sFirstNick[33], sFirstConnect[32], sTotalTime[64];
+	SQL_ReadResult(hQuery,1,sFirstNick,charsmax(sFirstNick));
+	//SQL_ReadResult(hQuery,2,sFirstConnect,charsmax(sFirstConnect));
+	//SQL_ReadResult(hQuery,3,sTotalTime,charsmax(sTotalTime));
+	console_print(0,"DBID: %d, firstnick: %s", SQL_ReadResult(hQuery, 0),sFirstNick);
+	g_ePlayerdata[id][m_iUserID] = SQL_ReadResult(hQuery, 0);
+	SQL_ReadResult(hQuery,1,g_ePlayerdata[id][m_sFirstName],charsmax(g_ePlayerdata[][m_sFirstName]));
 	
-		//if (!g_iPlayerIdent[id])
-		//{
-		//	fm_WarningLog("Player ident for <%s> from database is 0!", Data[m_sPlayerQueryAuthid])
-		//	return 0
-		//}
-
-		//CachePlayerIdent(id, Data[m_sPlayerQueryAuthid])
-		//ExecutePlayerIdentForward(id)
+	
+	//g_ePlayerdata[id][m_sFirstName] = SQL_ReadResult(hQuery, 1);
+	//g_iPlayerIdent[id] = SQL_ReadResult(hQuery, 0)
+	//fm_DebugPrintLevel(2, "Loaded player ident for <%s> from database: #%d", Data[m_sPlayerQueryAuthid], g_iPlayerIdent[id])
+	
+	//if (!g_iPlayerIdent[id])
+	//{
+	//	fm_WarningLog("Player ident for <%s> from database is 0!", Data[m_sPlayerQueryAuthid])
+	//	return 0
+	//}
+	
+	//CachePlayerIdent(id, Data[m_sPlayerQueryAuthid])
+	//ExecutePlayerIdentForward(id)
 	}
 	else
 	{	
-        console_print(0,"No Results from Database");
+	console_print(0,"No Results from Database");
 		//formatex(g_sQuery, charsmax(g_sQuery), "INSERT INTO players (player_authid) VALUES ('%s');", Data[m_sPlayerQueryAuthid])
 		//g_iPlayerQuery[id] = fm_SQLAddThreadedQuery(g_sQuery, "Handle_InsertPlayerId", QUERY_DISPOSABLE, PRIORITY_NORMAL, Data, iLen)
 	}
