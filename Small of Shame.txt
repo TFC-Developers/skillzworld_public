@@ -1,4 +1,4 @@
-This document records our disdain AMX Mod X and its chosen scripting language.
+This document records our disdain for AMX Mod X and its chosen scripting language.
 
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.
 https://github.com/compuphase/pawn/tree/master/doc
@@ -24,3 +24,12 @@ The compiler provides an incorrect listing when requesting help the correct way:
 amxxpc --help
 You have to trigger a file lookup failure to get the proper help listing:
 amxxpc --asdf
+
+There can only be a single tag across a variable amount of arguments, meaning type checking is not possible for functions like string formatters, making errors like formatting integers as floats completely silent.
+The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:
+TagCheck({_, Float}: x, x_tag = tagof x)
+    console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
+RunTagCheck() {
+	TagCheck 123
+	TagCheck 123.0
+}
