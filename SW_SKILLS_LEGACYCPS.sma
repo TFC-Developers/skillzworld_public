@@ -361,9 +361,8 @@ public spawn_checkpoint(id) {
     } else {
         entity_set_int(entity, EV_INT_skin, 1);
     }
-    new const Float: NULL_VECTOR[3] = {0.0, 0.0, 0.0}
     entity_set_vector(entity, EV_VEC_origin, origin);
-    entity_set_vector(entity, EV_VEC_angles, NULL_VECTOR);
+    entity_set_vector(entity, EV_VEC_angles, Float:{0.0, 0.0, 0.0});
     entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));  
     entity_set_int(entity, EV_INT_solid, SOLID_TRIGGER);
     entity_set_int(entity, EV_INT_rendermode, 5);
@@ -401,9 +400,8 @@ public debug_spawncheckpoint(id) {
     new Float:origin[3]
     pev(id,pev_origin,origin) //get the origin of the player
 
-    new const Float: NULL_VECTOR[3] = {0.0, 0.0, 0.0}
     entity_set_vector(entity, EV_VEC_origin, origin);
-    entity_set_vector(entity, EV_VEC_angles, NULL_VECTOR);
+    entity_set_vector(entity, EV_VEC_angles, Float:{0.0, 0.0, 0.0});
     entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));
     entity_set_int(entity, EV_INT_skin, 3);
     entity_set_int(entity, EV_INT_solid, SOLID_TRIGGER);
