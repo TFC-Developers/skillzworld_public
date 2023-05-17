@@ -16,11 +16,11 @@
 #include "include/utils"
 
 
-#define BEAM_SPRITE "sprites/laserbeam.spr"
+new const BEAM_SPRITE[] = "sprites/laserbeam.spr"
 new g_Beamsprite = 0;
 new g_bPlayerNearby[33];
 new g_bPlayerTempNoClip[33];
-new g_fPlayerOrigin[33][3];
+new Float:g_fPlayerOrigin[33][3];
 new g_iPlayerTeam[33];
 new g_bPlayerFalling[33];
 
@@ -66,9 +66,9 @@ public cmd_tempnoclip(id) {
         if (pev(id, pev_team) < 1 || pev(id, pev_team) > 4) {
             client_print(id, print_chat, "> You are not in a team anymore.");
             g_bPlayerTempNoClip[id] = false;
-            g_fPlayerOrigin[id][0] = 0;
-            g_fPlayerOrigin[id][1] = 0; 
-            g_fPlayerOrigin[id][2] = 0;
+            g_fPlayerOrigin[id][0] = 0.0;
+            g_fPlayerOrigin[id][1] = 0.0; 
+            g_fPlayerOrigin[id][2] = 0.0;
             g_iPlayerTeam[id] = 0;
             return PLUGIN_HANDLED;
         }
@@ -83,9 +83,9 @@ public cmd_tempnoclip(id) {
             stock_slay(id);
             client_print(id, print_chat, "> Silly you! You changed your team or class.");
             g_bPlayerTempNoClip[id] = false;
-            g_fPlayerOrigin[id][0] = 0;
-            g_fPlayerOrigin[id][1] = 0; 
-            g_fPlayerOrigin[id][2] = 0;
+            g_fPlayerOrigin[id][0] = 0.0;
+            g_fPlayerOrigin[id][1] = 0.0; 
+            g_fPlayerOrigin[id][2] = 0.0;
             g_iPlayerTeam[id] = 0;
             return PLUGIN_HANDLED;
         }
@@ -102,7 +102,7 @@ public cmd_tempnoclip(id) {
         message_end();
 
         //Teleport player to old position
-        stock_teleport(id, g_fPlayerOrigin[id]);    
+        stock_teleport(id, g_fPlayerOrigin[id]);
 
     } else {
         // don't allow when playerclass is 9 (engineer)
@@ -173,9 +173,9 @@ public cmd_tempnoclip(id) {
 public client_putinserver(id) {
     g_bPlayerNearby[id] = false;
     g_bPlayerTempNoClip[id] = false;
-    g_fPlayerOrigin[id][0] = 0;
-    g_fPlayerOrigin[id][1] = 0;
-    g_fPlayerOrigin[id][2] = 0;
+    g_fPlayerOrigin[id][0] = 0.0;
+    g_fPlayerOrigin[id][1] = 0.0;
+    g_fPlayerOrigin[id][2] = 0.0;
     g_iPlayerTeam[id] = 0;
     g_bPlayerFalling[id] = false;
 
@@ -186,9 +186,9 @@ public client_putinserver(id) {
 public client_disconnected(id) {
     g_bPlayerNearby[id] = false;
     g_bPlayerTempNoClip[id] = false;
-    g_fPlayerOrigin[id][0] = 0;
-    g_fPlayerOrigin[id][1] = 0;
-    g_fPlayerOrigin[id][2] = 0;
+    g_fPlayerOrigin[id][0] = 0.0;
+    g_fPlayerOrigin[id][1] = 0.0;
+    g_fPlayerOrigin[id][2] = 0.0;
     g_iPlayerTeam[id] = 0;
     g_bPlayerFalling[id] = false;
 
@@ -241,10 +241,9 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
 
 public timer_FindEntityInSphere()
 {
-	static Float:origin[3];
-	static class[32];
-	static ent;
-
+  static Float:origin[3];
+  static class[32];
+  static ent;
   for (new i = 1; i <= get_maxplayers(); i++)
   {
         if (is_connected_user(i)) {
