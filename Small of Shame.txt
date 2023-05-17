@@ -1,13 +1,13 @@
-This document records our disdain for AMXModX's chosen scripting language.
+This document records our disdain AMX Mod X and its chosen scripting language.
 
-AMXModX uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. People call it Pawn, which is misleading. This is made clear by the .sma source code extension.
+AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.
 https://github.com/compuphase/pawn/tree/master/doc
-The "Pawn_Language_Guide.pdf" is of limited use and is often misleading as it pertains to the language as it has evolved after 2005.
+The "Pawn_Language_Guide.pdf", updated in 2016 at the time of writing, is of limited use and is often misleading as it pertains to the language as it has evolved after 2005.
 https://www.doomworld.com/eternity/engine/smalldoc.pdf
 https://www.doomworld.com/eternity/engine/smallguide.pdf
-The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMXModX is derived from, and which changes were made to the syntax, if any.
+The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.
 
-AMXModX only allows the precache to be interacted with in the plugin_precache forward using the precache_* natives, offering no means to just check if a model is already precached. This could've easily been made available by exposing a native function that reads from the server_t struct.
+AMX Mod X only allows the precache to be interacted with in the plugin_precache forward using the precache_* natives, offering no means to just check if a model is already precached. This could easily have been made available by exposing a native function that reads from the server_t struct.
 
 The natives get_user_origin and set_user_origin operate on ints, not floats, for reasons unknown. They should be avoided whenever possible.
 Use entity_set_origin/entity_set_vector and entity_get_vector instead to get the player's origin.
@@ -19,3 +19,8 @@ Constants stop being constant when arrays are involved.
 This results in a "Must be constant expression" error:
 new const A = 123
 new B[] = {A}
+
+The compiler provides an incorrect listing when requesting help the correct way:
+amxxpc --help
+You have to trigger a file lookup failure to get the proper help listing:
+amxxpc --asdf
