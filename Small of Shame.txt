@@ -24,9 +24,9 @@ But this results in a "Must be constant expression" error:
     new const A = 123
     new B[] = {A}
 
-The compiler provides an incorrect listing when requesting help the correct way:
+The compiler provides a truncated listing of 16 options when requesting help the correct way:
     amxxpc --help
-You have to trigger a file lookup failure to get the proper help listing:
+You have to trigger a file lookup failure to get the proper help listing of 29 options:
     amxxpc --asdf
 
 There can only be a single tag across a variable amount of arguments, meaning type checking is not possible for string formatting functions like formatex, or others like engfunc, making typical errors like interpreting integers as floats completely silent.
