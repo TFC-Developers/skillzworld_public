@@ -80,7 +80,7 @@ public AddSantaHat(id) {
                 entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.5) )
                 entity_set_float(entity, EV_FL_takedamage, DAMAGE_NO);
                 entity_set_int(entity, EV_INT_movetype, MOVETYPE_FOLLOW);
-                entity_set_float(entity, EV_FL_health, 100);
+                entity_set_float(entity, EV_FL_health, 100.0);
                 entity_set_int(entity, EV_INT_solid, SOLID_NOT);
                 entity_set_int(entity, EV_ENT_owner, id);
                 entity_set_edict(entity, EV_ENT_aiment, id);
