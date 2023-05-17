@@ -33,18 +33,19 @@
 //from the mysql database
 enum eCheckPoints_t
 {
-    m_iID,                      // checkpoint id
-    m_iType,                    // checkpoint type (0 = start, 1 = checkpoint, 2 = finish)
-    m_iCourseID,                // course id (foreign key)
+    m_iCPID,                      // checkpoint id
+    m_iCPType,                    // checkpoint type (0 = start, 1 = checkpoint, 2 = finish)
+    m_iCPCourseID,                // course id (foreign key)
     Float:m_fOrigin[3]          // checkpoint origin
 
 }
+
 
 //this enum is used to store the course data parsed from file or
 //from the mysql database
 enum eCourseData_t 
 {
-    m_iID,                                          // course id
+    m_iCourseID,                                          // course id
     m_szCourseDescription[MAX_COURSE_DESCRIPTION],  // course description (e.g. "Easy")
     m_iNumCheckpoints,                              // number of checkpoints
     m_iDifficulty,                                  // difficulty (value between 0 - 100) if set to -1, the difficulty is not set
@@ -55,8 +56,8 @@ enum eCourseData_t
  * 	global variables
 */
 
-new g_Checkpoints = Invalid_Array;                  // array to store the checkpoints
-new g_Courses = Invalid_Array;                      // array to store the courses
+new Array: g_Checkpoints = Invalid_Array;                  // array to store the checkpoints
+new Array: g_Courses = Invalid_Array;                      // array to store the courses
 new g_iCPCount;                                     // number of checkpoints    
 new g_iModelID;                                         // model id of the goal model   
 
@@ -104,7 +105,7 @@ public get_course_description(id) {
 
     for (new i = 0; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
-        if (Buffer[m_iID] == id) {
+        if (Buffer[m_iCourseID] == id) {
             formatex(szDescription, charsmax(szDescription), "%s", Buffer[m_szCourseDescription]);
         }
     }
@@ -197,9 +198,9 @@ public parse_skillsconfig() {
                 tempOrigin[2] = str_to_float(szOriginValue);
 
                 new aCP[eCheckPoints_t];
-                aCP[m_iID] = -1; //not set
-                aCP[m_iType] = 1; //checkpoint
-                aCP[m_iCourseID] = -1; //not set
+                aCP[m_iCPID] = -1; //not set
+                aCP[m_iCPType] = 1; //checkpoint
+                aCP[m_iCPCourseID] = -1; //not set
                 aCP[m_fOrigin] = tempOrigin;
 
                 //push to tempCheckpoints
@@ -256,25 +257,25 @@ public parse_skillsconfig() {
         DebugPrintLevel(0, "Current  courses ID: %d", iNextCourseID);
 
         //set the course id
-        tempCourseData[m_iID] = (iNextCourseID + 1);
-        DebugPrintLevel(0, "Course ID: %d", tempCourseData[m_iID]);
+        tempCourseData[m_iCourseID] = (iNextCourseID + 1);
+        DebugPrintLevel(0, "Course ID: %d", tempCourseData[m_iCourseID]);
 
         ArrayPushArray(g_Courses, tempCourseData);
 
         debug_coursearray();
         //add the start cp to the tempCheckpoints array
         new aStartCP[eCheckPoints_t];
-        aStartCP[m_iID] = -1; //not set
-        aStartCP[m_iType] = 0; //start
-        aStartCP[m_iCourseID] = -1; //not set
+        aStartCP[m_iCPID] = -1; //not set
+        aStartCP[m_iCPType] = 0; //start
+        aStartCP[m_iCPCourseID] = -1; //not set
         aStartCP[m_fOrigin] = startCP;
         ArrayPushArray(tempCheckpoints, aStartCP);
 
         //add the end cp to the tempCheckpoints array
         new aEndCP[eCheckPoints_t];
-        aEndCP[m_iID] = -1; //not set
-        aEndCP[m_iType] = 2; //finish
-        aEndCP[m_iCourseID] = -1; //not set
+        aEndCP[m_iCPID] = -1; //not set
+        aEndCP[m_iCPType] = 2; //finish
+        aEndCP[m_iCPCourseID] = -1; //not set
         aEndCP[m_fOrigin] = endCP;
         ArrayPushArray(tempCheckpoints, aEndCP);
 
@@ -283,28 +284,28 @@ public parse_skillsconfig() {
         new Buffer[eCheckPoints_t];
         for (new i; i < iCount; i++) {
             ArrayGetArray(tempCheckpoints, i, Buffer);
-            Buffer[m_iCourseID] = tempCourseData[m_iID];
-            push_checkpoint_array(Buffer, tempCourseData[m_iID]);
+            Buffer[m_iCPCourseID] = tempCourseData[m_iCourseID];
+            push_checkpoint_array(Buffer, tempCourseData[m_iCourseID]);
         }
 
         ArrayDestroy(tempCheckpoints);
 
-        spawn_checkpoints_of_course(tempCourseData[m_iID]);
+        spawn_checkpoints_of_course(tempCourseData[m_iCourseID]);
         
     }
 } 
 
-public push_checkpoint_array( Buffer[eCheckPoints_t], iCourseID ) {
+public push_checkpoint_array( Buffer[eCheckPoints_t], id ) {
 
-    if (Buffer[m_iID] == -1) {
+    if (Buffer[m_iCPID] == -1) {
         g_iCPCount++;
-        Buffer[m_iID] = g_iCPCount;
+        Buffer[m_iCPID] = g_iCPCount;
     }
 
-    if (Buffer[m_iCourseID] == -1) {
-        Buffer[m_iCourseID] = iCourseID;
+    if (Buffer[m_iCPCourseID] == -1) {
+        Buffer[m_iCPCourseID] = id;
     }
-    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[m_iID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(iCourseID));
+    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[m_iCPID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(id));
     ArrayPushArray(g_Checkpoints, Buffer);
 }
 
@@ -316,7 +317,7 @@ public debug_coursearray() {
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
         DebugPrintLevel(0, "-------------------");
-        DebugPrintLevel(0, "Course ID: %d", Buffer[m_iID]);
+        DebugPrintLevel(0, "Course ID: %d", Buffer[m_iCourseID]);
         DebugPrintLevel(0, "Course Description: %s", Buffer[m_szCourseDescription]);
         DebugPrintLevel(0, "Difficulty: %d", Buffer[m_iDifficulty]);
         DebugPrintLevel(0, "Goal Teams: %s", Buffer[m_szGoalTeams]);
@@ -341,28 +342,28 @@ public spawn_checkpoint(id) {
 
     new Buffer[eCheckPoints_t];
     ArrayGetArray(g_Checkpoints, id, Buffer);
-    DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[m_iID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(Buffer[m_iCourseID]));
+    DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[m_iCPID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(Buffer[m_iCPCourseID]));
 
     new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     entity_set_string(entity, EV_SZ_classname, "sw_checkpoint");
     engfunc(EngFunc_SetModel, entity, LEGACY_MODEL);   
     
-	new Float:origin[3]
-	origin[0] = Buffer[m_fOrigin][0];
+    new Float:origin[3]
+    origin[0] = Buffer[m_fOrigin][0];
     origin[1] = Buffer[m_fOrigin][1];   
     origin[2] = Buffer[m_fOrigin][2];
 
 
-    if (Buffer[m_iType] == 0) {
+    if (Buffer[m_iCPType] == 0) {
         entity_set_int(entity, EV_INT_skin, 2);
-    } else if (Buffer[m_iType] == 1) {
+    } else if (Buffer[m_iCPType] == 1) {
         entity_set_int(entity, EV_INT_skin, 3);
     } else {
         entity_set_int(entity, EV_INT_skin, 1);
     }
-
+    new const Float: NULL_VECTOR[3] = {0.0, 0.0, 0.0}
     entity_set_vector(entity, EV_VEC_origin, origin);
-    entity_set_vector(entity, EV_VEC_angles, {0, 0, 0});
+    entity_set_vector(entity, EV_VEC_angles, NULL_VECTOR);
     entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));  
     entity_set_int(entity, EV_INT_solid, SOLID_TRIGGER);
     entity_set_int(entity, EV_INT_rendermode, 5);
@@ -370,7 +371,7 @@ public spawn_checkpoint(id) {
     entity_set_float(entity, EV_FL_renderamt, 255.0);
     entity_set_float(entity, EV_FL_framerate, 0.5);
     entity_set_int(entity, EV_INT_sequence, 0);	
-    entity_set_float(entity, EV_FL_health, 100000); 
+    entity_set_float(entity, EV_FL_health, 100000.0); 
 
     DebugPrintLevel(0, "Spawned checkpoint at %f, %f, %f", origin[0], origin[1], origin[2]);
 }
@@ -380,15 +381,14 @@ public spawn_checkpoints_of_course(id) {
     new Buffer[eCheckPoints_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
-        if (Buffer[m_iCourseID] == id) {
-            DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[m_iID], get_course_description(id));
+        if (Buffer[m_iCPCourseID] == id) {
+            DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[m_iCPID], get_course_description(id));
             spawn_checkpoint(i);
         }
     }
 }
 //spawns a checkpoint at the players location
 public debug_spawncheckpoint(id) {
-
     if (!is_connected_admin(id)) {
         client_print(id, print_chat, "> You are not an admin.");
         return PLUGIN_HANDLED;
@@ -398,12 +398,13 @@ public debug_spawncheckpoint(id) {
     entity_set_string(entity, EV_SZ_classname, "sw_checkpoint");
     engfunc(EngFunc_SetModel, entity, LEGACY_MODEL);   
     
-	new Float:origin[3]
-	pev(id,pev_origin,origin) //get the origin of the player
+    new Float:origin[3]
+    pev(id,pev_origin,origin) //get the origin of the player
 
+    new const Float: NULL_VECTOR[3] = {0.0, 0.0, 0.0}
     entity_set_vector(entity, EV_VEC_origin, origin);
-    entity_set_vector(entity, EV_VEC_angles, {0, 0, 0});
-    entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));  
+    entity_set_vector(entity, EV_VEC_angles, NULL_VECTOR);
+    entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));
     entity_set_int(entity, EV_INT_skin, 3);
     entity_set_int(entity, EV_INT_solid, SOLID_TRIGGER);
     entity_set_int(entity, EV_INT_rendermode, 5);
@@ -411,14 +412,15 @@ public debug_spawncheckpoint(id) {
     entity_set_float(entity, EV_FL_renderamt, 255.0);
     entity_set_float(entity, EV_FL_framerate, 0.5);
     entity_set_int(entity, EV_INT_sequence, 0);	
-    entity_set_float(entity, EV_FL_health, 100000);
+    entity_set_float(entity, EV_FL_health, 100000.0);
 
     DebugPrintLevel(0, "Spawning checkpoint at %f, %f, %f", origin[0], origin[1], origin[2]);
+    return PLUGIN_HANDLED
 }
 
 public debug_list_all_cps_in_world() {
     new ent = -1;
-    while (ent = find_ent_by_class(ent,"sw_checkpoint")) {
+    while ((ent = find_ent_by_class(ent,"sw_checkpoint"))) {
         new Float:origin[3];
         entity_get_vector(ent, EV_VEC_origin, origin);
         DebugPrintLevel(0, "Found Checkpoint at %f, %f, %f", origin[0], origin[1], origin[2]);
