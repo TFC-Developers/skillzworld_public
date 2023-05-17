@@ -14,3 +14,8 @@ Use entity_set_origin/entity_set_vector and entity_get_vector instead to get the
 
 https://www.amxmodx.org/api/file/fopen
 Mistake in documentation: "Example: "rb" opens a binary file for writing"
+
+Constants stop being constant when arrays are involved.
+This results in a "Must be constant expression" error:
+new const A = 123
+new B[] = {A}
