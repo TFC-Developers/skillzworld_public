@@ -85,7 +85,7 @@ stock CreateTeleportEffect(id, model_index)
 		write_coord(origin[2]);
 		write_coord(origin[0]);
 		write_coord(origin[1]);
-		write_coord(origin[2] + floatdiv(floatmul(random_float(50.0, 80.0), 2.0), 0.2); // reach damage radius over .3 seconds
+		write_coord(origin[2] + floatround(floatdiv(floatmul(random_float(50.0, 80.0), 2.0), 0.2))); // reach damage radius over .3 seconds
 		write_short(model_index);
 		write_byte(0); // startframe
 		write_byte(1); // framerate

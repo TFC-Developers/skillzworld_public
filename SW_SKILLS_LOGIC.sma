@@ -8,7 +8,7 @@
 
 //enum to store the player's session data
 enum ePlayerSessionData {
-    m_fRunStarttime,
+    Float:m_fRunStarttime,
     m_iRunCount, //how many times the player has tried to beat the map aka touched the start
     Float:m_fTouchCooldown, //how many seconds the player has to wait before touching the startball again
     bool:m_bInRun, //if the player is in a run
@@ -23,15 +23,15 @@ enum ePlayerSessionData {
     Float:m_fGenericCooldown //generic cooldown for various things
 }
 
-new Array: g_sPlayerData[32][ePlayerSessionData]; 
+new g_sPlayerData[32][ePlayerSessionData]; 
 new g_iThinker;
 new g_iIndexSprite;
 new g_iIndexClocksprite;
 new g_iIndex_Flaremodel; 
 new Float:g_fLastClockSpriteUpdate;
 
-#define CHECKPOINT_SOUND "misc/cpoint.wav"
-#define	CLOCK_SPRITE "sprites/clocktag.spr"
+new const CHECKPOINT_SOUND[] = "misc/cpoint.wav"
+new const CLOCK_SPRITE[] = "sprites/clocktag.spr"
 
 
 public plugin_init() {
@@ -63,17 +63,21 @@ public reset_struct(id) {
     //reset the player's session data
     g_sPlayerData[id][m_fRunStarttime] = 0.0;
     g_sPlayerData[id][m_iRunCount] = 0;
-    g_sPlayerData[id][m_bInRun] = false;
     g_sPlayerData[id][m_fTouchCooldown] = 0.0;
+    g_sPlayerData[id][m_bInRun] = false;
     g_sPlayerData[id][m_fLastHudUpdate] = 0.0;
     g_sPlayerData[id][m_fLastStartTouchHud] = 0.0;
     g_sPlayerData[id][m_bGotCourseInfo] = false;
-    ArrayDestroy(g_sPlayerData[id][m_touchedCPs]);
+    ArrayDestroy(g_sPlayerData[id][m_touchedCPs]); g_sPlayerData[id][m_touchedCPs] = Invalid_Array;
     g_sPlayerData[id][m_vStartOrigin][0] = 0.0;
     g_sPlayerData[id][m_vStartOrigin][1] = 0.0;
     g_sPlayerData[id][m_vStartOrigin][2] = 0.0;
+    g_sPlayerData[id][m_vStartAngles][0] = 0.0;
+    g_sPlayerData[id][m_vStartAngles][1] = 0.0;
+    g_sPlayerData[id][m_vStartAngles][2] = 0.0;
     g_sPlayerData[id][m_iTotalCPsUsed] = 0; 
     g_sPlayerData[id][m_bCourseFinished] = false;
+    g_sPlayerData[id][m_fGenericCooldown] = 0.0;
 }
 
 public client_connect(id) {
@@ -93,7 +97,7 @@ public spawn_thinker() {
     entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1) );
 
     //get the next think time as debug
-    new nextthink = entity_get_float(entity, EV_FL_nextthink);
+    new Float:nextthink = entity_get_float(entity, EV_FL_nextthink);
     DebugPrintLevel(0, "spawn_thinker: next think time: %f (now %f)", nextthink, get_gametime());
 
     DebugPrintLevel(0, "spawn_thinker: thinker spawned (id: %d)", entity);  
@@ -157,24 +161,24 @@ public update_hud(id) {
     
         }
         message_begin(MSG_ONE, SVC_TEMPENTITY, .player = id);
-    
-        write_byte(TE_TEXTMESSAGE);
-        write_byte(1 & 0xFF);
-        write_short( clamp(-1*(1<<13), -32768, 32767) );
-        write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
-        write_byte( 1 );
-        write_byte( 0 );
-        write_byte( 255 );
-        write_byte( 0 );
-        write_byte( 0 );
-        write_byte( 0 );
-        write_byte( 0 );
-        write_short( clamp(0*(1<<8), 0, 65535) );
-        write_short( clamp(0*(1<<8), 0, 65535) );
-        write_short( clamp(120*(1<<8), 0, 65535) );
-        write_string(szBigHudTXT);
-    
-    message_end();
+        {
+            write_byte(TE_TEXTMESSAGE);
+            write_byte(1 & 0xFF);
+            write_short( clamp(-1*(1<<13), -32768, 32767) );
+            write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
+            write_byte( 1 );
+            write_byte( 0 );
+            write_byte( 255 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(120*(1<<8), 0, 65535) );
+            write_string(szBigHudTXT);
+        }
+        message_end();
     }
     //DebugPrintLevel(0, "Mins: %d, Secs: %d, Millis: %d", iMinutes, iSeconds, iMillis);  
 
@@ -262,7 +266,7 @@ public pub_sub_endtouch(touched, toucher) {
 
         formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
         //show the hud message
-        set_hudmessage(100,100,0,-1.0, 0.35, 0, 0, 12.0, 1.0, 0.0, 1);
+        set_hudmessage(100,100,0,-1.0, 0.35, 0, 0.0, 12.0, 1.0, 0.0, 1);
         show_hudmessage(0, szBigHudTXT);
 
         // print a message to the chat of everyone stating some stats including how many cps were used
@@ -301,14 +305,12 @@ public pub_sub_cptouch(touched, toucher) {
     //now add the cp to the array
     add_touched_cp(toucher, touched);
     //play sound
-   client_cmd( toucher, "spk \"%s\"\n", CHECKPOINT_SOUND);
-   new iTotalCPsTouched = ArraySize(g_sPlayerData[toucher][m_touchedCPs]);
-   new iTotalCPsinCourse = api_get_totalcps(pev(touched, pev_iuser2));
-
-   client_print(toucher, print_chat, "* You touched a total of %d cps (max: %d), say /undo or /u to undo this.", iTotalCPsTouched, iTotalCPsinCourse);
-   DebugPrintLevel(0, "pub_sub_cptouch: player touched a total of %d cps", ArraySize(g_sPlayerData[toucher][m_touchedCPs]));
-
-
+    client_cmd( toucher, "spk \"%s\"\n", CHECKPOINT_SOUND);
+    new iTotalCPsTouched = ArraySize(g_sPlayerData[toucher][m_touchedCPs]);
+    new iTotalCPsinCourse = api_get_totalcps(pev(touched, pev_iuser2));
+    
+    client_print(toucher, print_chat, "* You touched a total of %d cps (max: %d), say /undo or /u to undo this.", iTotalCPsTouched, iTotalCPsinCourse);
+    DebugPrintLevel(0, "pub_sub_cptouch: player touched a total of %d cps", ArraySize(g_sPlayerData[toucher][m_touchedCPs]));
 }
 
 public pub_sub_starttouch(touched, toucher) {
@@ -365,7 +367,7 @@ public pub_sub_starttouch(touched, toucher) {
         client_cmd(toucher, "spk \"one two three go\"\n");
         if (g_sPlayerData[toucher][m_fLastStartTouchHud] < get_gametime()) {
             g_sPlayerData[toucher][m_fLastStartTouchHud] = get_gametime() + 30.0;
-            set_hudmessage(0,255,0,-1.0, 0.20, 0, 0, 15.0, 1.0, 0.0, 3);
+            set_hudmessage(0,255,0,-1.0, 0.20, 0, 0.0, 15.0, 1.0, 0.0, 3);
             show_hudmessage(toucher, "Speedrun timer started!\n\nType /reset if you want to start over.\nYour time can only be saved once per map cycle.");
         }
 
@@ -377,12 +379,13 @@ public pub_sub_starttouch(touched, toucher) {
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
         client_cmd(toucher, "spk \"no access\"\n");
-        return;
+        return FMRES_HANDLED;
     }
+    return FMRES_HANDLED
 }
 public pub_undo(id) {
     // check if the array exists
-    if (g_sPlayerData[id][m_touchedCPs] == 0) {
+    if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
         client_print(id, print_chat, "* You have not touched any cps yet");
         return;
     }
@@ -413,7 +416,7 @@ public pub_undo(id) {
 }
 public pub_loadlastcp(id) {
     //check if the array exists
-    if (g_sPlayerData[id][m_touchedCPs] == 0) {
+    if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
         client_print(id, print_chat, "* You have not touched any cps yet");
         return;
     }
@@ -452,7 +455,7 @@ public pub_loadlastcp(id) {
     fOrigin[2] += 20.0;
 
     //remove the users velocity
-    entity_set_vector(id, EV_VEC_velocity, {0.0, 0.0, 0.0});
+    entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});
     stock_teleport(id, fOrigin);
 
     //increase the amount of cps used by 1
@@ -461,12 +464,12 @@ public pub_loadlastcp(id) {
 }
 public pub_reset(id) {
     // just teleport the player to the start orb
-    new fOrigin[3];
+    new Float:fOrigin[3];
     fOrigin[0] = g_sPlayerData[id][m_vStartOrigin][0];
     fOrigin[1] = g_sPlayerData[id][m_vStartOrigin][1]; 
     fOrigin[2] = g_sPlayerData[id][m_vStartOrigin][2];
 
-    new fAngles[3];
+    new Float:fAngles[3];
     fAngles[0] = g_sPlayerData[id][m_vStartAngles][0];
     fAngles[1] = g_sPlayerData[id][m_vStartAngles][1];
     fAngles[2] = g_sPlayerData[id][m_vStartAngles][2];
@@ -474,13 +477,12 @@ public pub_reset(id) {
     entity_set_vector(id, EV_VEC_angles, fAngles);
 
     //reset velocity / momentum
-    entity_set_vector(id, EV_VEC_velocity, {0.0, 0.0, 0.0});
+    entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});
     stock_teleport(id, fOrigin);
 }
 
 public did_touch_cp(id,cp) {
-
-    if (g_sPlayerData[id][m_touchedCPs] == 0) { return false; } //if the array does not exist yet return false
+    if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) { return false; } //if the array does not exist yet return false
     new iSize = ArraySize(g_sPlayerData[id][m_touchedCPs]);
     new iValue = 0;
     for (new i = 0; i < iSize; i++) {
@@ -535,12 +537,10 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     entity_get_string(id, EV_SZ_classname, szClass, charsmax(szClass));
     DebugPrintLevel(0, "SkillsEffectGoalTouch: %d touched a %s", id, szClass);
 
-    // Player position
-    new Float:origin[3];
-    entity_get_vector(id, EV_VEC_origin, origin);
+    new origin[3]; get_user_origin(id, origin);  // Integer player position
 
     //Debug origin
-    DebugPrintLevel(0, "SkillsEffectGoalTouch: origin is %f %f %f", origin[0], origin[1], origin[2]);
+    DebugPrintLevel(0, "SkillsEffectGoalTouch: origin is %d %d %d", origin[0], origin[1], origin[2]);
 
 
     // Use particle burst for colors
@@ -548,31 +548,35 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     for (new i = 0; i < sizeof(COLORS); ++i) 
     {
         message_begin(MSG_ALL, SVC_TEMPENTITY);
-        write_byte(TE_PARTICLEBURST);
-        write_coord_f(origin[0]);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2]);
-        write_short(500); // radius
-        write_byte(COLORS[i]); // color
-        write_byte(100); // duration
+        {
+            write_byte(TE_PARTICLEBURST);
+            write_coord(origin[0]);
+            write_coord(origin[1]);
+            write_coord(origin[2]);
+            write_short(500); // radius
+            write_byte(COLORS[i]); // color
+            write_byte(100); // duration
+        }
         message_end();
     }
-
+    
     if (!speedrun)
         return;
-
+    
     message_begin(MSG_PVS, SVC_TEMPENTITY, origin);
     write_byte(TE_STREAK_SPLASH);
-    write_coord_f(origin[0]);
-    write_coord_f(origin[1]);
-    write_coord_f(origin[2] - 40);
-    write_coord_f(0);
-    write_coord_f(0);
-    write_coord_f(500);
-    write_byte(10);
-    write_short(100);
-    write_short(10);
-    write_short(100);
+    {
+        write_coord(origin[0]);
+        write_coord(origin[1]);
+        write_coord(origin[2] - 40);
+        write_coord(0);
+        write_coord(0);
+        write_coord(500);
+        write_byte(10);
+        write_short(100);
+        write_short(10);
+        write_short(100);
+    }
     message_end();
 
     // Increase player's z velocity
@@ -580,7 +584,7 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     new Float:velocity[3];
     entity_get_vector(id, EV_VEC_velocity, velocity);
     // set new velocity
-    velocity[2] += 800.0;
+    velocity[2] = floatadd(velocity[2], 800.0);
     entity_set_vector(id, EV_VEC_velocity, velocity);
     //set_pev(id, pev_velocity, pev(id, pev_velocity) + 800.0);
 
@@ -588,12 +592,14 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     for (new i = 0; i < sizeof(funnel_positions); ++i) 
     {
         message_begin(MSG_ALL, SVC_TEMPENTITY);
-        write_byte(TE_LARGEFUNNEL);
-        write_coord_f(origin[0]);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2] + funnel_positions[i]);
-        write_short(model_flare);
-        write_short(i);
+        {
+            write_byte(TE_LARGEFUNNEL);
+            write_coord(origin[0]);
+            write_coord(origin[1]);
+            write_coord(origin[2] + funnel_positions[i]);
+            write_short(model_flare);
+            write_short(i);
+        }
         message_end();
     }
 
@@ -601,24 +607,26 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     for (new i = 0; i < sizeof(beamdisk_positions); ++i) 
     {
         message_begin(MSG_ALL, SVC_TEMPENTITY);
-        write_byte(TE_BEAMDISK);
-        write_coord_f(origin[0]);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2] + beamdisk_positions[i]);
-        write_coord_f(origin[0] + 100);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2] + 100); // reach damage radius over .3 seconds
-        write_short(model_lightning);
-        write_byte(0); // startframe
-        write_byte(0); // framerate
-        write_byte(150); // life
-        write_byte(10);  // width
-        write_byte(0);   // noise
-        write_byte(random_float(100.0, 255.0));   // r, g, b
-        write_byte(random_float(0.0, 255.0));   // r, g, b
-        write_byte(random_float(20.0, 255.0));   // r, g, b
-        write_byte(210);	// brightness
-        write_byte(0);		// speed
+        {
+            write_byte(TE_BEAMDISK);
+            write_coord(origin[0]);
+            write_coord(origin[1]);
+            write_coord(origin[2] + beamdisk_positions[i]);
+            write_coord(origin[0] + 100);
+            write_coord(origin[1]);
+            write_coord(origin[2] + 100); // reach damage radius over .3 seconds
+            write_short(model_lightning);
+            write_byte(0); // startframe
+            write_byte(0); // framerate
+            write_byte(150); // life
+            write_byte(10);  // width
+            write_byte(0);   // noise
+            write_byte(floatround(random_float(100.0, 255.0)));   // r, g, b
+            write_byte(floatround(random_float(0.0  , 255.0)));   // r, g, b
+            write_byte(floatround(random_float(20.0 , 255.0)));   // r, g, b
+            write_byte(210);	// brightness
+            write_byte(0);		// speed
+        }
         message_end();
     }
 
@@ -626,24 +634,26 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
     for (new i = 0; i < sizeof(beamtorus_positions); ++i) 
     {
         message_begin(MSG_ALL, SVC_TEMPENTITY);
-        write_byte(TE_BEAMTORUS);
-        write_coord_f(origin[0]);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2] + beamtorus_positions[i]);
-        write_coord_f(origin[0]);
-        write_coord_f(origin[1]);
-        write_coord_f(origin[2] + 100); // reach damage radius over .3 seconds
-        write_short(model_lightning);
-        write_byte(0); // startframe
-        write_byte(0); // framerate
-        write_byte(150); // life
-        write_byte(10);  // width
-        write_byte(0);   // noise
-        write_byte(random_float(100.0, 255.0));   // r, g, b
-        write_byte(random_float(0.0, 255.0));   // r, g, b
-        write_byte(random_float(20.0, 255.0));   // r, g, b
-        write_byte(210);	// brightness
-        write_byte(0);		// speed
+        {
+            write_byte(TE_BEAMTORUS);
+            write_coord(origin[0]);
+            write_coord(origin[1]);
+            write_coord(origin[2] + beamtorus_positions[i]);
+            write_coord(origin[0]);
+            write_coord(origin[1]);
+            write_coord(origin[2] + 100); // reach damage radius over .3 seconds
+            write_short(model_lightning);
+            write_byte(0); // startframe
+            write_byte(0); // framerate
+            write_byte(150); // life
+            write_byte(10);  // width
+            write_byte(0);   // noise
+            write_byte(floatround(random_float(100.0, 255.0)));   // r, g, b
+            write_byte(floatround(random_float(100.0, 255.0)));   // r, g, b
+            write_byte(floatround(random_float(100.0, 255.0)));   // r, g, b
+            write_byte(210);	// brightness
+            write_byte(0);		// speed
+        }
         message_end();
     }
 }
