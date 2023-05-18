@@ -417,7 +417,7 @@ public Native_IsTeamAllowed(iPluign, iParams) {
     new iCountCPs = ArraySize(g_Checkpoints);
     new iCourseID = -1;
     new Buffer[eCheckPoints_t];
-     for (new i; i < iCountCPs; i++) {
+    for (new i; i < iCountCPs; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
         //DebugPrintLevel(0, "Checking checkpoint %d with entid %d against ent id %d", Buffer[m_iCPID], Buffer[m_iEntID], startent);
         if (Buffer[m_iEntID] == startent) {
