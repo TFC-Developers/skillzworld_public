@@ -8,12 +8,26 @@ https://www.doomworld.com/eternity/engine/smallguide.pdf
 The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.
 
 AMX Mod X only allows the precache to be interacted with in the plugin_precache forward using the precache_* natives, offering no means to just check if a model is already precached. This could easily have been made available by exposing a native function that reads from the server_t struct.
+	
+The natives get_user_origin and set_user_origin operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.
+Getting an int vector is however handy for sending messages (https://www.amxmodx.org/api/message_const).
+Use entity_set_origin/entity_set_vector and entity_get_vector instead to get the player's origin as a float vector.
 
-The natives get_user_origin and set_user_origin operate on ints, not floats, for reasons unknown. They should be avoided whenever possible.
-Use entity_set_origin/entity_set_vector and entity_get_vector instead to get the player's origin.
+The AMX Mod X library has accumulated many mistakes over the years that haven't been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
+	https://www.amxmodx.org/api/float/floatadd
+	The parameters have the wrong names, which belong to floatdiv.
+	
+	include/tfcconst.inc provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
 
-https://www.amxmodx.org/api/file/fopen
-Mistake in documentation: "Example: "rb" opens a binary file for writing"
+The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information, many pages are missing or aren't complete.
+	https://www.amxmodx.org/api/file/fopen
+	Wrong example: "Example: "rb" opens a binary file for writing"
+	
+	https://www.amxmodx.org/api/message_const
+	TE_FIREFIELD and TE_PLAYERATTACHMENT have wrong documentation, they mention only one coordinate but there should be three.
+	Confused user: https://forums.alliedmods.net/showthread.php?t=14870
+	
+	Documentation for read_argv, *_float and *_int neglects mentioning what happens when the index is out of bounds.
 
 Constants stop being constant when arrays are involved.
 This is valid:
@@ -24,12 +38,27 @@ But this results in a "Must be constant expression" error:
     new const A = 123
     new B[] = {A}
 
-The compiler provides a truncated listing of 16 options when requesting help the correct way:
+The compiler provides a truncated listing of 16 options when requesting help the intended way:
     amxxpc --help
 You have to trigger a file lookup failure to get the proper help listing of 29 options:
     amxxpc --asdf
 
-There can only be a single tag across a variable amount of arguments, meaning type checking is not possible for string formatting functions like formatex, or others like engfunc, making typical errors like interpreting integers as floats completely silent.
+The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do when there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
+    amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
+    AMX Mod X Compiler 1.9.0.5294
+    Copyright (c) 1997-2006 ITB CompuPhase
+    Copyright (c) 2004-2013 AMX Mod X Team
+    ═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
+	Compilation aborted.
+	1 Error.
+	Could not locate output file tput Folder/PLUGIN.amx (compile failed).
+The correct command in this case would be:
+    amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"
+
+Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the small language does not permit type information in this case.
+Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:
+    function(format_string[], any: ...) {}
+This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.
 The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:
     TagCheck({_, Float}: x, x_tag = tagof x)
         console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
