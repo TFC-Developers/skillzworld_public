@@ -64,21 +64,10 @@ public plugin_init() {
     register_clcmd("say /savecp", "pub_savecustomcp");
     register_clcmd("say save", "pub_savecustomcp");
     register_clcmd("say /mapcps", "pub_mapcps");
-    register_clcmd("say /etest", "pub_test"); 
-    register_clcmd("say /testdraw", "pub_drawtest");  
-    set_task(5.0, "spawn_thinker");
-
-    
+    set_task(5.0, "spawn_thinker"); 
     g_iThinker = 0;
 }
-public pub_test(id) {
-    SkillsEffectGoalTouch(id, true, g_iIndexSprite, g_iIndex_Flaremodel);
-}
-public pub_drawtest(id) {
-    //toggle m_bOwnCPs
-    //get origin
 
-}
 public plugin_precache() {
     precache_sound(CHECKPOINT_SOUND);
     g_iIndexSprite = precache_model("sprites/lgtning.spr")
@@ -89,18 +78,15 @@ public plugin_precache() {
 
 }
 public pub_stoprun(id) {
-    //check wether player is in a speedrun
     if (!g_sPlayerData[id][m_bInRun]) {
         client_print(id, print_chat, "* You are not in a run");
         return;
     }
-    //reset the players run
     g_sPlayerData[id][m_bInRun] = false;
     g_sPlayerData[id][m_fRunStarttime] = 0.0;
 
     client_cmd(id, "spk \"reset ok\"\n");
     client_print(id, print_chat, "* Your timer has been reset. Have fun on the course!");
-    //native set_hudmessage(red = 200, green = 100, blue = 0, Float:x = -1.0, Float:y = 0.35, effects = 0, Float:fxtime = 6.0, Float:holdtime = 12.0, Float:fadeintime = 0.1, Float:fadeouttime = 0.2, channel = -1);
     set_hudmessage(255, 0, 0, -1.0, 0.35, 0, 0.0, 1.0, 0.0, 0.0,13);
     show_hudmessage(id,"Stopped run...");
 }
@@ -179,34 +165,19 @@ public pub_savecustomcp(id) {
 
 }
 public draw_customcps(id) {
-    //return if not in customcps mode
-    if (!g_sPlayerData[id][m_bOwnCPs]) {
-        return;
-    }
+    if (!g_sPlayerData[id][m_bOwnCPs]) { return; }                          //return if not in custom cps mode
+    if (g_sPlayerData[id][m_fCustomCPsNextDr] > get_gametime()) { return; } //return if not time to draw
+    if (g_sPlayerData[id][m_CustomCPs] == Invalid_Array) { return; }        //return if no custom cps
+    
+    g_sPlayerData[id][m_fCustomCPsNextDr] = get_gametime() + 1.1;           //set the next time to draw
+    new Float:origin[3]; pev(id, pev_origin, origin);                       //get the player's origin
+    new iCount = ArraySize(g_sPlayerData[id][m_CustomCPs]);                 //get the amount of custom cps
+    if (iCount == 0) { return; }                                            //return if no custom cps
+    new Buffer[eCustomCP];                                                  
 
-    //check wether one second has passed already
-    if (g_sPlayerData[id][m_fCustomCPsNextDr] > get_gametime()) {
-        return;
-    }
-    //return when Invalid_Array
-    if (g_sPlayerData[id][m_CustomCPs] == Invalid_Array) {
-        return;
-    }
-    // set next draw
-    g_sPlayerData[id][m_fCustomCPsNextDr] = get_gametime() + 1.1;
-    //get origin
-    new Float:origin[3];
-    pev(id, pev_origin, origin);
-    //iterate through all custom cps
-    new iCount = ArraySize(g_sPlayerData[id][m_CustomCPs]);
-    //return if no cps are in the array
-    if (iCount == 0) { return; }
-    new Buffer[eCustomCP];
     for (new i = iCount-1; i >= 0; i--) {
-        //get the origin of the cp
         ArrayGetArray(g_sPlayerData[id][m_CustomCPs], i, Buffer);
         if (i == iCount-1) {
-            //draw the cp
             message_begin(MSG_ONE, SVC_TEMPENTITY, Float:{0,0,0}, .player = id);
             {
                 write_byte(TE_SPRITE);
@@ -219,7 +190,6 @@ public draw_customcps(id) {
             }
             message_end();
         } else if (i < iCount-1 && i >= iCount-6){
-            //draw the cp
             message_begin(MSG_ONE, SVC_TEMPENTITY,Float:{0,0,0} , .player = id);
             {
                 write_byte(TE_SPRITE);
@@ -233,35 +203,20 @@ public draw_customcps(id) {
             message_end();
         }
     }
-
-
 }
 public spawn_thinker() {
-    if (g_iThinker != 0) {
-        return;
-    }
-    //spawn an info_target and rename it to sw_skillsthink^
-    new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
-    entity_set_string(entity, EV_SZ_classname, "sw_skillsthink");    
-    entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1) );
-
-    //get the next think time as debug
-    new Float:nextthink = entity_get_float(entity, EV_FL_nextthink);
-    DebugPrintLevel(0, "spawn_thinker: next think time: %f (now %f)", nextthink, get_gametime());
-
-    DebugPrintLevel(0, "spawn_thinker: thinker spawned (id: %d)", entity);  
-    g_iThinker = entity;
+    if (g_iThinker != 0) { return; }                                                             //return if thinker already exists    
+    new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target")) // create the entity
+    entity_set_string(entity, EV_SZ_classname, "sw_skillsthink");                                // set the classname
+    entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1) );                          // set the nextthink
+    g_iThinker = entity;                                                                         // set the global thinker 
 }
 
 public pub_skillsthink(id) {
-    if (g_iThinker == 0 || g_iThinker != id) {
-	    return FMRES_HANDLED;
-    }
-    //set next think to gametime + 0.15
-    entity_set_float(id, EV_FL_nextthink, (get_gametime() + 0.09) );
-
-    //call update_hud for all players
-    for (new i = 1; i <= 32; i++) {
+    if (g_iThinker == 0 || g_iThinker != id) { return FMRES_HANDLED; }
+    
+    entity_set_float(id, EV_FL_nextthink, (get_gametime() + 0.09) );                            // set the nextthink
+    for (new i = 1; i <= 32; i++) {                                                             // loop through all players
         if (is_connected_user(i) && pev(i, pev_team) >= 1 && pev(i, pev_team) <= 4) {
             update_hud(i);
             draw_customcps(i);
@@ -275,11 +230,10 @@ public pub_skillsthink(id) {
     return FMRES_HANDLED;
 }
 public update_hud(id) {
-    new iStatusMessage = get_user_msgid("StatusText"); 
+    new iStatusMessage = get_user_msgid("StatusText");
     if (!g_sPlayerData[id][m_bInRun] && g_sPlayerData[id][m_iTotalCPsUsed] > 0) {
         new szMsg[128];
         formatex(szMsg, charsmax(szMsg), "Checkpoints used: %d", g_sPlayerData[id][m_iTotalCPsUsed]);
-
         message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
         write_byte(1);
         write_string(szMsg);
@@ -288,7 +242,6 @@ public update_hud(id) {
     }
 
     if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun]) {
-        //empty the hud
         message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
         write_byte(1);
         write_string("");
@@ -342,7 +295,6 @@ public update_hud(id) {
         formatex(szMsg, charsmax(szMsg), "Timer: %02d.%02d", iSeconds, iMillis);
     }
 
-    //add the cps used to the string if the player has used any
     if (g_sPlayerData[id][m_iTotalCPsUsed] == 1) {
         formatex(szMsg, charsmax(szMsg), "%s (%d cp used)", szMsg, g_sPlayerData[id][m_iTotalCPsUsed]);
     } else if (g_sPlayerData[id][m_iTotalCPsUsed] > 1) {
@@ -353,13 +305,10 @@ public update_hud(id) {
     write_byte(1);
     write_string(szMsg);
     message_end();
-
-
 }
 
 
 public pub_cptouch(touched, toucher) {
-     //check if touched is a cp
     new szClass[32];
     new szClassToucher[32];
     entity_get_string(touched, EV_SZ_classname, szClass, charsmax(szClass));
@@ -367,80 +316,42 @@ public pub_cptouch(touched, toucher) {
     if (!equali(szClass, "sw_checkpoint") || !equali(szClassToucher, "player")) {
         return;
     }
-
-    //check if cp is start cp by checking if its iuser1 is 0 => start cp
     if (pev(touched, pev_iuser1) == 0) {
-        //DebugPrintLevel(0, "pub_cptouch: %d touched a start cp", toucher);
         pub_sub_starttouch(touched, toucher);
     } 
-
-    //check if the cp is a normal cp so if its iuser1 is set to 1
     if (pev(touched, pev_iuser1) == 1) {
-        //DebugPrintLevel(0, "pub_cptouch: %d touched a normal cp", toucher);
         pub_sub_cptouch(touched, toucher);
     }
-
-    // check if the cp is a goal orb so if its iuser1 is set to 2
     if (pev(touched, pev_iuser1) == 2) {
-        //DebugPrintLevel(0, "pub_cptouch: %d touched a goal orb", toucher);
         pub_sub_endtouch(touched, toucher);
     }
  
 }
 
 public pub_sub_endtouch(touched, toucher) {
-
-    //ignore if the player already touched the goal orb
-    if (g_sPlayerData[toucher][m_bCourseFinished]) {
-        return;
-    }
-
-    //check wether the player was allowed to touch this orb, dismiss if not
-    if (api_is_team_allowed(toucher,touched)) {
-        // calculate the runtime as float
+    if (g_sPlayerData[toucher][m_bCourseFinished]) { return; }                      //return if the player has already finished the course
+    if (api_is_team_allowed(toucher,touched)) {                                     //check if the player is in the correct team to touch this cp
         new Float:fTime = floatsub(get_gametime(), g_sPlayerData[toucher][m_fRunStarttime]);
-        //dismiss if the runtime is below 5 seconds (testing purposes)
-        if (fTime < 5.0) {
-            client_print(toucher, print_chat, "* Your time is too short to be saved");
-            return;
-        }
-
-        g_sPlayerData[toucher][m_bCourseFinished] = true; //set the player's course finished to true
-        //format the hud message
-        new szBigHudTXT[128];
-        //get player name
-        new szName[32];
-        get_user_name(toucher, szName, charsmax(szName));
-        //get course name
-        new szCourseName[32];
+        if (fTime < 5.0) { client_print(toucher, print_chat, "* Your time is too short to be saved"); return; }
+        g_sPlayerData[toucher][m_bCourseFinished] = true;                           //set the player's course finished to true
+        new szName[32]; get_user_name(toucher, szName, charsmax(szName));           //get the player's name
+        new szBigHudTXT[128]; new szCourseName[32];
         api_get_coursename(pev(touched, pev_iuser2), szCourseName, charsmax(szCourseName));
         g_sPlayerData[toucher][m_bInRun] = false; //set the player's inrun to false
         new iTotalSeconds = floatround(fTime, floatround_floor); new iHours = iTotalSeconds / 3600; new iSeconds = iTotalSeconds % 60; new iMinutes = iTotalSeconds / 60; new iMillis = floatround(fTime*100.0, floatround_floor) % 100;
-        //format differently if hours are > 0
+
         if (iHours > 0) {
             formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iMillis);
         } else {
             formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iMillis);
         }
-        //print to console as dbeug
-        DebugPrintLevel(0, "pub_sub_endtouch: %s finished the course %s in %02d:%02d.%02d", szName, szCourseName, iMinutes, iSeconds, iMillis);
-        DebugPrintLevel(0, "Hudtxt: %s", szBigHudTXT);
-        //show the hud message
         set_hudmessage(200,100,0,-1.0, 0.35, 0, 0.0, 19.0, 1.0, 0.0, 2);
         show_hudmessage(0, szBigHudTXT);
-
-        // print a message to the chat of everyone stating some stats including how many cps were used
         new szChatTXT[128];
         formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
         client_print(0, print_chat, szChatTXT);
-
-        //show some fancy effects
-        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);  
-
-
-        
+        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);         
     } else if (g_sPlayerData[toucher][m_fGenericCooldown] < get_gametime()) {
-        // set generic cooldown to 10 seconds
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
         client_cmd(toucher, "spk \"no access\"\n");
@@ -449,55 +360,34 @@ public pub_sub_endtouch(touched, toucher) {
 
 }
 public pub_sub_cptouch(touched, toucher) {
-    // check if the player is in the correct team to touch this cp
-    if (!api_is_team_allowed(toucher,touched)) {
-        return;
-    }
-    //return if custom cps are enabled
-    if (g_sPlayerData[toucher][m_bOwnCPs]) {
-        return;
-    }
-    //check if player already has touched this cp
-    if (did_touch_cp(toucher,touched)) {
-        return;
-    }
+    if (!api_is_team_allowed(toucher,touched)) { return; }          //return if the player is not in the correct team to touch this cp
+    if (g_sPlayerData[toucher][m_bOwnCPs]) { return; }              //return if the player is in custom cps mode
+    if (did_touch_cp(toucher,touched)) { return; }                  //return if the player has already touched this cp
 
-    //now add the cp to the array
-    add_touched_cp(toucher, touched);
-    //play sound
-    client_cmd( toucher, "spk \"%s\"\n", CHECKPOINT_SOUND);
+    add_touched_cp(toucher, touched);                               //add the touched cp to the player's touched cp array
+    client_cmd( toucher, "spk \"%s\"\n", CHECKPOINT_SOUND);         //play the checkpoint sound
+
     new iTotalCPsTouched = ArraySize(g_sPlayerData[toucher][m_touchedCPs]);
     new iTotalCPsinCourse = api_get_totalcps(pev(touched, pev_iuser2));
-    
     client_print(toucher, print_chat, "* You touched a total of %d cps (max: %d), say /undo or /u to undo this.", iTotalCPsTouched, iTotalCPsinCourse);
-    DebugPrintLevel(0, "pub_sub_cptouch: player touched a total of %d cps", ArraySize(g_sPlayerData[toucher][m_touchedCPs]));
 }
 
 public pub_sub_starttouch(touched, toucher) {
-   
-    //check if he is allowed to touch again (prevent spamming)
     if (g_sPlayerData[toucher][m_fTouchCooldown] > get_gametime()) {
         return FMRES_HANDLED;
     }
-
-    //start the run
     if (api_is_team_allowed(toucher,touched)) {
+        ArrayDestroy(g_sPlayerData[toucher][m_touchedCPs]);                                                                 //destroy the player's touched cp array
+        ArrayDestroy(g_sPlayerData[toucher][m_CustomCPs]); g_sPlayerData[toucher][m_CustomCPs] = Invalid_Array;             //destroy the player's custom cp array
+        g_sPlayerData[toucher][m_touchedCPs] = ArrayCreate(1);                                                              //create a new touched cp array
+        g_sPlayerData[toucher][m_bInRun] = true;                                                                            //set the player's inrun to true
+        g_sPlayerData[toucher][m_fRunStarttime] = get_gametime();                                                           //set the player's runstarttime to the current gametime
+        g_sPlayerData[toucher][m_iRunCount] += 1;                                                                           //increase the player's runcount by 1
+        g_sPlayerData[toucher][m_fTouchCooldown] = get_gametime() + 2.0;                                                    //set the player's touchcooldown to 2 seconds
+        g_sPlayerData[toucher][m_iTotalCPsUsed] = 0;                                                                        //set the player's totalcpsused to 0
+        g_sPlayerData[toucher][m_bOwnCPs] = false;                                                                          //set the player's owncps to false
+        g_sPlayerData[toucher][m_iCourseID] = pev(touched, pev_iuser2);                                                     //set the player's courseid to the touched cp's courseid
 
-        //start the run
-        ArrayDestroy(g_sPlayerData[toucher][m_touchedCPs]);
-        ArrayDestroy(g_sPlayerData[toucher][m_CustomCPs]); g_sPlayerData[toucher][m_CustomCPs] = Invalid_Array;
-
-        g_sPlayerData[toucher][m_touchedCPs] = ArrayCreate(1);
-
-        g_sPlayerData[toucher][m_bInRun] = true;
-        g_sPlayerData[toucher][m_fRunStarttime] = get_gametime();
-        g_sPlayerData[toucher][m_iRunCount] += 1;
-        g_sPlayerData[toucher][m_fTouchCooldown] = get_gametime() + 2.0;
-        g_sPlayerData[toucher][m_iTotalCPsUsed] = 0;
-        g_sPlayerData[toucher][m_bOwnCPs] = false;
-        g_sPlayerData[toucher][m_iCourseID] = pev(touched, pev_iuser2);
-
-        //only provide the course info once per map cycle
         if (!g_sPlayerData[toucher][m_bGotCourseInfo]) {
             g_sPlayerData[toucher][m_bGotCourseInfo] = true;
             new szCourseName[32]; new szCourseDescription[128];
@@ -508,6 +398,7 @@ public pub_sub_starttouch(touched, toucher) {
         }
 
         client_cmd(toucher, "spk \"one two three go\"\n");
+
         if (g_sPlayerData[toucher][m_fLastStartTouchHud] < get_gametime()) {
             g_sPlayerData[toucher][m_fLastStartTouchHud] = get_gametime() + 30.0;
             set_hudmessage(0,255,0,-1.0, 0.20, 0, 0.0, 15.0, 1.0, 0.0, 3);
@@ -517,7 +408,6 @@ public pub_sub_starttouch(touched, toucher) {
         update_hud(toucher);
 
     } else if (g_sPlayerData[toucher][m_fGenericCooldown] < get_gametime()) {
-        // set generic cooldown to 10 seconds
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
         client_cmd(toucher, "spk \"no access\"\n");
@@ -525,8 +415,9 @@ public pub_sub_starttouch(touched, toucher) {
     }
     return FMRES_HANDLED
 }
+
 public pub_undo(id) {
-    // check if player has custom cps
+
     if (g_sPlayerData[id][m_bOwnCPs]) {
         new iSize = ArraySize(g_sPlayerData[id][m_CustomCPs]);
         if (iSize == 0) {
@@ -541,7 +432,8 @@ public pub_undo(id) {
         client_print(id, print_chat, "* Your last saved custom cp has been removed");
         pub_loadlastcp(id);
         return;
-    } // proceed if not
+    }
+    // if the player is not in custom cps mode, remove the last touched cp
     if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
         client_print(id, print_chat, "* You have not touched any cps yet");
         return;
@@ -568,8 +460,7 @@ public pub_loadlastcp(id) {
         client_print(id, print_chat, "* You have to respawn first in order to use your last cp");
         return;
     }
-    new Float:fOrigin[3];
-    fOrigin = Float:{0.0, 0.0, 0.0};
+    new Float:fOrigin[3]; fOrigin = Float:{0.0, 0.0, 0.0};
 
     if (g_sPlayerData[id][m_bOwnCPs]) {
         new iSize = ArraySize(g_sPlayerData[id][m_CustomCPs]);
@@ -600,9 +491,8 @@ public pub_loadlastcp(id) {
         if (!equali(szClass, "sw_checkpoint")) {
             client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 1]");
             return;
-        }  
-
-        entity_get_vector(iLastCP, EV_VEC_origin, fOrigin);                        //get the origin of the cp
+        }
+        entity_get_vector(iLastCP, EV_VEC_origin, fOrigin);                             //get the origin of the cp
     }
 
     if (fOrigin[0] == 0.0 && fOrigin[1] == 0.0 && (fOrigin[2] == 20.0 || fOrigin[2] == 5.0)) {
@@ -650,21 +540,17 @@ public pub_reset(id) {
         client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 2]");
         return;
     }
-    //get the origin of the cp
-    new Float:fOrigin[3];
-    pev(eSearch, pev_origin, fOrigin);
-    //add 20 to z axis
-    fOrigin[2] += 20.0;
-    //teleport the player to the cp
-    CreateTeleportEffect(id,g_iIndexSprite);
-    //reset velocity / momentum
-    entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});
-    stock_teleport(id, fOrigin);
+    new Float:fOrigin[3];                                           //create a new origin vector
+    pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+    fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
+    CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
+    entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
+    stock_teleport(id, fOrigin);                                    //teleport the player to the cp
 }
 
 public did_touch_cp(id,cp) {
     if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) { return false; } //if the array does not exist yet return false
-    new iSize = ArraySize(g_sPlayerData[id][m_touchedCPs]);
+    new iSize = ArraySize(g_sPlayerData[id][m_touchedCPs]);                 //get the size of the array
     new iValue = 0;
     for (new i = 0; i < iSize; i++) {
         iValue = ArrayGetCell(g_sPlayerData[id][m_touchedCPs], i);
@@ -676,20 +562,14 @@ public did_touch_cp(id,cp) {
 }
 
 public add_touched_cp(id,cp) {
-    //check if the array has an Invalid_Handled
     if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
         g_sPlayerData[id][m_touchedCPs] = ArrayCreate(1);
     }
-    //add the cp to the array
     return ArrayPushCell(g_sPlayerData[id][m_touchedCPs], cp);
 }
 
 public draw_clocksprite(id) {
-
-    //if user is not in speedrun then return
-    if (!g_sPlayerData[id][m_bInRun]) {
-        return;
-    }
+    if (!g_sPlayerData[id][m_bInRun]) { return; }                           //return if not in run
 
     //send message to remove the sprite
     message_begin(MSG_ALL, SVC_TEMPENTITY);
@@ -697,7 +577,6 @@ public draw_clocksprite(id) {
     write_byte(id);
     message_end();
 
-    //iterate through all players and send sprite mesage
     for (new i = 1; i <= 32; i++) {
         if (is_connected_user(i) && g_sPlayerData[i][m_bInRun] && i != id) { // dont send to the player who triggered the sprite
             message_begin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, {0,0,0}, i);
@@ -712,10 +591,8 @@ public draw_clocksprite(id) {
 }
 
 public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
-
-    //check wether player is not set
     if (player == 0) {
-        //since its not a player check if the host should see the cp entities and compare the class
+
         if (!is_valid_ent(ent)) { return FMRES_IGNORED; }
         new szClass[32];
         entity_get_string(ent, EV_SZ_classname, szClass, charsmax(szClass));
@@ -731,18 +608,11 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
 /* Effect when touching the goal */
 stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
 {
-
-    //debug message on which class called
     new szClass[32];
     entity_get_string(id, EV_SZ_classname, szClass, charsmax(szClass));
     DebugPrintLevel(0, "SkillsEffectGoalTouch: %d touched a %s", id, szClass);
-
     new origin[3]; get_user_origin(id, origin);  // Integer player position
-
-    //Debug origin
-    DebugPrintLevel(0, "SkillsEffectGoalTouch: origin is %d %d %d", origin[0], origin[1], origin[2]);
-
-
+    
     // Use particle burst for colors
     new const COLORS[] = {250, 83, 211};
     for (new i = 0; i < sizeof(COLORS); ++i) 
