@@ -38,9 +38,16 @@ But this results in a "Must be constant expression" error:
 	new const A = 123
 	new B[] = {A}
 
-The compiler does not understand constant indexing in constant arrays, as this following code generates unnecessary lookup code and does not raise a redundant assertion warning:
-	new const A[] = {3, 3}
-	assert A[0] == 3
+The compiler does not recognise expressions made of constant symbols, as this following code generates unnecessary lookup code and does not raise redundant assertion warnings:
+	new const A = 123
+	new const B[] = {3, 3}
+	assert A == 123
+	assert B[0] == 3
+
+The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:
+	new V[5]
+	for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}
+Fixing it requires placing a line break so the end brace "}" gets separated away, or if there's only one statement, removing the curly braces.
 
 The compiler provides a truncated listing of 16 options when requesting help the intended way:
 	amxxpc --help
