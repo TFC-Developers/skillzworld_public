@@ -47,7 +47,8 @@ The compiler does not recognise expressions made of constant symbols, as this fo
 The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:
 	new V[5]
 	for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}
-Fixing it requires placing a line break so the end brace "}" gets separated away, or if there's only one statement, removing the curly braces.
+Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "}" gets separated away, or if there's only one statement, removing the curly braces.
+This problem is generalised to any inner scope.
 
 The compiler provides a truncated listing of 16 options when requesting help the intended way:
 	amxxpc --help
@@ -83,3 +84,5 @@ The lack of this feature is surprising considering the effort put into type chec
 		TagCheck 123
 		TagCheck 123.0
 	}
+
+AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
