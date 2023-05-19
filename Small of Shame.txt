@@ -28,9 +28,14 @@ The AMX Mod X documentation is very sloppy and is full of grammar and spelling e
 	Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 	
 	Documentation for read_argv, *_float and *_int neglects mentioning what happens when the index is out of bounds.
+		The function read_argv writes an empty string if the argument is out of bounds.
+		The functions read_argv_int and read_argv_float try to read a number, both returning 0 if that fails.
+			Arguments <= 0 are set to return 0, even if argument 0 would've parsed fine as a number.
+			The number is parsed from the start of the argument, returning fine even if the latter part of the argument is an invalid number, like "1.0asdf".
+			Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
 	
 	The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradicting information.
-	The function actually writes a single cell to a file using mode as the byte width, it has nothing to do with arrays. This error probably came from lazy copypasting of the fwrite_blocks documentation.
+	The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copypasting of the fwrite_blocks documentation.
 	
 	Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
 	This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
@@ -83,7 +88,7 @@ The compiler's option arguments follow a strange convention that require additio
 The correct command in this case would be:
 	amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"
 
-Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the small language does not permit type information in this case.
+Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.
 Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:
 	function(format_string[], any: ...) {}
 This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.
