@@ -28,6 +28,16 @@ The AMX Mod X documentation is very sloppy and is full of grammar and spelling e
 	Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 	
 	Documentation for read_argv, *_float and *_int neglects mentioning what happens when the index is out of bounds.
+	
+	The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradicting information.
+	The function actually writes a single cell to a file using mode as the byte width, it has nothing to do with arrays. This error probably came from lazy copypasting of the fwrite_blocks documentation.
+	
+	Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
+	This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
+		fp->Write(&data, ...)
+	should have been
+		fp->Write(data, ...)
+	Use fwrite_blocks instead.
 
 Constants stop being constant when arrays are involved.
 This is valid:
