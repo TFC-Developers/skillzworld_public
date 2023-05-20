@@ -19,7 +19,10 @@ The AMX Mod X library has accumulated many mistakes over the years that haven't 
 	
 	include/tfcconst.inc provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
 
-The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information, many pages are missing or aren't complete.
+The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
+	Documentation for register_clcmd completely lacks a description of the callback function it should receive. For an example of how it should've been documented, see menu_create.
+		The callback function to register_clcmd should take a single parameter holding the calling player id, often just called id.
+	
 	https://www.amxmodx.org/api/file/fopen
 	Wrong example: "Example: "rb" opens a binary file for writing"
 	
@@ -35,7 +38,7 @@ The AMX Mod X documentation is very sloppy and is full of grammar and spelling e
 			Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
 	
 	The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradicting information.
-	The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copypasting of the fwrite_blocks documentation.
+		The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copypasting of the fwrite_blocks documentation.
 	
 	Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
 	This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
