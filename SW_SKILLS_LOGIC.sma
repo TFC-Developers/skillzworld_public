@@ -310,7 +310,7 @@ public update_hud(id) {
         return;
     }
 
-    if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun]) {
+    if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun] || g_sPlayerData[id][m_bCourseFinished]) {
         message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
         write_byte(1);
         write_string("");
@@ -326,7 +326,7 @@ public update_hud(id) {
 
     // check when the hud was last updated and fire function
     if (g_sPlayerData[id][m_fLastHudUpdate] < get_gametime()) {
-        g_sPlayerData[id][m_fLastHudUpdate] = get_gametime() + 0.5;
+        g_sPlayerData[id][m_fLastHudUpdate] = get_gametime() + 0.25;
         new szBigHudTXT[128];
         if (iHours > 0) {
             formatex(szBigHudTXT, charsmax(szBigHudTXT), "XX%02d:%02d:%02d", iHours, iMinutes, iSeconds);
@@ -425,7 +425,26 @@ public pub_sub_endtouch(touched, toucher) {
         new szChatTXT[128];
         formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
         client_print(0, print_chat, szChatTXT);
-        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);         
+        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);
+        message_begin(MSG_ONE, SVC_TEMPENTITY, .player = toucher);
+        {
+            write_byte(TE_TEXTMESSAGE);
+            write_byte(1 & 0xFF);
+            write_short( clamp(-1*(1<<13), -32768, 32767) );
+            write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
+            write_byte( 1 );
+            write_byte( 0 );
+            write_byte( 255 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(120*(1<<8), 0, 65535) );
+            write_string("");
+        }
+        message_end();         
     } else if (g_sPlayerData[toucher][m_fGenericCooldown] < get_gametime()) {
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
