@@ -44,20 +44,15 @@ The AMX Mod X documentation is very sloppy and is full of grammar and spelling e
 		fp->Write(data, ...)
 	Use fwrite_blocks instead.
 
-Constants stop being constant when arrays are involved.
-This is valid:
-	new const A = 123
-	new const A2 = A
-	new B[] = {123}
-But this results in a "Must be constant expression" error:
-	new const A = 123
-	new B[] = {A}
-
-The compiler does not recognise expressions made of constant symbols, as this following code generates unnecessary lookup code and does not raise redundant assertion warnings:
-	new const A = 123
-	new const B[] = {3, 3}
-	assert A == 123
-	assert B[0] == 3
+You can't create constant arrays.
+This is valid (and is much like a #define):
+	const A = 123
+But this is an error:
+	const A[] = {0, 1, 2}
+This means that it's impossible to create constant arrays that can be indexed at compile time. You have to create constant variable arrays that will generate unnecessary lookup code when indexed:
+	new const A[] = {0, 1, 2}
+You can create a #define for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:
+	#define A "Constant string"
 
 The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:
 	new V[5]
