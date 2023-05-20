@@ -1,18 +1,12 @@
-// code by watch/fm see https://github.com/ben-watch/feckinmad, modified by MrKoala in order to migrate skillzworld 
-// from the c++ metamod plugin to amxmodx
+#if defined _included_sw_thirdperson
+  #endinput 
+#endif 
+#define _included_sw_thirdperson 
 
-#if defined _module_included
-  #endinput
-#endif
-#define _module_included
+#pragma reqlib sw_thirdperson
 
-#if AMXX_VERSION_NUM >= 175
- #pragma reqclass sw_thirdperson
- #if !defined AMXMODX_NOAUTOLOAD
-  #pragma defclasslib sw_thirdperson sw_thirdperson
- #endif
-#else
- #pragma library sw_thirdperson
-#endif
-
-public Native_GetUserThird(iPlugin, iParams);
+native is_user_thirdperson(id)
+native thirdperson(id)
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/
