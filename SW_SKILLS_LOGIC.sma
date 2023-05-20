@@ -387,6 +387,7 @@ public pub_sub_starttouch(touched, toucher) {
         g_sPlayerData[toucher][m_iTotalCPsUsed] = 0;                                                                        //set the player's totalcpsused to 0
         g_sPlayerData[toucher][m_bOwnCPs] = false;                                                                          //set the player's owncps to false
         g_sPlayerData[toucher][m_iCourseID] = pev(touched, pev_iuser2);                                                     //set the player's courseid to the touched cp's courseid
+        g_sPlayerData[toucher][m_bCourseFinished] = false;                                                                  //set the player's coursefinished to false
 
         if (!g_sPlayerData[toucher][m_bGotCourseInfo]) {
             g_sPlayerData[toucher][m_bGotCourseInfo] = true;
