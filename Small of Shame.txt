@@ -18,10 +18,14 @@ The AMX Mod X library has accumulated many mistakes over the years that haven't 
 	The parameters have the wrong names, which belong to floatdiv.
 	
 	include/tfcconst.inc provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
+	
+	register_event provides a workaround for a bug, leaving it unfixed.
 
 The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
 	Documentation for register_clcmd completely lacks a description of the callback function it should receive. For an example of how it should've been documented, see menu_create.
 		The callback function to register_clcmd should take a single parameter holding the calling player id, often just called id.
+	
+	The documentation for get_user_msgid neglects to mention where message names can be found.
 	
 	https://www.amxmodx.org/api/file/fopen
 	Wrong example: "Example: "rb" opens a binary file for writing"
