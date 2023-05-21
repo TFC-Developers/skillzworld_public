@@ -69,7 +69,8 @@ native api_get_coursedescription(id, desc[], len);    //params: id - course id, 
 native api_get_totalcps(id);                          //params: id - course id
 native api_legacycheck();                             //params: none
 native api_registercourse( Buffer[] );                //params: Buffer[] - course data 
-native api_registercheckpoint( Buffer[] );            //params: Buffer[] - checkpoint data  
+native api_registercheckpoint( Buffer[] );            //params: Buffer[] - checkpoint data
+native api_spawnallcourses();                         //params: none  
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */
