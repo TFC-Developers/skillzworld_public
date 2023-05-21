@@ -22,7 +22,7 @@ enum ePlayerSessionData {
     bool:m_bOwnCPs,             //if the player has his own cps / disables all other cps
     Array:m_CustomCPs,          //array of custom cps
     Float:m_fCustomCPsNextDr,   //next time the custom cps should be drawn
-    booal:m_bResetConsent,      //if the player has consented to reset his time without menu
+    bool:m_bResetConsent,      //if the player has consented to reset his time without menu
     Float:m_fMenuCooldown,      //the cooldown for the menu
     m_iCourseID                 //the course id
 }
@@ -151,31 +151,21 @@ public consentmenu_clicked( const id, const menu, const item )
         case 1:                                                            // reset the timer and the cps (Choice: "Yes!")
         {
             pub_reset(id);
-            menu_destroy( menu );
-            return PLUGIN_HANDLED;
         }
         case 2:                                                             // reset the timer (Choice: "Just reset the timer")
         {
             pub_stoprun(id);
-            menu_destroy( menu );
-            return PLUGIN_HANDLED;
         }
         case 3:                                                             // reset the timer and teleport to start (Choice: "Reset+TP to Start and dont ask again")
         {
             g_sPlayerData[id][m_bResetConsent] = true;
             pub_reset(id);
-            menu_destroy( menu );
-            return PLUGIN_HANDLED;
         }
         case 4:                                                             // do nothing (Choice: "No!")
         {
-            menu_destroy( menu );
-            return PLUGIN_HANDLED;
         }
         default:                                                            // do nothing 
         {
-            menu_destroy( menu );
-            return PLUGIN_HANDLED;
         }
     }
     menu_destroy( menu );
@@ -247,7 +237,7 @@ public draw_customcps(id) {
     for (new i = iCount-1; i >= 0; i--) {
         ArrayGetArray(g_sPlayerData[id][m_CustomCPs], i, Buffer);
         if (i == iCount-1) {
-            message_begin(MSG_ONE, SVC_TEMPENTITY, Float:{0,0,0}, .player = id);
+            message_begin(MSG_ONE, SVC_TEMPENTITY, .player = id);
             {
                 write_byte(TE_SPRITE);
                 write_coord_f(Buffer[m_vOrigin][0]);
@@ -259,7 +249,7 @@ public draw_customcps(id) {
             }
             message_end();
         } else if (i < iCount-1 && i >= iCount-6){
-            message_begin(MSG_ONE, SVC_TEMPENTITY,Float:{0,0,0} , .player = id);
+            message_begin(MSG_ONE, SVC_TEMPENTITY, .player = id);
             {
                 write_byte(TE_SPRITE);
                 write_coord_f(Buffer[m_vOrigin][0]);
@@ -603,48 +593,37 @@ public pub_loadlastcp(id) {
 
 }
 public pub_reset(id) {
-    /* discussion: should we allow resetting if the player has not started a run yet?
-    if (g_sPlayerData[id][m_iCourseID] == 0) {
-        client_print(id, print_chat, "* You have not started a run yet");
-        return;
-    }*/
-    new ent;
-  	ent = -1;
-    new eSearch = -1;
-	while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint")))
-	{
-        if(!pev_valid(ent))
-            continue;
-
-        if(pev(ent, pev_iuser2) != g_sPlayerData[id][m_iCourseID])
-            continue;
-
-        if (pev(ent, pev_iuser1) == 0) {
-            eSearch = ent;
-            break;
-        }
-		if(ent != g_sPlayerData[id][m_iCourseID])
-			continue;
-
-		if(!pev_valid(ent))
-			continue;
-
+	/* discussion: should we allow resetting if the player has not started a run yet?
+	if (g_sPlayerData[id][m_iCourseID] == 0) {
+		client_print(id, print_chat, "* You have not started a run yet");
+		return;
+	}*/
+	new ent;
+	ent = -1;
+	new eSearch = -1;
+	while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
+		if(!pev_valid(ent) || pev(ent, pev_iuser2) != g_sPlayerData[id][m_iCourseID]) continue;
+		
+		if (pev(ent, pev_iuser1) == 0) {
+			eSearch = ent;
+			break;
+		}
 	}  
-    //chec if ent is valid
-    if (!pev_valid(eSearch)) {
-        client_print(id, print_chat, "* Something weird happened here.. did you already start a run? [error: 2]");
-        return;
-    }
-    //reset his run
-    g_sPlayerData[id][m_bInRun] = false;
-    g_sPlayerData[id][m_fRunStarttime] = 0.0;
-    g_sPlayerData[id][m_fTouchCooldown] = 0.0;
-    new Float:fOrigin[3];                                           //create a new origin vector
-    pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
-    fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
-    CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
-    entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
-    stock_teleport(id, fOrigin);                                    //teleport the player to the cp
+	//check if ent is valid
+	if (!pev_valid(eSearch)) {
+		client_print(id, print_chat, "* Something weird happened here.. did you already start a run? [error: 2]");
+		return;
+	}
+	//reset his run
+	g_sPlayerData[id][m_bInRun] = false;
+	g_sPlayerData[id][m_fRunStarttime] = 0.0;
+	g_sPlayerData[id][m_fTouchCooldown] = 0.0;
+	new Float:fOrigin[3];                                           //create a new origin vector
+	pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+	fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
+	CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
+	entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
+	stock_teleport(id, fOrigin);                                    //teleport the player to the cp
 }
 
 public did_touch_cp(id,cp) {

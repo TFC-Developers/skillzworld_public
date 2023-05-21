@@ -110,9 +110,11 @@ stock send_motd(id, const sFormat[], any:...) {
 	new szMessage[256];
 	vformat(szMessage, charsmax(szMessage), sFormat, 3)
 
-	message_begin(MSG_ONE, iMsgID, Float:{0.0,0.0,0.0}, id);
-	write_byte(false);
-	write_string(szMessage);
+	message_begin(MSG_ONE, iMsgID, .player = id);
+	{
+		write_byte(false);
+		write_string(szMessage);
+	}
 	message_end();
 
 }
@@ -130,18 +132,18 @@ stock display_motd(id, const sFormat[], any:...) {
 
 	vformat(szMessage, charsmax(szMessage), sFormat, 3)
 	if (strlen(szMessage) >= 2) {
-		message_begin(MSG_ONE, iMsgIDServer, Float:{0.0,0.0,0.0}, id);
+		message_begin(MSG_ONE, iMsgIDServer, .player = id);
 		write_string(szMessage);
 		message_end();
 	}
 
-	message_begin(MSG_ONE, iMsgID, Float:{0.0,0.0,0.0}, id);
+	message_begin(MSG_ONE, iMsgID, .player = id);
 	write_byte(true);
 	write_string("");
 	message_end();
 
 	if (strlen(szMessage) >= 2) {
-		message_begin(MSG_ONE, iMsgIDServer, Float:{0.0,0.0,0.0}, id);
+		message_begin(MSG_ONE, iMsgIDServer, .player = id);
 		write_string(szHostname);
 		message_end();
 	}
