@@ -22,6 +22,8 @@ enum ePlayerSessionData {
     bool:m_bOwnCPs,             //if the player has his own cps / disables all other cps
     Array:m_CustomCPs,          //array of custom cps
     Float:m_fCustomCPsNextDr,   //next time the custom cps should be drawn
+    booal:m_bResetConsent,      //if the player has consented to reset his time without menu
+    Float:m_fMenuCooldown,      //the cooldown for the menu
     m_iCourseID                 //the course id
 }
 
@@ -51,8 +53,8 @@ public plugin_init() {
     register_forward(FM_Think, "pub_skillsthink");
     register_forward(FM_AddToFullPack, "Hook_AddToFullPack",1);
     register_think("spawn_thinker", "pub_skillsthink");
-    register_clcmd("say /reset", "pub_reset");
-    register_clcmd("say /r", "pub_reset");
+    register_clcmd("say /reset", "menu_resetconsent");
+    register_clcmd("say /r", "menu_resetconsent");
     register_clcmd("say /load", "pub_loadlastcp");
     register_clcmd("say load", "pub_loadlastcp");
     register_clcmd("say /l", "pub_loadlastcp");
@@ -87,6 +89,7 @@ public pub_stoprun(id) {
 
     client_cmd(id, "spk \"reset ok\"\n");
     client_print(id, print_chat, "* Your timer has been reset. Have fun on the course!");
+    
     set_hudmessage(255, 0, 0, -1.0, 0.35, 0, 0.0, 1.0, 0.0, 0.0,13);
     show_hudmessage(id,"Stopped run...");
 }
@@ -106,6 +109,8 @@ public reset_struct(id) {
     g_sPlayerData[id][m_fGenericCooldown] = 0.0;
     g_sPlayerData[id][m_bOwnCPs] = false;
     g_sPlayerData[id][m_fCustomCPsNextDr] = 0.0;
+    g_sPlayerData[id][m_bResetConsent] = false;
+    g_sPlayerData[id][m_fMenuCooldown] = 0.0;
 }
 
 public client_connect(id) {
@@ -114,6 +119,70 @@ public client_connect(id) {
 public client_disconnected(id) {
     reset_struct(id);
 }
+public menu_resetconsent(id) {
+    if (g_sPlayerData[id][m_bResetConsent]) { pub_reset(id); return PLUGIN_HANDLED; }           //reset the player's time since he consented to it
+    new oldMenuId, newMenuId; player_menu_info(id, oldMenuId, newMenuId);                                                                                       //get the player's menu id he is currently in
+    if (oldMenuId >= 1) { return PLUGIN_HANDLED; }                                                                                                              //return if the player is in a menu
+    //if (g_sPlayerData[id][m_fMenuCooldown] > get_gametime()) { return PLUGIN_HANDLED; }                                                                         //return if the player is in a menu cooldown
+    g_sPlayerData[id][m_fMenuCooldown] = get_gametime() + 1.5;                                                                                                  //set the menu cooldown to 5 seconds
+
+    new szMenu[256]; formatex(szMenu, charsmax(szMenu), "\\wDo you want to \\rreset\\w your \ncurrent timer and start over?\n\nNote: checkpoints will be reset if you start over\nif you just want to continue checkpoints wont be reset\n");
+    new menu = menu_create( szMenu, "consentmenu_clicked" );
+    menu_additem( menu, "Yes! (CPs will be reset!)", "1" );
+    menu_additem( menu, "Just reset timer! (let me continue map)", "2" );
+    menu_additem( menu, "Reset+TP to Start and dont ask again", "3" );
+    menu_additem( menu, "No!", "4" );
+    menu_display( id, menu ); //time out after 60 seconds
+    return PLUGIN_HANDLED;
+}
+public consentmenu_clicked( const id, const menu, const item )
+{
+    if( item == MENU_EXIT )
+    {
+        menu_destroy( menu );
+        return PLUGIN_HANDLED;
+    }
+
+    new data[ 6 ], iName[ 64 ];
+    new access, callback;
+    menu_item_getinfo( menu, item, access, data,5, iName, 63, callback );
+    new iDecision = str_to_num( data );
+    switch(iDecision) {
+        case 1:                                                            // reset the timer and the cps (Choice: "Yes!")
+        {
+            pub_reset(id);
+            menu_destroy( menu );
+            return PLUGIN_HANDLED;
+        }
+        case 2:                                                             // reset the timer (Choice: "Just reset the timer")
+        {
+            pub_stoprun(id);
+            menu_destroy( menu );
+            return PLUGIN_HANDLED;
+        }
+        case 3:                                                             // reset the timer and teleport to start (Choice: "Reset+TP to Start and dont ask again")
+        {
+            g_sPlayerData[id][m_bResetConsent] = true;
+            pub_reset(id);
+            menu_destroy( menu );
+            return PLUGIN_HANDLED;
+        }
+        case 4:                                                             // do nothing (Choice: "No!")
+        {
+            menu_destroy( menu );
+            return PLUGIN_HANDLED;
+        }
+        default:                                                            // do nothing 
+        {
+            menu_destroy( menu );
+            return PLUGIN_HANDLED;
+        }
+    }
+    menu_destroy( menu );
+    return PLUGIN_HANDLED;
+}
+
+
 public pub_mapcps(id) {
     //return if not in customcps mode
     if (!g_sPlayerData[id][m_bOwnCPs]) {
@@ -241,7 +310,7 @@ public update_hud(id) {
         return;
     }
 
-    if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun]) {
+    if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun] || g_sPlayerData[id][m_bCourseFinished]) {
         message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
         write_byte(1);
         write_string("");
@@ -257,7 +326,7 @@ public update_hud(id) {
 
     // check when the hud was last updated and fire function
     if (g_sPlayerData[id][m_fLastHudUpdate] < get_gametime()) {
-        g_sPlayerData[id][m_fLastHudUpdate] = get_gametime() + 0.5;
+        g_sPlayerData[id][m_fLastHudUpdate] = get_gametime() + 0.25;
         new szBigHudTXT[128];
         if (iHours > 0) {
             formatex(szBigHudTXT, charsmax(szBigHudTXT), "XX%02d:%02d:%02d", iHours, iMinutes, iSeconds);
@@ -317,7 +386,13 @@ public pub_cptouch(touched, toucher) {
         return;
     }
     if (pev(touched, pev_iuser1) == 0) {
-        pub_sub_starttouch(touched, toucher);
+        if (g_sPlayerData[toucher][m_bInRun]                                            //check if the player is in a run
+            && ((g_sPlayerData[toucher][m_fRunStarttime] + 2.0) <= get_gametime())      //check if the player has touched the start orb at least 2 seconds ago
+            && !g_sPlayerData[toucher][m_bResetConsent]) {                              //check if the player has consented to reset his time without menu
+            menu_resetconsent(toucher);                                                 //ask the player if he wants to reset his time and if consented, reset it
+        } else {                                                                        //if the player is not in a run
+            pub_sub_starttouch(touched, toucher);                                       //start the run
+        }
     } 
     if (pev(touched, pev_iuser1) == 1) {
         pub_sub_cptouch(touched, toucher);
@@ -350,7 +425,26 @@ public pub_sub_endtouch(touched, toucher) {
         new szChatTXT[128];
         formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
         client_print(0, print_chat, szChatTXT);
-        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);         
+        SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);
+        message_begin(MSG_ONE, SVC_TEMPENTITY, .player = toucher);
+        {
+            write_byte(TE_TEXTMESSAGE);
+            write_byte(1 & 0xFF);
+            write_short( clamp(-1*(1<<13), -32768, 32767) );
+            write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
+            write_byte( 1 );
+            write_byte( 0 );
+            write_byte( 255 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_byte( 0 );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(0*(1<<8), 0, 65535) );
+            write_short( clamp(120*(1<<8), 0, 65535) );
+            write_string("");
+        }
+        message_end();         
     } else if (g_sPlayerData[toucher][m_fGenericCooldown] < get_gametime()) {
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
@@ -387,6 +481,7 @@ public pub_sub_starttouch(touched, toucher) {
         g_sPlayerData[toucher][m_iTotalCPsUsed] = 0;                                                                        //set the player's totalcpsused to 0
         g_sPlayerData[toucher][m_bOwnCPs] = false;                                                                          //set the player's owncps to false
         g_sPlayerData[toucher][m_iCourseID] = pev(touched, pev_iuser2);                                                     //set the player's courseid to the touched cp's courseid
+        g_sPlayerData[toucher][m_bCourseFinished] = false;                                                                  //set the player's coursefinished to false
 
         if (!g_sPlayerData[toucher][m_bGotCourseInfo]) {
             g_sPlayerData[toucher][m_bGotCourseInfo] = true;
@@ -537,9 +632,13 @@ public pub_reset(id) {
 	}  
     //chec if ent is valid
     if (!pev_valid(eSearch)) {
-        client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 2]");
+        client_print(id, print_chat, "* Something weird happened here.. did you already start a run? [error: 2]");
         return;
     }
+    //reset his run
+    g_sPlayerData[id][m_bInRun] = false;
+    g_sPlayerData[id][m_fRunStarttime] = 0.0;
+    g_sPlayerData[id][m_fTouchCooldown] = 0.0;
     new Float:fOrigin[3];                                           //create a new origin vector
     pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
     fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp

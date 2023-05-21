@@ -100,6 +100,53 @@ stock CreateTeleportEffect(id, model_index)
 	}
 	message_end();
 }
+stock send_motd(id, const sFormat[], any:...) {
+	new iMsgID = get_user_msgid("MOTD");
+
+	if (iMsgID == 0) {
+		DebugPrintLevel(0,"MOTD message not found");
+		return;
+	}
+	new szMessage[256];
+	vformat(szMessage, charsmax(szMessage), sFormat, 3)
+
+	message_begin(MSG_ONE, iMsgID, Float:{0.0,0.0,0.0}, id);
+	write_byte(false);
+	write_string(szMessage);
+	message_end();
+
+}
+
+stock display_motd(id, const sFormat[], any:...) {
+	new iMsgID = get_user_msgid("MOTD");
+	new iMsgIDServer = get_user_msgid("ServerName");
+	new szHostname[63]; get_cvar_string("hostname",szHostname,63);
+	new szMessage[256];
+
+	if (iMsgID == 0 || iMsgIDServer == 0) {
+		DebugPrintLevel(0,"MOTD message not found");
+		return;
+	}
+
+	vformat(szMessage, charsmax(szMessage), sFormat, 3)
+	if (strlen(szMessage) >= 2) {
+		message_begin(MSG_ONE, iMsgIDServer, Float:{0.0,0.0,0.0}, id);
+		write_string(szMessage);
+		message_end();
+	}
+
+	message_begin(MSG_ONE, iMsgID, Float:{0.0,0.0,0.0}, id);
+	write_byte(true);
+	write_string("");
+	message_end();
+
+	if (strlen(szMessage) >= 2) {
+		message_begin(MSG_ONE, iMsgIDServer, Float:{0.0,0.0,0.0}, id);
+		write_string(szHostname);
+		message_end();
+	}
+}
+
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */
