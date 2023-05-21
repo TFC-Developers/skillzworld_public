@@ -10,50 +10,13 @@
 */
 
 #include "include/global"
-#include "include/api_skills_mapentities"
+#include "include/api_skills_mapentities"   // include file belonging to this plugin
+#include "include/api_skills_mysql"         // include file belonging the plugin SW_SKILLS_MYSQL
 #include <engine>
 #include <fakemeta>
 #include "include/utils"
 #include <file>
 
-/* 
- * 	Defines
-*/
-
-#define MAX_CHECKPOINTS 2048 // max number of checkpoints
-#define MAX_COURSES 128 // max number of courses
-#define MAX_COURSE_NAME 32 // max length of the course name
-#define MAX_COURSE_DESCRIPTION 64 // max length of the course description
-#define LEGACY_MODEL "models/skillzworld/checkpoint2.mdl"
-
-/* 
- * 	Structs
-*/
-
-//this enum is used to store the checkpoint data parsed from file or 
-//from the mysql database
-enum eCheckPoints_t
-{
-    m_iCPID,                      // checkpoint id
-    m_iCPType,                    // checkpoint type (0 = start, 1 = checkpoint, 2 = finish)
-    m_iCPCourseID,                // course id (foreign key)
-    Float:m_fOrigin[3],           // checkpoint origin
-    m_iEntID                      // entity id
-
-}
-
-
-//this enum is used to store the course data parsed from file or
-//from the mysql database
-enum eCourseData_t 
-{
-    m_iCourseID,                                          // course id
-    m_szCourseName[MAX_COURSE_NAME],               // course name (e.g. "Easy")
-    m_szCourseDescription[MAX_COURSE_DESCRIPTION],  // course description (e.g. "Easy")
-    m_iNumCheckpoints,                              // number of checkpoints
-    m_iDifficulty,                                  // difficulty (value between 0 - 100) if set to -1, the difficulty is not set
-    m_szGoalTeams[16]                               // teams that can reach the goal (e.g. "BRGY"), here for legacy reasons
-}
 
 /* 
  * 	global variables
@@ -61,9 +24,9 @@ enum eCourseData_t
 
 new Array: g_Checkpoints = Invalid_Array;                  // array to store the checkpoints
 new Array: g_Courses = Invalid_Array;                      // array to store the courses
-new g_iCPCount;                                     // number of checkpoints    
-new g_iModelID;                                         // model id of the goal model   
-new g_bWorldSpawned;                                    // true if the worldspawn entity has been spawned
+new g_iCPCount;                                            // number of checkpoints    
+new g_iModelID;                                            // model id of the goal model   
+new g_bWorldSpawned;                                       // true if the worldspawn entity has been spawned
 
 /* 
  * 	Functions
@@ -75,6 +38,10 @@ public plugin_natives() {
     register_native("api_get_coursename", "Native_GetCourseName");
     register_native("api_is_team_allowed", "Native_IsTeamAllowed");
     register_native("api_get_totalcps", "Native_GetTotalCPS");
+    register_native("api_legacycheck", "Native_LegacyCheck");
+    register_native("api_registercourse", "Native_RegisterCourse");
+    register_native("api_registercheckpoint", "Native_RegisterCP");
+    register_native("api_spawnallcourses", "Native_SpawnAllCourses");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -87,7 +54,6 @@ public plugin_init() {
     RegisterPlugin();
 
     register_clcmd("say /loadfile", "parse_skillsconfig");
-    register_clcmd("say /spawncheckpoint", "debug_spawncheckpoint");
     register_clcmd("say /cp", "debug_spawncheckpoint");
     register_clcmd("say /listcps", "debug_list_all_cps_in_world");
 
@@ -101,14 +67,17 @@ public plugin_unload() {
 public plugin_precache() {
     g_iModelID = precache_model(LEGACY_MODEL);
 }
-
+//called by mysql plugin after the database has been loaded
+//and no legacy courses have been found
+public Native_LegacyCheck() {
+    parse_skillsconfig();
+}
 
 public fm_spawn(id) {
     if (g_bWorldSpawned) { return; } //worldspawn has already been spawned
     
     new szClassname[32]; entity_get_string(id, EV_SZ_classname, szClassname, charsmax(szClassname));
     if (equali(szClassname, "worldspawn")) {
-        parse_skillsconfig();
         g_bWorldSpawned = true;
     }
 }
@@ -118,20 +87,19 @@ public get_course_description(id) {
     new iCount = ArraySize(g_Courses);
     new szDescription[MAX_COURSE_DESCRIPTION];
     new Buffer[eCourseData_t];
-    //initialize the string
     formatex(szDescription, charsmax(szDescription), "__Unknown");
 
     for (new i = 0; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
-        if (Buffer[m_iCourseID] == id) {
-            formatex(szDescription, charsmax(szDescription), "%s", Buffer[m_szCourseName]);
+        if (Buffer[mC_iCourseID] == id) {
+            formatex(szDescription, charsmax(szDescription), "%s", Buffer[mC_szCourseName]);
         }
     }
     return szDescription;
 }
 
 public parse_skillsconfig() {
-
+    DebugPrintLevel(0, "Parsing skills config..");
     new mapname[32];  get_mapname(mapname, charsmax(mapname));                          // get the map name
     new filename[32]; formatex(filename, charsmax(filename), "skills/%s.cfg", mapname); // get the filename
     new path[128]; BuildAMXFilePath(filename, path, charsmax(path), "amxx_configsdir"); // get the full path to the file
@@ -142,7 +110,7 @@ public parse_skillsconfig() {
     new Array:tempCheckpoints = ArrayCreate(eCheckPoints_t);          // temp array to store the checkpoints
 
     //set the tempCourseData difficulty to -1
-    tempCourseData[m_iDifficulty] = -1;
+    tempCourseData[mC_iDifficulty] = -1;
 
     if (file_exists(path)) // check if the file exists
     {
@@ -163,7 +131,7 @@ public parse_skillsconfig() {
 
             //check if key is "sv_difficulty" and set the difficulty
             if (equali(szKey, "sv_difficulty")) {
-                tempCourseData[m_iDifficulty] = str_to_num(szValue);
+                tempCourseData[mC_iDifficulty] = str_to_num(szValue);
             }
 
             //check if the key is x_start and set the origin to startCP
@@ -198,7 +166,7 @@ public parse_skillsconfig() {
 
             //check if the key is sv_goalteams and set the goal teams
             if (equali(szKey, "sv_goalteams")) {
-                formatex(tempCourseData[m_szGoalTeams], charsmax(tempCourseData[m_szGoalTeams]), "%s", szValue);
+                formatex(tempCourseData[mC_szGoalTeams], charsmax(tempCourseData[mC_szGoalTeams]), "%s", szValue);
             }
 
             //check if key is skillcheckpoint and parse the checkpoint data
@@ -216,10 +184,11 @@ public parse_skillsconfig() {
                 tempOrigin[2] = str_to_float(szOriginValue);
 
                 new aCP[eCheckPoints_t];
-                aCP[m_iCPID] = -1; //not set
-                aCP[m_iCPType] = 1; //checkpoint
-                aCP[m_iCPCourseID] = -1; //not set
-                aCP[m_fOrigin] = tempOrigin;
+                aCP[mCP_iID] = -1; //not set
+                aCP[mCP_iType] = 1; //checkpoint
+                aCP[mCP_iCourseID] = -1; //not set
+                aCP[mCP_fOrigin] = tempOrigin;
+                aCP[mCP_sqlCourseID] = -100;  //workaround for legacy courses
 
                 //push to tempCheckpoints
                 ArrayPushArray(tempCheckpoints, aCP);
@@ -250,79 +219,82 @@ public parse_skillsconfig() {
         }
 
         //check if difficulty is set
-        if (tempCourseData[m_iDifficulty] == -1) {
+        if (tempCourseData[mC_iDifficulty] == -1) {
             DebugPrintLevel(0, "No difficulty found in file %s", path);
             ArrayDestroy(tempCheckpoints);
             return;
         }
 
         //check if goal teams are set and set them to "BRGY" if not
-        if (equal(tempCourseData[m_szGoalTeams], "__Undefined")) {
-            formatex(tempCourseData[m_szGoalTeams], charsmax(tempCourseData[m_szGoalTeams]), "BRGY");
+        if (equal(tempCourseData[mC_szGoalTeams], "__Undefined")) {
+            formatex(tempCourseData[mC_szGoalTeams], charsmax(tempCourseData[mC_szGoalTeams]), "BRGY");
         }
 
-        //set the name of the course to "Legacy Course"
-        formatex(tempCourseData[m_szCourseName], charsmax(tempCourseData[m_szCourseName]), "Legacy Course");
+        formatex(tempCourseData[mC_szCourseName], charsmax(tempCourseData[mC_szCourseName]), "Legacy course");
+        new szDate[32]; format_time(szDate, charsmax(szDate), "%d.%m.%Y %H:%M:%S", get_systime());
+        formatex(tempCourseData[mC_szCourseDescription], charsmax(tempCourseData[mC_szCourseDescription]), "Legacy course imported into the database (%s)", szDate);
 
-        //set the Description to "Legacy course imported from the file on <date>"
-        new szDate[32];
-        //format_time(output[], len, const format[], time = -1);
-        format_time(szDate, charsmax(szDate), "%d.%m.%Y", get_systime());
-        formatex(tempCourseData[m_szCourseDescription], charsmax(tempCourseData[m_szCourseDescription]), "Legacy course imported from the file on %s", szDate);
+        tempCourseData[mC_iCreatorID] = -1;         //set the creator id to -1 (SYSTEM)
+        tempCourseData[mC_bLegacy] = true;          //set the legacy flag to true
+        tempCourseData[mC_iFlags] = 0;              //set the flags to 0
+        tempCourseData[mC_sqlCourseID] = -100;     //workaround for legacy courses
 
-        new iNextCourseID = ArraySize(g_Courses);
-        DebugPrintLevel(0, "Current  courses ID: %d", iNextCourseID);
+        new iFlags = 0;
+        if (containi(tempCourseData[mC_szGoalTeams],"B") >= 0) { iFlags |= SRFLAG_TEAMBLUE; }
+        if (containi(tempCourseData[mC_szGoalTeams],"R") >= 0) { iFlags |= SRFLAG_TEAMRED; }
+        if (containi(tempCourseData[mC_szGoalTeams],"G") >= 0) { iFlags |= SRFLAG_TEAMGREEN; }
+        if (containi(tempCourseData[mC_szGoalTeams],"Y") >= 0) { iFlags |= SRFLAG_TEAMYELLOW; }
+        tempCourseData[mC_iFlags] = iFlags; 
 
-        //set the course id
-        tempCourseData[m_iCourseID] = (iNextCourseID + 1);
-        DebugPrintLevel(0, "Course ID: %d", tempCourseData[m_iCourseID]);
+        new iNextCourseID = ArraySize(g_Courses);                   //get the next course id (if no course this is 0 or the amount of courses)
+        tempCourseData[mC_iCourseID] = iNextCourseID + 1;           //set the course id to the next course id by adding 1 to the current amount of courses
+        ArrayPushArray(g_Courses, tempCourseData);                  //push the course to the array of courses
+        api_sql_insertcourse( tempCourseData );                     //insert the course into the database
 
-        ArrayPushArray(g_Courses, tempCourseData);
+        new aStartCP[eCheckPoints_t];                               //array to store the start cp
+        aStartCP[mCP_iID] = -1;                                     //not set, will be set by push_checkpoint_array
+        aStartCP[mCP_iType] = 0; //start                            //start (0 = start, 1 = checkpoint, 2 = finish)
+        aStartCP[mCP_iCourseID] = tempCourseData[mC_iCourseID];     //course id
+        aStartCP[mCP_fOrigin] = startCP;                            //origin
+        aStartCP[mCP_sqlCourseID] = -100;                           //workaround for legacy courses
+        internal_register_cp(aStartCP);                             //register the cp in the array
+        api_sql_insertlegacycps( aStartCP );                        //insert the cp into the database
 
-        debug_coursearray();
-        //add the start cp to the tempCheckpoints array
-        new aStartCP[eCheckPoints_t];
-        aStartCP[m_iCPID] = -1; //not set
-        aStartCP[m_iCPType] = 0; //start
-        aStartCP[m_iCPCourseID] = -1; //not set
-        aStartCP[m_fOrigin] = startCP;
-        ArrayPushArray(tempCheckpoints, aStartCP);
+        new aEndCP[eCheckPoints_t];                                 //array to store the end cp
+        aEndCP[mCP_iID] = -1;                                       //not set, will be set by push_checkpoint_array
+        aEndCP[mCP_iType] = 2;                                      //finish (0 = start, 1 = checkpoint, 2 = finish)
+        aEndCP[mCP_iCourseID] = tempCourseData[mC_iCourseID];       //course id
+        aEndCP[mCP_fOrigin] = endCP;                                //origin
+        aEndCP[mCP_sqlCourseID] = -100;                             //workaround for legacy courses  
+        internal_register_cp(aEndCP);                               //register the cp in the array
+        api_sql_insertlegacycps( aEndCP );                          //insert the cp into the database
 
-        //add the end cp to the tempCheckpoints array
-        new aEndCP[eCheckPoints_t];
-        aEndCP[m_iCPID] = -1; //not set
-        aEndCP[m_iCPType] = 2; //finish
-        aEndCP[m_iCPCourseID] = -1; //not set
-        aEndCP[m_fOrigin] = endCP;
-        ArrayPushArray(tempCheckpoints, aEndCP);
-
-        //cycle through all tempcheckpoints and call push_checkpoint_array
-        new iCount = ArraySize(tempCheckpoints);
-        new Buffer[eCheckPoints_t];
-        for (new i; i < iCount; i++) {
-            ArrayGetArray(tempCheckpoints, i, Buffer);
-            Buffer[m_iCPCourseID] = tempCourseData[m_iCourseID];
-            push_checkpoint_array(Buffer, tempCourseData[m_iCourseID]);
+        new iCount = ArraySize(tempCheckpoints);                    //get the number of checkpoints loaded from the file
+        new Buffer[eCheckPoints_t];                                 //array to store the checkpoint data
+        for (new i; i < iCount; i++) {                              //loop through the checkpoints loaded from the file
+            ArrayGetArray(tempCheckpoints, i, Buffer);              //get the checkpoint data
+            Buffer[mCP_iCourseID] = tempCourseData[mC_iCourseID]    //set the course id to the course id of the course
+            internal_register_cp(Buffer);                           //register the cp in the array
+            api_sql_insertlegacycps( Buffer );                      //insert the cp into the database
         }
-
-        ArrayDestroy(tempCheckpoints);
-
-        spawn_checkpoints_of_course(tempCourseData[m_iCourseID]);
+        ArrayDestroy(tempCheckpoints);                              //destroy the temp array
+        spawn_checkpoints_of_course(tempCourseData[mC_iCourseID]);  //spawn the checkpoints of the course loaded from the file
         
     }
 } 
 
 public push_checkpoint_array( Buffer[eCheckPoints_t], id ) {
 
-    if (Buffer[m_iCPID] == -1) {
+    if (Buffer[mCP_iID] == -1) {
         g_iCPCount++;
-        Buffer[m_iCPID] = g_iCPCount;
+        Buffer[mCP_iID] = g_iCPCount;
     }
 
-    if (Buffer[m_iCPCourseID] == -1) {
-        Buffer[m_iCPCourseID] = id;
+    if (Buffer[mCP_iCourseID] == -1) {
+        Buffer[mCP_iCourseID] = id;
     }
-    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[m_iCPID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(id));
+    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_description(id));
+    api_sql_insertlegacycps( Buffer );
     ArrayPushArray(g_Checkpoints, Buffer);
 }
 
@@ -334,12 +306,18 @@ public debug_coursearray() {
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
         DebugPrintLevel(0, "-------------------");
-        DebugPrintLevel(0, "Course ID: %d", Buffer[m_iCourseID]);
-        DebugPrintLevel(0, "Course Name: %s", Buffer[m_szCourseName]);
-        DebugPrintLevel(0, "Course Description: %s", Buffer[m_szCourseDescription]);
-        DebugPrintLevel(0, "Difficulty: %d", Buffer[m_iDifficulty]);
-        DebugPrintLevel(0, "Goal Teams: %s", Buffer[m_szGoalTeams]);
-        DebugPrintLevel(0, "Number of Checkpoints: %d", Buffer[m_iNumCheckpoints]);
+        DebugPrintLevel(0, "Course ID: %d", Buffer[mC_iCourseID]);
+        DebugPrintLevel(0, "Course Name: %s", Buffer[mC_szCourseName]);
+        DebugPrintLevel(0, "Course Description: %s", Buffer[mC_szCourseDescription]);
+        DebugPrintLevel(0, "Difficulty: %d", Buffer[mC_iDifficulty]);
+        DebugPrintLevel(0, "Goal Teams: %s", Buffer[mC_szGoalTeams]);
+        DebugPrintLevel(0, "Number of Checkpoints: %d", Buffer[mC_iNumCheckpoints]);
+        DebugPrintLevel(0, "Creator ID: %d", Buffer[mC_iCreatorID]);
+        DebugPrintLevel(0, "Legacy: %d", Buffer[mC_bLegacy]);
+        DebugPrintLevel(0, "Flags: %d", Buffer[mC_iFlags]);
+        DebugPrintLevel(0, "Sql Active: %d", Buffer[mC_bSQLActive]);
+        DebugPrintLevel(0, "Sql ID: %d", Buffer[mC_iCourseID]);
+        DebugPrintLevel(0, "-------------------");
     }
 }
 
@@ -348,11 +326,49 @@ public debug_coursearray() {
 */
 
 // native to get the map difficulty
-public Native_GetMapDifficulty(iPluign, iParams) {
-    return 0;
+public Native_RegisterCourse(iPlugin, iParams) {
+    new Buffer[eCourseData_t];
+    get_array(1, Buffer, eCourseData_t);
+    //validate the data
+    //if difficulty out of bounds (0-100) set to boundary
+    if (Buffer[mC_iDifficulty] < 0) { Buffer[mC_iDifficulty] = 0; } else if (Buffer[mC_iDifficulty] > 100) { Buffer[mC_iDifficulty] = 100; }
+    if (equal(Buffer[mC_szCourseName], "")) { formatex(Buffer[mC_szCourseName], charsmax(Buffer[mC_szCourseName]), "Undefined"); }
+    if (equal(Buffer[mC_szCourseDescription], "")) { formatex(Buffer[mC_szCourseDescription], charsmax(Buffer[mC_szCourseDescription]), "Undefined"); }
+    if (equal(Buffer[mC_szCreatorName], "")) { formatex(Buffer[mC_szCreatorName], charsmax(Buffer[mC_szCreatorName]), "SYSTEM"); }
+    if (equal(Buffer[mC_szCreated_at], "")) { formatex(Buffer[mC_szCreated_at], charsmax(Buffer[mC_szCreated_at]), "<no time available>"); }
+    new iNextCourseID = ArraySize(g_Courses);
+    Buffer[mC_iCourseID] = (iNextCourseID + 1); 
+    DebugPrintLevel(0, "Registering course [%s] with internal id %d, mysql id %d (flags: %d)", Buffer[mC_szCourseName], Buffer[mC_iCourseID], Buffer[mC_sqlCourseID], Buffer[mC_iFlags]);
+
+    ArrayPushArray(g_Courses, Buffer);      //push the course to the array
 }
 
-public Native_GetCourseDescription(iPluign, iParams) {
+public Native_RegisterCP(iPlugin, iParams) {
+    new Buffer[eCheckPoints_t];
+    get_array(1, Buffer, eCheckPoints_t);
+    internal_register_cp(Buffer);
+}
+
+public Native_SpawnAllCourses() {
+    new iCount = ArraySize(g_Courses);
+    new Buffer[eCourseData_t];
+    for (new i; i < iCount; i++) {
+        ArrayGetArray(g_Courses, i, Buffer);
+        spawn_checkpoints_of_course(Buffer[mC_iCourseID]);
+    }
+}
+public Native_GetMapDifficulty(iPlugin, iParams) {
+    new iCourseID = get_param(1);  new iCount = ArraySize(g_Courses); new iDifficulty = 0; new Buffer[eCourseData_t];
+    for (new i; i < iCount; i++) {
+        ArrayGetArray(g_Courses, i, Buffer);
+        if (Buffer[mC_iCourseID] == iCourseID) {
+            iDifficulty = Buffer[mC_iDifficulty];
+        }
+    }
+    return iDifficulty;
+}
+
+public Native_GetCourseDescription(iPlugin, iParams) {
     new id = get_param(1);
     new szReturn[MAX_COURSE_DESCRIPTION];
     formatex(szReturn, charsmax(szReturn), "__Undefined");
@@ -365,8 +381,8 @@ public Native_GetCourseDescription(iPluign, iParams) {
     new Buffer[eCourseData_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
-        if (Buffer[m_iCourseID] == id) {
-            formatex(szReturn, charsmax(szReturn), "%s", Buffer[m_szCourseDescription]);
+        if (Buffer[mC_iCourseID] == id) {
+            formatex(szReturn, charsmax(szReturn), "%s", Buffer[mC_szCourseDescription]);
         }
     }
     set_string(2, szReturn, get_param(3));
@@ -386,8 +402,8 @@ public Native_GetCourseName(iIndex) {
     new Buffer[eCourseData_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
-        if (Buffer[m_iCourseID] == id) {
-            formatex(szReturn, charsmax(szReturn), "%s", Buffer[m_szCourseName]);
+        if (Buffer[mC_iCourseID] == id) {
+            formatex(szReturn, charsmax(szReturn), "%s", Buffer[mC_szCourseName]);
         }
     }
     set_string(2, szReturn, get_param(3));
@@ -401,7 +417,7 @@ public Native_GetTotalCPS(iPlugin, iParams) {
     new Buffer[eCheckPoints_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
-        if (Buffer[m_iCPCourseID] == id) {
+        if (Buffer[mCP_iCourseID] == id) {
             iTotal++;
         }
     }
@@ -410,19 +426,19 @@ public Native_GetTotalCPS(iPlugin, iParams) {
 
 // native to check if a team is allowed to reach the goal
 // called through api_is_team_allowed(playerid, cp_entid);
+// params: playerid, cp_entid
 public Native_IsTeamAllowed(iPluign, iParams) {
     new id = get_param(1);
     new startent = get_param(2);
-
+    new result = false;
     new iCountCPs = ArraySize(g_Checkpoints);
     new iCourseID = -1;
     new Buffer[eCheckPoints_t];
+
     for (new i; i < iCountCPs; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
-        //DebugPrintLevel(0, "Checking checkpoint %d with entid %d against ent id %d", Buffer[m_iCPID], Buffer[m_iEntID], startent);
-        if (Buffer[m_iEntID] == startent) {
-            // found the start checkpoint now check the course id and break the loop
-            iCourseID = Buffer[m_iCPCourseID];
+        if (Buffer[mCP_iEntID] == startent) {
+            iCourseID = Buffer[mCP_iCourseID];          // get the course id of the checkpoint
             break;
         }
     }
@@ -431,31 +447,21 @@ public Native_IsTeamAllowed(iPluign, iParams) {
         DebugPrintLevel(0, "[ERROR] Could not find course id for start checkpoint %d", startent);
         return false;
     }
-
-    //now check if the team is allowed to reach the goal
-    new iCount = ArraySize(g_Courses);
-    new Buffer2[eCourseData_t];
-    for (new i; i < iCount; i++) {
-        ArrayGetArray(g_Courses, i, Buffer2);
-
-        if (equali(Buffer2[m_szGoalTeams], "BRGY")) {                                           
-            return true;
-        } else {
-            if ((containi(Buffer2[m_szGoalTeams], "B") > -1) && get_user_team(id) == 1) {            
-                return true;
-            } else if ((containi(Buffer2[m_szGoalTeams], "R") > -1) && get_user_team(id) == 2) { 
-                return true;
-            } else if ((containi(Buffer2[m_szGoalTeams], "G") > -1) && get_user_team(id) == 3) {
-                return true;
-            } else if ((containi(Buffer2[m_szGoalTeams], "Y") > -1)&& get_user_team(id) == 4) {
-                return true;
-            } else {
-                return false;
-            }
+    //get course Buffer instead of iterating through them
+    new CourseBuffer[eCourseData_t];
+    new iCountCourses = ArraySize(g_Courses);
+    for (new i; i < iCountCourses; i++) {
+        ArrayGetArray(g_Courses, i, CourseBuffer);
+        if (CourseBuffer[mC_iCourseID] == iCourseID) {
+            break;
         }
-        
     }
-    return false;
+    new iTeam = get_user_team(id);    
+    if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMBLUE && iTeam == 1) { result = true; }
+    if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMRED && iTeam == 2) { result = true; } 
+    if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMGREEN && iTeam == 4) { result = true; }
+    if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMYELLOW && iTeam == 3) { result = true; } 
+    return result;
 }
 
 /*
@@ -469,24 +475,21 @@ public spawn_checkpoint(id) {
 
     new Buffer[eCheckPoints_t];
     ArrayGetArray(g_Checkpoints, id, Buffer);
-    DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[m_iCPID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], get_course_description(Buffer[m_iCPCourseID]));
+    //DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_description(Buffer[mCP_iCourseID]));
 
-    new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
+    new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"));
     entity_set_string(entity, EV_SZ_classname, "sw_checkpoint");
     engfunc(EngFunc_SetModel, entity, LEGACY_MODEL);   
     
     new Float:origin[3]
-    origin[0] = Buffer[m_fOrigin][0];
-    origin[1] = Buffer[m_fOrigin][1];   
-    origin[2] = Buffer[m_fOrigin][2];
-
-
-    if (Buffer[m_iCPType] == 0) {
-        entity_set_int(entity, EV_INT_skin, 2);
-    } else if (Buffer[m_iCPType] == 1) {
-        entity_set_int(entity, EV_INT_skin, 3);
-    } else {
-        entity_set_int(entity, EV_INT_skin, 1);
+    origin[0] = Buffer[mCP_fOrigin][0];
+    origin[1] = Buffer[mCP_fOrigin][1];   
+    origin[2] = Buffer[mCP_fOrigin][2];       //http://database.gruk.io:9000/index.php?route=/sql&pos=0&db=tfc_sw2023&table=courses
+    
+    switch( Buffer[mCP_iType] ) {
+        case 0 : entity_set_int(entity, EV_INT_skin, 2)
+        case 1 : entity_set_int(entity, EV_INT_skin, 3)
+        default: entity_set_int(entity, EV_INT_skin, 1)
     }
     entity_set_vector(entity, EV_VEC_origin, origin);
     entity_set_vector(entity, EV_VEC_angles, Float:{0.0, 0.0, 0.0});
@@ -499,13 +502,13 @@ public spawn_checkpoint(id) {
     entity_set_int(entity, EV_INT_sequence, 0);	
     entity_set_float(entity, EV_FL_health, 100000.0); 
 
-    entity_set_int(entity, EV_INT_iuser1, Buffer[m_iCPType]); //set the m_iCPType of the checkpoint (0 = start, 1 = checkpoint, 2 = finish)
-    entity_set_int(entity, EV_INT_iuser2, Buffer[m_iCPCourseID]); //set the m_iCPCourseID of the checkpoint
+    entity_set_int(entity, EV_INT_iuser1, Buffer[mCP_iType]); //set the m_iCPType of the checkpoint (0 = start, 1 = checkpoint, 2 = finish)
+    entity_set_int(entity, EV_INT_iuser2, Buffer[mCP_iCourseID]); //set the m_iCPCourseID of the checkpoint
 
     //set the m_iEntID of the checkpoint
-    Buffer[m_iEntID] = entity;
+    Buffer[mCP_iEntID] = entity;
 
-    //DebugPrintLevel(0, "Spawned checkpoint at %f, %f, %f (EntID: %d)", origin[0], origin[1], origin[2], Buffer[m_iEntID]);
+    DebugPrintLevel(0, " -> Spawned checkpoint at %f, %f, %f (EntID: %d) of course #%d (%s)", origin[0], origin[1], origin[2], Buffer[mCP_iEntID], Buffer[mCP_iCourseID], get_course_description(Buffer[mCP_iCourseID]));
 
     ArraySetArray(g_Checkpoints, id, Buffer); //update the array
 }
@@ -515,42 +518,18 @@ public spawn_checkpoint(id) {
 public spawn_checkpoints_of_course(id) { 
     new iCount = ArraySize(g_Checkpoints);
     new Buffer[eCheckPoints_t];
+    new iTotal = 0;
+    DebugPrintLevel(0, "Spawning checkpoints of course %s", get_course_description(id));
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
-        if (Buffer[m_iCPCourseID] == id) {
-            DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[m_iCPID], get_course_description(id));
+        if (Buffer[mCP_iCourseID] == id) {
+            //DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[mCP_iID], get_course_description(id));
             spawn_checkpoint(i);
+            iTotal++;
         }
     }
-}
-//spawns a checkpoint at the players location
-public debug_spawncheckpoint(id) {
-    if (!is_connected_admin(id)) {
-        client_print(id, print_chat, "> You are not an admin.");
-        return PLUGIN_HANDLED;
-    }
 
-    new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
-    entity_set_string(entity, EV_SZ_classname, "sw_checkpoint");
-    engfunc(EngFunc_SetModel, entity, LEGACY_MODEL);   
-    
-    new Float:origin[3]
-    pev(id,pev_origin,origin) //get the origin of the player
-
-    entity_set_vector(entity, EV_VEC_origin, origin);
-    entity_set_vector(entity, EV_VEC_angles, Float:{0.0, 0.0, 0.0});
-    entity_set_float(entity, EV_FL_nextthink, (get_gametime() + 0.1));
-    entity_set_int(entity, EV_INT_skin, 3);
-    entity_set_int(entity, EV_INT_solid, SOLID_TRIGGER);
-    entity_set_int(entity, EV_INT_rendermode, 5);
-    entity_set_int(entity, EV_INT_renderfx, 0);
-    entity_set_float(entity, EV_FL_renderamt, 255.0);
-    entity_set_float(entity, EV_FL_framerate, 0.5);
-    entity_set_int(entity, EV_INT_sequence, 0);	
-    entity_set_float(entity, EV_FL_health, 100000.0);
-
-    //DebugPrintLevel(0, "Spawning checkpoint at %f, %f, %f", origin[0], origin[1], origin[2]);
-    return PLUGIN_HANDLED
+    DebugPrintLevel(0, "Finished spawning checkpoints of course %s (total number of cps in course: %d)", get_course_description(id), iTotal);
 }
 
 public debug_list_all_cps_in_world() {
@@ -562,3 +541,17 @@ public debug_list_all_cps_in_world() {
     }
 }
 
+
+public internal_register_cp( Buffer[eCheckPoints_t] ) {
+      new CourseBuffer[eCourseData_t];                                    // temp array to store the course data
+    new iCount = ArraySize(g_Courses);                                  // get the number of courses
+    for (new i; i < iCount; i++) {                                      // loop through all courses
+        ArrayGetArray(g_Courses, i, CourseBuffer);                      // get the course data^
+        if (CourseBuffer[mC_sqlCourseID] == Buffer[mCP_sqlCourseID]) {     // if the sql course id matches
+            Buffer[mCP_iCourseID] = CourseBuffer[mC_iCourseID];          // set the internal course id
+        }
+    }
+    g_iCPCount++;
+    Buffer[mCP_iID] = g_iCPCount;
+    ArrayPushArray(g_Checkpoints, Buffer);
+}
