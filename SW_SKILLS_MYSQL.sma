@@ -1,11 +1,11 @@
 
-#include "include/global"
-#include "include/sql_tquery"
+#include "include/api_skills_mysql"             // Include file for this plugin source
+#include "include/global"                       // Include file for general functions
+#include "include/sql_tquery"                   // Include file for threaded queries
 #include <engine>
 #include <fakemeta>
-#include "include/utils"
-#include "include/api_skills_mapentities"
-#include "include/sql_dbqueries"
+#include "include/utils"                        // Include file for utility functions
+#include "include/sql_dbqueries"                // Include file for database queries (provides the strings)
 
 //global variables
 new g_pCvarOldRanks; new g_pCvarOldRuns;            // Cvars for the old ranks and runs table
@@ -13,7 +13,7 @@ new bool:g_bInRequest[32];                          // Array to check if a playe
 new g_iRequestFor[32];                                 // Array to check for which player the request is
 new g_iRequest[32];                                   // Array to check which request is being made 
 //array of requests number => description
-new const g_szRequest[3][32] = { "Retrieve legacy stats" };
+new const g_szRequest[3][32] = { "Retrieve legacy stats", "","" };
 //end global variables
 
 //strings
@@ -27,6 +27,12 @@ new const g_szWait[] = "* Please wait for the previous request to finish.";
 #define define_inrequest { if(g_bInRequest[id]) { client_print(id, print_chat, g_szWait); return; } }
 #define define_sql_error { if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { client_print(id, print_chat, g_szError); g_bInRequest[id] = false; return PLUGIN_HANDLED; } }
 
+public plugin_natives() {
+    register_native("api_sql_insertcourse", "SQLNative_InsertCourse");
+    register_native("api_sql_insertlegacycps", "SQLNative_InsertLegacyCPs");
+    register_library("sw_sql_skills");
+}
+
 public plugin_init()
 {
     RegisterPlugin();
@@ -35,8 +41,123 @@ public plugin_init()
     register_clcmd("say /oldstats", "menu_deploy");                             // Shows the old stats menu
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
 	g_pCvarOldRuns = register_cvar("sw_sqloldruns", "climb_oldrunstable")       // Cvar for the old runs table
+
+
 }
 
+// logic; sql_loadcourses -> api_registercourse 
+//              |-done-> load all cps for map (done in Handle_QueryLoadCourses)                    
+public plugin_precache() {
+    sql_loadcourses();
+}
+//loads all courses from the database
+public sql_loadcourses() {
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_selectcourses, szMapname);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCourses", QUERY_DISPOSABLE, PRIORITY_HIGHEST);
+}
+
+public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
+    }
+    new Buffer[eCourseData_t];
+    while (SQL_MoreResults(hQuery)) {
+        dump_sqldata(hQuery);
+        /*
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 19
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (map_id) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (creator_id) = -1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (name) = Legacy course
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (description) = Legacy course imported into the database (20.05.2023 17:47:50)
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (legacy) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (difficulty) = 75
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (active) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 8 (flags) = 14
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 9 (created_at) = 2023-05-20 15:47:48
+DEBUG: [SW_SKILLS_MYSQL.amxx] ---------------------------------
+//this enum is used to store the course data parsed from file or
+//from the mysql database
+enum eCourseData_t 
+{
+    m_iCourseID,                                    // [INTERNAL] course id
+    m_sqlCourseID,                                  // [SQL]      sql course id  (foreign key)
+    m_szCourseName[MAX_COURSE_NAME],                // [SQL]      course name (e.g. "Easy")
+    m_szCourseDescription[MAX_COURSE_DESCRIPTION],  // [SQL]      course description (e.g. "Easy")
+    m_iNumCheckpoints,                              // [INTERNAL] number of checkpoints
+    m_iDifficulty,                                  // [SQL]      difficulty (value between 0 - 100) if set to -1, the difficulty is not set
+    m_szGoalTeams[16],                              // [INTERNAL] teams that can reach the goal (e.g. "BRGY"), here for legacy reasons
+    bool:m_bLegacy,                                 // [SQL]      legacy course (true/false)
+    m_iCreatorID,                                   // [SQL]      creator id
+    m_iFlags,                                       // [SQL]      flags
+    m_szCreated_at[32],                             // [SQL]      creation date
+    m_bSQLActive,                                   // [SQL]      course flagged as active (true/false) in database
+    m_szCreatorName[32]                             // [SQL]      creator name
+}
+
+*/
+        DebugPrintLevel(0, "1 -->: CourseID: %d CourseID #%d Name:%s", Buffer[m_iCourseID], Buffer[m_sqlCourseID], Buffer[m_szCourseName]);
+        if (SQL_FieldNameToNum(hQuery,"id") >= 0) { Buffer[m_sqlCourseID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"id")); }
+        DebugPrintLevel(0, "2 -->: CourseID: %d CourseID #%d Name:%s", Buffer[m_iCourseID], Buffer[m_sqlCourseID], Buffer[m_szCourseName]);
+        if (SQL_FieldNameToNum(hQuery,"creator_id") >= 0) { Buffer[m_iCreatorID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"creator_id")); }
+        DebugPrintLevel(0, "3 -->: CourseID: %d CourseID #%d Name:%s", Buffer[m_iCourseID], Buffer[m_sqlCourseID], Buffer[m_szCourseName]);
+        if (SQL_FieldNameToNum(hQuery,"name") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"name"), Buffer[m_szCourseName], charsmax(Buffer[m_szCourseName])); }
+        DebugPrintLevel(0, "4 -->: CourseID: %d CourseID #%d Name:%s", Buffer[m_iCourseID], Buffer[m_sqlCourseID], Buffer[m_szCourseName]);
+        if (SQL_FieldNameToNum(hQuery,"description") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"description"), Buffer[m_szCourseDescription], charsmax(Buffer[m_szCourseDescription])); }
+        if (SQL_FieldNameToNum(hQuery,"legacy") >= 0) { Buffer[m_bLegacy] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"legacy")); }
+        if (SQL_FieldNameToNum(hQuery,"difficulty") >= 0) { Buffer[m_iDifficulty] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"difficulty")); }
+        if (SQL_FieldNameToNum(hQuery,"active") >= 0) { Buffer[m_bSQLActive] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"active")); }
+        if (SQL_FieldNameToNum(hQuery,"flags") >= 0) { Buffer[m_szGoalTeams] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"flags")); }
+        if (SQL_FieldNameToNum(hQuery,"created_at") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"created_at"), Buffer[m_szCreated_at], charsmax(Buffer[m_szCreated_at])); }
+        if (SQL_FieldNameToNum(hQuery,"creator_name") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"creator_name"), Buffer[m_szCreatorName], charsmax(Buffer[m_szCreatorName])); }
+        DebugPrintLevel(0, "Loaded course: CourseID #%d Name:%s Description:%s Legacy:%d Difficulty:%d Active:%d Flags:%d Created_at:%s CreatorID:%d CreatorName:%s", Buffer[m_sqlCourseID], Buffer[m_szCourseName], Buffer[m_szCourseDescription], Buffer[m_bLegacy], Buffer[m_iDifficulty], Buffer[m_bSQLActive], Buffer[m_szGoalTeams], Buffer[m_szCreated_at], Buffer[m_iCreatorID], Buffer[m_szCreatorName]);
+        api_registercourse(Buffer);
+
+        SQL_NextRow(hQuery);
+    }
+    //now load all cps for the map^
+    //new const sql_loadcps[] = "SELECT cp.* FROM checkpoints cp JOIN courses c ON cp.course_id = c.id JOIN maps m ON m.id = c.map_id WHERE  m.name = '%s';"
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_loadcps, szMapname);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCheckpoints", QUERY_DISPOSABLE, PRIORITY_HIGHEST);
+
+}
+public Handle_QueryLoadCheckpoints(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
+    }
+    new Buffer[eCheckPoints_t];
+    while (SQL_MoreResults(hQuery)) {
+        /*
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 47
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 19
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (x) = -669.169
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (y) = -843.361
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (z) = -3757.97
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (checkpoint_type) = 0
+enum eCheckPoints_t
+{
+    m_iCPID,                      // [INTERNAL] checkpoint id
+    m_iCPType,                    // [SQL]      checkpoint type (0 = start, 1 = checkpoint, 2 = finish)
+    m_iCPCourseID,                // [INTERNAL] course id (foreign key)
+    Float:m_fOrigin[3],           // [SQL]      checkpoint origin
+    m_iEntID,                     // [INTERNAL] entity id
+    m_sqlCourseID,                // [SQL]      sql course id (foreign key)
+
+}
+*/
+        //fil the data
+        if (SQL_FieldNameToNum(hQuery,"course_id") >= 0) { Buffer[m_sqlCourseID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"course_id")); }
+        if (SQL_FieldNameToNum(hQuery,"x") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"x"),Buffer[m_fOrigin][0]); }
+        if (SQL_FieldNameToNum(hQuery,"y") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"y"),Buffer[m_fOrigin][1]); }
+        if (SQL_FieldNameToNum(hQuery,"z") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"z"),Buffer[m_fOrigin][2]); }
+        if (SQL_FieldNameToNum(hQuery,"checkpoint_type") >= 0) { Buffer[m_iCPType] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"checkpoint_type")); }
+        //DebugPrintLevel(0, "Loaded CP: CourseID #%d x:%d y:%d z:%d type:%d", Buffer[m_iCPCourseID], Buffer[m_fOrigin][0], Buffer[m_fOrigin][1], Buffer[m_fOrigin][2], Buffer[m_iCPType]);
+    	api_registercheckpoint(Buffer);
+        SQL_NextRow(hQuery);
+    }
+
+}
 public player_connect(id)
 {
     g_bInRequest[id] = false;
@@ -122,17 +243,6 @@ public Handle_QueryOldStatsme(iFailState, Handle:hQuery, sError[], iError, Data[
     if (SQL_NumResults(hQuery) == 0) { client_print(id, print_console, g_szNoData); g_bInRequest[id] = false; return PLUGIN_HANDLED; } // If no data is found, return
 
     send_motd(id2, "<<<================= [ LEGACY STATS ] =================>>>\n\n");
-    /*		len1 += format(statsMotd[len1], 2047-len1,"Your average difficulty of finished maps = %s^n",qryRankPrimaryRank)
-		len1 += format(statsMotd[len1], 2047-len1,"Your on place [%i] of [%i] ubers.^nHarder maps = more uber :)^n^n^n",playersUberPosition,nUbers)
-        
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (steamId) = STEAM_0:0:438030
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (primaryRank) = 54
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (nFinnished) = 118
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (position) = 73
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (posmax) = 95
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (mapFinishes) = 115
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (mostMapFinishes) = 3097
-*/
     new szSteamID[32];
     while(SQL_MoreResults(hQuery))
     {
@@ -258,4 +368,66 @@ stock dump_sqldata(Handle:hQuery) {
             DebugPrintLevel(0, "Column %d (%s) = %s", i, szColumns, szValue);  
         }
         DebugPrintLevel(0, "---------------------------------");
+}
+
+
+public SQLNative_InsertCourse(Data[]) {
+    new Buffer[eCourseData_t];
+    get_array(1, Buffer, sizeof(Buffer));
+    new szCourseName[MAX_COURSE_NAME]; new szCourseDescription[MAX_COURSE_DESCRIPTION]; new szGoalTeams[16]; new iNumCheckpoints; new iDifficulty; new bool:bLegacy; new iCreatorID;
+    if (strlen(Buffer[m_szCourseName]) == 0) { formatex(szCourseName, charsmax(szCourseName), "Unknown"); } else { formatex(szCourseName, charsmax(szCourseName), Buffer[m_szCourseName]); }
+    if (strlen(Buffer[m_szCourseDescription]) == 0) { formatex(szCourseDescription, charsmax(szCourseDescription), "No description provided."); } else { formatex(szCourseDescription, charsmax(szCourseDescription), Buffer[m_szCourseDescription]); }
+    if (strlen(Buffer[m_szGoalTeams]) <= 0) { formatex(szGoalTeams, charsmax(szGoalTeams), "BRGY"); } else { formatex(szGoalTeams, charsmax(szGoalTeams), Buffer[m_szGoalTeams]); }
+    iDifficulty = Buffer[m_iDifficulty]; if (iDifficulty < 0) { iDifficulty = 0; } else if (iDifficulty > 100) { iDifficulty = 100; }
+    iCreatorID = Buffer[m_iCreatorID]; if (iCreatorID < -1) { iCreatorID = -1; }
+    bLegacy = Buffer[m_bLegacy];
+    new iFlags = 0;
+    if (containi(szGoalTeams,"B")) { iFlags |= SRFLAG_TEAMBLUE; }
+    if (containi(szGoalTeams,"R")) { iFlags |= SRFLAG_TEAMRED; }
+    if (containi(szGoalTeams,"G")) { iFlags |= SRFLAG_TEAMGREEN; }
+    if (containi(szGoalTeams,"Y")) { iFlags |= SRFLAG_TEAMYELLOW; }
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new szPreQuery[1024]; formatex(szPreQuery, charsmax(szPreQuery), sql_insertmap, szMapname); // insert map if it doesn't exist
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertcourse, szMapname, iCreatorID, szCourseName, szCourseDescription, bLegacy, iDifficulty, 1, iFlags);
+    new szFinalQuery[1024]; formatex(szFinalQuery, charsmax(szFinalQuery), "%s %s", szPreQuery, szQuery);
+    write_file("debug.txt", szFinalQuery);
+    api_SQLAddThreadedQuery(szFinalQuery, "Handle_QueryInsertCourse", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+}
+public Handle_QueryInsertCourse(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent)
+{
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
+    }
+
+    return PLUGIN_HANDLED;
+}
+
+public SQLNative_InsertLegacyCPs( Data[] ) {
+    new Buffer[eCheckPoints_t];
+    get_array(1, Buffer, sizeof(Buffer));
+    //prepare the query
+    //new const sql_insertlegacycps[] = "INSERT INTO checkpoints(course_id, x, y, z, checkpoint_type) VALUES ( (SELECT c.id FROM courses c JOIN maps m ON m.id = c.map_id WHERE m.name = '%s' AND c.legacy = TRUE), %f, %f, %f, %f);"
+    //get mapname
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new Float:x, Float:y, Float:z; x = Buffer[m_fOrigin][0]; y = Buffer[m_fOrigin][1]; z = Buffer[m_fOrigin][2];
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertlegacycps, szMapname, x, y, z, Buffer[m_iCPType]);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertLegacyCPs", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+
+    /*enum eCheckPoints_t
+{
+    m_iCPID,                      // [INTERNAL] checkpoint id
+    m_iCPType,                    // [SQL]      checkpoint type (0 = start, 1 = checkpoint, 2 = finish)
+    m_iCPCourseID,                // [INTERNAL] course id (foreign key)
+    Float:m_fOrigin[3],           // [SQL]      checkpoint origin
+    m_iEntID                      // [INTERNAL] entity id
+
+}*/
+}
+
+public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
+    }
+
+    return PLUGIN_HANDLED;
 }
