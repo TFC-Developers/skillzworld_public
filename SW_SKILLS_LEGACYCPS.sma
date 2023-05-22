@@ -54,7 +54,6 @@ public plugin_init() {
     RegisterPlugin();
 
     register_clcmd("say /loadfile", "parse_skillsconfig");
-    register_clcmd("say /cp", "debug_spawncheckpoint");
     register_clcmd("say /listcps", "debug_list_all_cps_in_world");
 
 }

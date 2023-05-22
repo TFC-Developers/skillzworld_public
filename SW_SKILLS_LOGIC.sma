@@ -293,7 +293,7 @@ public update_hud(id) {
     if (!g_sPlayerData[id][m_bInRun] && g_sPlayerData[id][m_iTotalCPsUsed] > 0) {
         new szMsg[128];
         formatex(szMsg, charsmax(szMsg), "Checkpoints used: %d", g_sPlayerData[id][m_iTotalCPsUsed]);
-        message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
+        message_begin(MSG_ONE, iStatusMessage, .player = id);
         write_byte(1);
         write_string(szMsg);
         message_end();
@@ -301,7 +301,7 @@ public update_hud(id) {
     }
 
     if (get_user_team(id) < 1 || get_user_team(id) > 4 || !g_sPlayerData[id][m_bInRun] || g_sPlayerData[id][m_bCourseFinished]) {
-        message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
+        message_begin(MSG_ONE, iStatusMessage, .player = id);
         write_byte(1);
         write_string("");
         message_end();       
@@ -319,24 +319,26 @@ public update_hud(id) {
         g_sPlayerData[id][m_fLastHudUpdate] = get_gametime() + 0.25;
         new szBigHudTXT[128];
         if (iHours > 0) {
-            formatex(szBigHudTXT, charsmax(szBigHudTXT), "XX%02d:%02d:%02d", iHours, iMinutes, iSeconds);
+            formatex(szBigHudTXT, charsmax(szBigHudTXT), "%02d:%02d:%02d", iHours, iMinutes, iSeconds);
         } else {
-            formatex(szBigHudTXT, charsmax(szBigHudTXT), "XX%02d:%02d", iMinutes, iSeconds);
+            formatex(szBigHudTXT, charsmax(szBigHudTXT), "%02d:%02d", iMinutes, iSeconds);
     
         }
         message_begin(MSG_ONE, SVC_TEMPENTITY, .player = id);
         {
             write_byte(TE_TEXTMESSAGE);
-            write_byte(1 & 0xFF);
-            write_short( clamp(-1*(1<<13), -32768, 32767) );
-            write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
             write_byte( 1 );
-            write_byte( 0 );
-            write_byte( 255 );
-            write_byte( 0 );
-            write_byte( 0 );
-            write_byte( 0 );
-            write_byte( 0 );
+            write_short( clamp(-1*(1<<13), -32768, 32767) );
+            write_short( clamp(floatround(0.92*float(1<<13), floatround_floor), -32768, 32767) );
+            write_byte( 1 ); // Effect
+            write_byte( 0 ); // R
+            write_byte( 255 ); // G
+            write_byte( 0 ); // B
+            write_byte( 0 ); // Alpha
+            write_byte( 0 ); // Effect R
+            write_byte( 0 ); // Effect G
+            write_byte( 0 ); // Effect B
+            write_byte( 0 ); // Effect Alpha
             write_short( clamp(0*(1<<8), 0, 65535) );
             write_short( clamp(0*(1<<8), 0, 65535) );
             write_short( clamp(120*(1<<8), 0, 65535) );
@@ -360,7 +362,7 @@ public update_hud(id) {
         formatex(szMsg, charsmax(szMsg), "%s (%d cps used)", szMsg, g_sPlayerData[id][m_iTotalCPsUsed]);
     }
 
-    message_begin(MSG_ONE, iStatusMessage, {0,0,0}, id);
+    message_begin(MSG_ONE, iStatusMessage, .player = id);
     write_byte(1);
     write_string(szMsg);
     message_end();
@@ -419,16 +421,18 @@ public pub_sub_endtouch(touched, toucher) {
         message_begin(MSG_ONE, SVC_TEMPENTITY, .player = toucher);
         {
             write_byte(TE_TEXTMESSAGE);
-            write_byte(1 & 0xFF);
+            write_byte( 1 );
             write_short( clamp(-1*(1<<13), -32768, 32767) );
             write_short( clamp(floatround(floatmul(0.92, float(1<<13)), floatround_floor), -32768, 32767) );
-            write_byte( 1 );
-            write_byte( 0 );
-            write_byte( 255 );
-            write_byte( 0 );
-            write_byte( 0 );
-            write_byte( 0 );
-            write_byte( 0 );
+            write_byte( 1 ); // Effect
+            write_byte( 0 ); // R
+            write_byte( 255 ); // G
+            write_byte( 0 ); // B
+            write_byte( 0 ); // A
+            write_byte( 0 ); // Effect R
+            write_byte( 0 ); // Effect G
+            write_byte( 0 ); // Effect B
+            write_byte( 0 ); // Effect A
             write_short( clamp(0*(1<<8), 0, 65535) );
             write_short( clamp(0*(1<<8), 0, 65535) );
             write_short( clamp(120*(1<<8), 0, 65535) );
