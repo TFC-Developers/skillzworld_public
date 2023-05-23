@@ -102,7 +102,7 @@ This forces the programmer to break the initialisation into a loop, or many assi
 `AMX Mod X Compiler 1.9.0.5294`  
 `Copyright (c) 1997-2006 ITB CompuPhase`  
 `Copyright (c) 2004-2013 AMX Mod X Team`  
-`═^☺└╩^☺\`¬ ... ^☺\`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"`  
+``═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"``  
 `Compilation aborted.`  
 `1 Error.`  
 `Could not locate output file tput Folder/PLUGIN.amx (compile failed).`  
