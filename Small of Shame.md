@@ -16,6 +16,8 @@ The outdated documentation is more representative (The Small Booklet - The Langu
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
 Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
 
+- AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
+
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that haven't been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
@@ -55,68 +57,68 @@ Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
 
 - Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.  
-This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where  
-	fp->Write(&data, ...)  
+This bugged code is in [amxmodx/file.cpp, amx_fwrite_raw](https://github.com/alliedmodders/amxmodx/blob/master/amxmodx/file.cpp#L454), where  
+`fp->Write(&data, ...)`  
 should have been  
-	fp->Write(data, ...)  
+`fp->Write(data, ...)`  
 Use fwrite_blocks instead.
 
---The functions contain and containi use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.
----The documentation says to use:
-    contain(original, substring)
-But you should use:
-    contain(substring, original)
-
---You can't create constant arrays.
-This is valid (and is much like a #define):
-	const A = 123
-But this is an error:
-	const A[] = {0, 1, 2}
-This means that it's impossible to create constant arrays that can be indexed at compile time. You have to create constant variable arrays that will generate unnecessary lookup code when indexed:
-	new const A[] = {0, 1, 2}
-You can create a #define for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:
-	#define A "Constant string"
-	
---AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
+- The functions contain and containi use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.  
+The documentation says to use:  
+`contain(original, substring)`  
+But you should use:  
+`contain(substring, original)`
 
 ## The language
-The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:
-	new V[5]
-	for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}
-Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "}" gets separated away, or if there's only one statement, removing the curly braces.
+- You can't create constant arrays.  
+This is valid (and is much like a `#define`):  
+`const A = 123`  
+But this is an error:  
+`const A[] = {0, 1, 2}`  
+This means that it's impossible to create constant arrays that can be indexed at compile time. You have to create constant variable arrays that will generate unnecessary lookup code when indexed:  
+`new const A[] = {0, 1, 2}`  
+You can create a `#define` for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:  
+`#define A "Constant string"`
+
+- The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:  
+```new V[5]
+for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}```  
+Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
-The compiler provides a truncated listing of 16 options when requesting help the intended way:
-	amxxpc --help
-You have to trigger a file lookup failure to get the proper help listing of 29 options:
-	amxxpc --asdf
+- The compiler provides a truncated listing of 16 options when requesting help the intended way:  
+`amxxpc --help`  
+You have to trigger a file lookup failure to get the proper help listing of 29 options:  
+`amxxpc --asdf`  
 
-The compiler rejects array initialisation with variables. This code is invalid:
-	new i = 1
-	new A[3] = {i, i, i}
-This forces the programmer to break the initialisation into a loop, or many assignments:
-	new A[3]; A[0] = A[1] = A[2] = i
+- The compiler rejects array initialisation with variables. This code is invalid:  
+```new i = 1
+new A[3] = {i, i, i}```  
+This forces the programmer to break the initialisation into a loop, or many assignments:  
+`new A[3]; A[0] = A[1] = A[2] = i`
 
-The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
-	amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
-	AMX Mod X Compiler 1.9.0.5294
-	Copyright (c) 1997-2006 ITB CompuPhase
-	Copyright (c) 2004-2013 AMX Mod X Team
-	═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
-	Compilation aborted.
-	1 Error.
-	Could not locate output file tput Folder/PLUGIN.amx (compile failed).
-The correct command in this case would be:
-	amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"
+- The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
+```
+amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
+AMX Mod X Compiler 1.9.0.5294
+Copyright (c) 1997-2006 ITB CompuPhase
+Copyright (c) 2004-2013 AMX Mod X Team
+═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
+Compilation aborted.
+1 Error.
+Could not locate output file tput Folder/PLUGIN.amx (compile failed).```  
+The correct command in this case would be:  
+`amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
 
-Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.
-Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:
-	function(format_string[], any: ...) {}
-This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.
-The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:
-	TagCheck({_, Float}: x, x_tag = tagof x)
-		console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
-	RunTagCheck() {
-		TagCheck 123
-		TagCheck 123.0
-	}
+- Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.  
+Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:  
+`function(format_string[], any: ...) {}`
+This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.  
+The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:  
+```
+TagCheck({_, Float}: x, x_tag = tagof x)
+	console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
+RunTagCheck() {
+	TagCheck 123
+	TagCheck 123.0
+}```
