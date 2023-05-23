@@ -70,6 +70,8 @@ But you should use:
 `contain(substring, original)`
 
 ## The language
+The Small language is not a particularly bad one, but it has some questionable design decisions and strange syntax rules that are always waiting to trip the user.
+
 - You can't create constant arrays.  
 This is valid (and is much like a `#define`):  
 `const A = 123`  
@@ -86,30 +88,11 @@ You can create a `#define` for an array, but this comes at the cost of having sp
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
-- The compiler provides a truncated listing of 16 options when requesting help the intended way:  
-`amxxpc --help`  
-You have to trigger a file lookup failure to get the proper help listing of 29 options:  
-`amxxpc --asdf`  
-
 - The compiler rejects array initialisation with variables. This code is invalid:  
 `new i = 1`  
 `new A[3] = {i, i, i}`  
 This forces the programmer to break the initialisation into a loop, or many assignments:  
 `new A[3]; A[0] = A[1] = A[2] = i`
-
-- The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
-```
-amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
-AMX Mod X Compiler 1.9.0.5294
-Copyright (c) 1997-2006 ITB CompuPhase
-Copyright (c) 2004-2013 AMX Mod X Team
-═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
-Compilation aborted.
-1 Error.
-Could not locate output file tput Folder/PLUGIN.amx (compile failed).
-```
-The correct command in this case would be:  
-`amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
 
 - Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.  
 Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:  
@@ -124,3 +107,25 @@ RunTagCheck() {
 	TagCheck 123.0
 }
 ```
+
+### Compiling
+The compiler is just as weird as the language. Some of its problems may have been introduced by the AMX Mod X team.
+
+- The compiler provides a truncated listing of 16 options when requesting help the intended way:  
+`amxxpc --help`  
+You have to trigger a file lookup failure to get the proper help listing of 29 options:  
+`amxxpc --asdf`  
+
+- The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
+```
+amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
+AMX Mod X Compiler 1.9.0.5294
+Copyright (c) 1997-2006 ITB CompuPhase
+Copyright (c) 2004-2013 AMX Mod X Team
+═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
+Compilation aborted.
+1 Error.
+Could not locate output file tput Folder/PLUGIN.amx (compile failed).
+```
+The correct command in this case would be:  
+`amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
