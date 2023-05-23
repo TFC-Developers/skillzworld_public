@@ -11,7 +11,7 @@ The outdated documentation is more representative (The Small Booklet - The Langu
 
 ## AMX Mod X
 https://www.amxmodx.org/about.php  
-AMX Mod X is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.
+AMX Mod X is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.  
 It's not very good.  
   
 The Sven Co-op team made a wise decision when integrating the more sensible AngelScript language into their mod with their own API, eliminating any possible use case for AMX Mod X.
@@ -37,8 +37,9 @@ The parameters have the wrong names, which belong to floatdiv.
 ### Bad documentation
 The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
 
-- Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
-	- The callback function to register_clcmd should take a single parameter holding the calling player id, often just called id.
+- Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) and [register_concmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation that does not have this problem, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
+	- The callback function for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) should take a single parameter holding the calling player id: `public <name>(id)`
+	- The callback function for [register_concmd](https://www.amxmodx.org/api/amxmodx/register_concmd) should take a calling player id, an admin access flag field, and command id: `public <name>(id, level, cid)`
 
 - The documentation for [get_user_msgid](https://www.amxmodx.org/api/amxmodx/get_user_msgid) neglects to mention where message names can be found.
 
