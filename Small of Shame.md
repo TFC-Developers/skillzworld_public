@@ -79,8 +79,8 @@ But you should use:
 ## The language
 The Small language is not a particularly bad one, but it has some questionable design decisions and strange syntax rules that are always waiting to trip the user.
 
-### Design
-Small has plenty of peculiar features, some inconvenient because they have limitations that appear to stem from being incomplete.
+### Rules
+Small has plenty of peculiar features, some inconvenient because they have limitations that appear to stem from being incomplete. The documentation glosses over or does not state why certain limitations are in place.
 
 - You can't create constant arrays.  
 This is valid (and is much like a `#define`):  
@@ -112,7 +112,7 @@ RunTagCheck() {
 This forces the programmer to break the initialisation into a loop, or many assignments:  
 `new A[3]; A[0] = A[1] = A[2] = i`
 
-### Syntax
+### Semicolons - optional until they aren't
 The language has lax syntax with optional semicolons. This appears to be a half-baked feature of the language, as this causes strange pitfalls where compiler errors give little to no useful information aside from a line number.
 
 - The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:  
@@ -120,6 +120,20 @@ The language has lax syntax with optional semicolons. This appears to be a half-
 `for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}`   
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
+
+- Forward declarations have mandatory semicolons:
+`public func ();`
+
+- Double standard: Null statements are allowed, but not with `;`, only with `{}`.  
+This means that a preprocessor macro to, for example, convert an integer vector to a float vector has three possible styles, each with their own downside:  
+	1. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2])`  
+	2. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);`  
+	3. `#define VEC_TO_FVEC(%1,%2) %2[0] = {float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);}`  
+These examples show that here is no catch-all solution, aside from redefining the macro as a function:
+	* `VEC_TO_FVEC(vec_i, vec_f);`
+	* `if (id == target) VEC_TO_FVEC(vec_i, vec_f)`
+	* `if (id == target) {found = true; VEC_TO_FVEC(vec_i, vec_f);}`
+
 
 ### Compiling
 The compiler is just as weird as the language. Some of its problems may have been introduced by the AMX Mod X team.
