@@ -3,6 +3,7 @@ This document records our disdain for AMX Mod X and its chosen scripting languag
 
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.
+
 https://github.com/compuphase/pawn/tree/master/doc
 The "Pawn_Language_Guide.pdf", updated in 2016 at the time of writing, is of limited use and is often misleading as it pertains to the language as it has evolved after 2005.
 https://www.doomworld.com/eternity/engine/smalldoc.pdf
