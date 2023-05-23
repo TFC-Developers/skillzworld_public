@@ -5,8 +5,8 @@ This document records our disdain for AMX Mod X and its chosen scripting languag
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
 [Repository with "Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
 The "Pawn Language Guide", updated in 2016 at the time of writing, is of limited use and is often misleading as it pertains to the language as it has evolved after 2005.  
-["(Download) The Small Booklet - The Language (2005)"](https://www.doomworld.com/eternity/engine/smalldoc.pdf)  
-["(Download) The Small Booklet - Implementor's Guide (2005)"](https://www.doomworld.com/eternity/engine/smallguide.pdf)  
+[(Download) The Small Booklet - The Language (2005)](https://www.doomworld.com/eternity/engine/smalldoc.pdf)  
+[(Download) The Small Booklet - Implementor's Guide (2005)](https://www.doomworld.com/eternity/engine/smallguide.pdf)  
 The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.  
 
 ## AMX Mod X
@@ -44,26 +44,26 @@ TE_FIREFIELD and TE_PLAYERATTACHMENT have wrong documentation, they mention only
 Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 	
 - Documentation for [read_argv](https://www.amxmodx.org/api/amxmodx/read_argv), [\*_float](https://www.amxmodx.org/api/amxmodx/read_argv_float) and [\*_int](https://www.amxmodx.org/api/amxmodx/read_argv_int) neglects mentioning what happens when the index is out of bounds.
-	- The function read_argv writes an empty string if the argument is out of bounds.
-	- The functions read_argv_int and read_argv_float try to read a number, both returning 0 if that fails.
+	- The function [read_argv](https://www.amxmodx.org/api/amxmodx/read_argv) writes an empty string if the argument is out of bounds.
+	- The functions [read_argv_int](https://www.amxmodx.org/api/amxmodx/read_argv_int) and [read_argv_float](https://www.amxmodx.org/api/amxmodx/read_argv_float) try to read a number, both returning 0 if that fails.
 		- Arguments <= 0 are set to return 0, even if argument 0 would've parsed fine as a number.  
-		The number is parsed from the start of the argument, returning fine even if the latter part of the argument is an invalid number, like "1.0asdf".  
+		The number is parsed from the start of the argument, returning fine even if the latter part of the argument is an invalid number, like "`1.0asdf`".  
 		Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
 	
-- The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
+- The documentation for [fwrite](https://www.amxmodx.org/api/file/fwrite) is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
 	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
 
-- Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.  
+- Not only is the documentation for [fwrite_raw](https://www.amxmodx.org/api/file/fwrite_raw) wrong, the function just doesn't work. The descriptions for the `block` and `mode` parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.  
 This bugged code is in [amxmodx/file.cpp, amx_fwrite_raw](https://github.com/alliedmodders/amxmodx/blob/master/amxmodx/file.cpp#L454), where  
 `fp->Write(&data, ...)`  
 should have been  
 `fp->Write(data, ...)`  
-Use fwrite_blocks instead.
+Use [fwrite_blocks](https://www.amxmodx.org/api/file/fwrite_blocks) instead.
 
-- The functions contain and containi use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.  
+- The functions [contain](https://www.amxmodx.org/api/string/contain) and [containi](https://www.amxmodx.org/api/string/containi) use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.  
 The documentation says to use:  
 `contain(original, substring)`  
 But you should use:  
@@ -81,8 +81,8 @@ You can create a `#define` for an array, but this comes at the cost of having sp
 `#define A "Constant string"`
 
 - The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:  
-```new V[5]
-for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}```  
+`new V[5]`  
+`for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}`   
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
@@ -98,15 +98,14 @@ This forces the programmer to break the initialisation into a loop, or many assi
 `new A[3]; A[0] = A[1] = A[2] = i`
 
 - The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
-```
-amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
-AMX Mod X Compiler 1.9.0.5294
-Copyright (c) 1997-2006 ITB CompuPhase
-Copyright (c) 2004-2013 AMX Mod X Team
-═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
-Compilation aborted.
-1 Error.
-Could not locate output file tput Folder/PLUGIN.amx (compile failed).```  
+`amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"`  
+`AMX Mod X Compiler 1.9.0.5294`  
+`Copyright (c) 1997-2006 ITB CompuPhase`  
+`Copyright (c) 2004-2013 AMX Mod X Team`  
+`═^☺└╩^☺\`¬ ... ^☺\`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"`  
+`Compilation aborted.`  
+`1 Error.`  
+`Could not locate output file tput Folder/PLUGIN.amx (compile failed).`  
 The correct command in this case would be:  
 `amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
 
@@ -115,10 +114,9 @@ Variable arguments use the any tag, so all arguments have their types overridden
 `function(format_string[], any: ...) {}`
 This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.  
 The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:  
-```
-TagCheck({_, Float}: x, x_tag = tagof x)
-	console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
-RunTagCheck() {
-	TagCheck 123
-	TagCheck 123.0
-}```
+`TagCheck({_, Float}: x, x_tag = tagof x)`  
+`	console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:`  
+`RunTagCheck() {`  
+`	TagCheck 123`  
+`	TagCheck 123.0`  
+`}`
