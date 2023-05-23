@@ -52,13 +52,14 @@ Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
 
 ### Broken standard library
-- Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
-	- Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
-	This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
-		fp->Write(&data, ...)
-	should have been
-		fp->Write(data, ...)
-	Use fwrite_blocks instead.
+Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
+
+- Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.  
+This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where  
+	fp->Write(&data, ...)  
+should have been  
+	fp->Write(data, ...)  
+Use fwrite_blocks instead.
 
 --The functions contain and containi use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.
 ---The documentation says to use:
