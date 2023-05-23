@@ -92,8 +92,10 @@ You have to trigger a file lookup failure to get the proper help listing of 29 o
 `amxxpc --asdf`  
 
 - The compiler rejects array initialisation with variables. This code is invalid:  
-`new i = 1`  
-`new A[3] = {i, i, i}`  
+```
+new i = 1
+new A[3] = {i, i, i}
+```
 This forces the programmer to break the initialisation into a loop, or many assignments:  
 `new A[3]; A[0] = A[1] = A[2] = i`
 
