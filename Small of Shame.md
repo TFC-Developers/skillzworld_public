@@ -92,22 +92,22 @@ You have to trigger a file lookup failure to get the proper help listing of 29 o
 `amxxpc --asdf`  
 
 - The compiler rejects array initialisation with variables. This code is invalid:  
-```
-new i = 1
-new A[3] = {i, i, i}
-```
+`new i = 1`  
+`new A[3] = {i, i, i}`  
 This forces the programmer to break the initialisation into a loop, or many assignments:  
 `new A[3]; A[0] = A[1] = A[2] = i`
 
 - The compiler's option arguments follow a strange convention that require additional information to be appended onto the same argument. If the user slips up, easy to do if coming from other compilers or if there's a space in the path, the compiler will expose garbage memory and output an unhelpful and corrupted error:
-`amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"`  
-`AMX Mod X Compiler 1.9.0.5294`  
-`Copyright (c) 1997-2006 ITB CompuPhase`  
-`Copyright (c) 2004-2013 AMX Mod X Team`  
-``═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"``  
-`Compilation aborted.`  
-`1 Error.`  
-`Could not locate output file tput Folder/PLUGIN.amx (compile failed).`  
+```
+amxxpc.exe PLUGIN.sma -o "Output Folder/PLUGIN.amxx"
+AMX Mod X Compiler 1.9.0.5294
+Copyright (c) 1997-2006 ITB CompuPhase
+Copyright (c) 2004-2013 AMX Mod X Team
+═^☺└╩^☺`¬ ... ^☺`¬^☺0"^☺(0) : fatal error 100: cannot read from file: "PLUGIN.sma"
+Compilation aborted.
+1 Error.
+Could not locate output file tput Folder/PLUGIN.amx (compile failed).
+```
 The correct command in this case would be:  
 `amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
 
@@ -116,9 +116,11 @@ Variable arguments use the any tag, so all arguments have their types overridden
 `function(format_string[], any: ...) {}`
 This makes variable argument functions like engfunc and string formatting functions like formatex prone to errors.  
 The lack of this feature is surprising considering the effort put into type checking syntax in Small. Take this AMX Mod X code snippet as an example:  
-`TagCheck({_, Float}: x, x_tag = tagof x)`  
-`	console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:`  
-`RunTagCheck() {`  
-`	TagCheck 123`  
-`	TagCheck 123.0`  
-`}`
+```
+TagCheck({_, Float}: x, x_tag = tagof x)
+	console_print 0, "x=%d, unused x tag=%d, real x tag=%d, _:=%d, Float:=%d", x, tagof x, x_tag, tagof _:, tagof Float:
+RunTagCheck() {
+	TagCheck 123
+	TagCheck 123.0
+}
+```
