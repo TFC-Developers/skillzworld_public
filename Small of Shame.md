@@ -3,7 +3,7 @@ This document records our disdain for AMX Mod X and its chosen scripting languag
 
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
-["Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
+[Repository with "Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
 The "Pawn Language Guide", updated in 2016 at the time of writing, is of limited use and is often misleading as it pertains to the language as it has evolved after 2005.  
 ["(Download) The Small Booklet - The Language (2005)"](https://www.doomworld.com/eternity/engine/smalldoc.pdf)  
 ["(Download) The Small Booklet - Implementor's Guide (2005)"](https://www.doomworld.com/eternity/engine/smallguide.pdf)  
@@ -12,48 +12,53 @@ The outdated documentation is more representative (The Small Booklet - The Langu
 ## AMX Mod X
 - AMX Mod X only allows the precache to be interacted with in the plugin_precache forward using the precache_\* natives, offering no means to just check if a model is already precached. This could easily have been made available by exposing a native function that reads from the server_t struct.
 
-- The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin]((https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
+- The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin](https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
 Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
 
-- The AMX Mod X library has accumulated many mistakes over the years that haven't been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
-	- https://www.amxmodx.org/api/float/floatadd
-	The parameters have the wrong names, which belong to floatdiv.
+### Anything for backwards compatibility
+The AMX Mod X library has accumulated many mistakes over the years that haven't been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
--- include/tfcconst.inc provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
+- https://www.amxmodx.org/api/float/floatadd  
+The parameters have the wrong names, which belong to floatdiv.
 
--- register_event provides a workaround for a bug, leaving it unfixed.
+- [include/tfcconst.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/tfcconst.inc#L75) provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
 
-- The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
-- Documentation for register_clcmd completely lacks a description of the callback function it should receive. For an example of how it should've been documented, see menu_create.
-- - The callback function to register_clcmd should take a single parameter holding the calling player id, often just called id.
+- [register_event](https://www.amxmodx.org/api/amxmodx/register_event) provides a workaround for a bug, leaving it unfixed.
 
-- - The documentation for get_user_msgid neglects to mention where message names can be found.
+### Bad documentation
+The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
 
-- - https://www.amxmodx.org/api/file/fopen
+- Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
+	- The callback function to register_clcmd should take a single parameter holding the calling player id, often just called id.
+
+- The documentation for [get_user_msgid](https://www.amxmodx.org/api/amxmodx/get_user_msgid) neglects to mention where message names can be found.
+
+- https://www.amxmodx.org/api/file/fopen  
 Wrong example: "Example: "rb" opens a binary file for writing"
 
-- - https://www.amxmodx.org/api/message_const
-TE_FIREFIELD and TE_PLAYERATTACHMENT have wrong documentation, they mention only one coordinate but there should be three.
+- https://www.amxmodx.org/api/message_const  
+TE_FIREFIELD and TE_PLAYERATTACHMENT have wrong documentation, they mention only one coordinate but there should be three.  
 Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 	
-- - Documentation for read_argv, *_float and *_int neglects mentioning what happens when the index is out of bounds.
---- The function read_argv writes an empty string if the argument is out of bounds.
---- The functions read_argv_int and read_argv_float try to read a number, both returning 0 if that fails.
-----Arguments <= 0 are set to return 0, even if argument 0 would've parsed fine as a number.
-The number is parsed from the start of the argument, returning fine even if the latter part of the argument is an invalid number, like "1.0asdf".
-Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
+- Documentation for [read_argv](https://www.amxmodx.org/api/amxmodx/read_argv), [\*_float](https://www.amxmodx.org/api/amxmodx/read_argv_float) and [\*_int](https://www.amxmodx.org/api/amxmodx/read_argv_int) neglects mentioning what happens when the index is out of bounds.
+	- The function read_argv writes an empty string if the argument is out of bounds.
+	- The functions read_argv_int and read_argv_float try to read a number, both returning 0 if that fails.
+		- Arguments <= 0 are set to return 0, even if argument 0 would've parsed fine as a number.  
+		The number is parsed from the start of the argument, returning fine even if the latter part of the argument is an invalid number, like "1.0asdf".  
+		Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
 	
---The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
----The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
+- The documentation for fwrite is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
+	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
 
--Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
---Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
-This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
-    fp->Write(&data, ...)
-should have been
-    fp->Write(data, ...)
-Use fwrite_blocks instead.
+### Broken standard library
+- Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
+	- Not only is the documentation for fwrite_raw wrong, the function just doesn't work. The descriptions for the block and mode parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.
+	This bugged code is in amxmodx/file.cpp, amx_fwrite_raw, where
+		fp->Write(&data, ...)
+	should have been
+		fp->Write(data, ...)
+	Use fwrite_blocks instead.
 
 --The functions contain and containi use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.
 ---The documentation says to use:
