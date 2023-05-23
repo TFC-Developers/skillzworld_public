@@ -10,6 +10,12 @@ The "Pawn Language Guide", updated in 2016 at the time of writing, is of limited
 The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.  
 
 ## AMX Mod X
+https://www.amxmodx.org/about.php  
+AMX Mod X is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.
+It's not very good.  
+  
+The Sven Co-op team made a wise decision when integrating the more sensible AngelScript language into their mod with their own API, eliminating any possible use case for AMX Mod X.
+
 - AMX Mod X only allows the precache to be interacted with in the plugin_precache forward using the precache_\* natives, offering no means to just check if a model is already precached. This could easily have been made available by exposing a native function that reads from the server_t struct.
 
 - The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin](https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
@@ -19,7 +25,7 @@ Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / 
 - AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
 
 ### Anything for backwards compatibility
-The AMX Mod X library has accumulated many mistakes over the years that haven't been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
+The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
 - https://www.amxmodx.org/api/float/floatadd  
 The parameters have the wrong names, which belong to floatdiv.
