@@ -79,6 +79,9 @@ But you should use:
 ## The language
 The Small language is not a particularly bad one, but it has some questionable design decisions and strange syntax rules that are always waiting to trip the user.
 
+### Design
+Small has plenty of peculiar features, some inconvenient because they have limitations that appear to stem from being incomplete.
+
 - You can't create constant arrays.  
 This is valid (and is much like a `#define`):  
 `const A = 123`  
@@ -88,18 +91,6 @@ This means that it's impossible to create constant arrays that can be indexed at
 `new const A[] = {0, 1, 2}`  
 You can create a `#define` for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:  
 `#define A "Constant string"`
-
-- The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:  
-`new V[5]`  
-`for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}`   
-Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
-This problem is generalised to any inner scope.
-
-- The compiler rejects array initialisation with variables. This code is invalid:  
-`new i = 1`  
-`new A[3] = {i, i, i}`  
-This forces the programmer to break the initialisation into a loop, or many assignments:  
-`new A[3]; A[0] = A[1] = A[2] = i`
 
 - Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.  
 Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:  
@@ -114,6 +105,21 @@ RunTagCheck() {
 	TagCheck 123.0
 }
 ```
+
+- The compiler rejects array initialisation with variables. This code is invalid:  
+`new i = 1`  
+`new A[3] = {i, i, i}`  
+This forces the programmer to break the initialisation into a loop, or many assignments:  
+`new A[3]; A[0] = A[1] = A[2] = i`
+
+### Syntax
+The language has lax syntax with optional semicolons. This appears to be a half-baked feature of the language, as this causes strange pitfalls where compiler errors give little to no useful information aside from a line number.
+
+- The compiler jumps the gun on (presumably) vector literal detection and fails to understand one-lined multi-statements with any amount of statements other than zero. This code fails:  
+`new V[5]`  
+`for (new i; i < sizeof V; i++) {console_print(0, "%d\n", i); V[i] = i}`   
+Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
+This problem is generalised to any inner scope.
 
 ### Compiling
 The compiler is just as weird as the language. Some of its problems may have been introduced by the AMX Mod X team.
