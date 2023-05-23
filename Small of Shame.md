@@ -122,13 +122,13 @@ Fixing it requires placing a semicolon after the last statement in the multi-sta
 This problem is generalised to any inner scope.
 
 - Forward declarations have mandatory semicolons:
-`public func ();`
+`public func();`
 
 - Double standard: Null statements are allowed, but not with `;`, only with `{}`.  
 This means that a preprocessor macro to, for example, convert an integer vector to a float vector has three possible styles, each with their own downside:  
 	1. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2])`  
 	2. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);`  
-	3. `#define VEC_TO_FVEC(%1,%2) %2[0] = {float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);}`  
+	3. `#define VEC_TO_FVEC(%1,%2) {%2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);}`  
 These examples show that here is no catch-all solution, aside from redefining the macro as a function:
 	* `VEC_TO_FVEC(vec_i, vec_f);`
 	* `if (id == target) VEC_TO_FVEC(vec_i, vec_f)`
@@ -137,6 +137,13 @@ These examples show that here is no catch-all solution, aside from redefining th
 
 ### Compiling
 The compiler is just as weird as the language. Some of its problems may have been introduced by the AMX Mod X team.
+
+- The compiler wrongly issues an unreachable code warning because it's blind to labels:
+```
+goto label
+return
+label:
+```
 
 - The compiler provides a truncated listing of 16 options when requesting help the intended way:  
 `amxxpc --help`  
