@@ -129,7 +129,8 @@ This problem is generalised to any inner scope.
 message_begin MSG_BROADCAST, SVC_TEMPENTITY
 {
 	write_byte TE_BEAMENTPOINT
-}```
+}
+```
 
 - Forward declarations have mandatory semicolons:
 `public func();`
