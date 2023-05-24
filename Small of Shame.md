@@ -43,12 +43,13 @@ The AMX Mod X documentation is very sloppy and is full of grammar and spelling e
 
 - The documentation for [get_user_msgid](https://www.amxmodx.org/api/amxmodx/get_user_msgid) neglects to mention where message names can be found.
 
-- https://www.amxmodx.org/api/file/fopen  
-Wrong example: "Example: "rb" opens a binary file for writing"
+- [fopen](https://www.amxmodx.org/api/file/fopen) has a wrong example: "Example: "rb" opens a binary file for writing"
 
-- https://www.amxmodx.org/api/message_const  
-TE_FIREFIELD and TE_PLAYERATTACHMENT have wrong documentation, they mention only one coordinate but there should be three.  
+- [TE_FIREFIELD](https://www.amxmodx.org/api/message_const#makes-a-field-of-fire) and [TE_PLAYERATTACHMENT](https://www.amxmodx.org/api/message_const#attaches-a-tent-to-a-player-this-is-a-high-priority-tent) have wrong documentation, they mention only one coordinate but there should be three.  
 Confused user: https://forums.alliedmods.net/showthread.php?t=14870
+
+- [TE_EXPLODEMODEL](https://www.amxmodx.org/api/message_const#spherical-shower-of-models-picks-from-set) has wrong documentation, it shows 3 velocity coordinates but there should only be one, because the direction is random.  
+Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 	
 - Documentation for [read_argv](https://www.amxmodx.org/api/amxmodx/read_argv), [\*_float](https://www.amxmodx.org/api/amxmodx/read_argv_float) and [\*_int](https://www.amxmodx.org/api/amxmodx/read_argv_int) neglects mentioning what happens when the index is out of bounds.
 	- The function [read_argv](https://www.amxmodx.org/api/amxmodx/read_argv) writes an empty string if the argument is out of bounds.
