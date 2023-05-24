@@ -63,6 +63,9 @@ Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 - The documentation for [get_user_aiming](https://www.amxmodx.org/api/amxmodx/get_user_aiming) uses the wrong terminology, or centers the description around aiming at clients, making it sound like it can't be used for anything else.
 	- This function is in fact used to aim at any entity at all, not just clients.
 
+- The precache_\* family of functions fails to state the reason for there being multiple functions. The function [precache_generic](https://www.amxmodx.org/api/amxmodx/precache_generic) does not work with precaching sprites, and it doesn't clearly state what it's *for* -- what is a generic file, if not also a sprite?
+	- Use [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model) to precache sprites. This is also not documented behaviour, unless you're supposed to already know that .spr sprites and .mdl models are considered the one and same type of resource.
+
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
 
