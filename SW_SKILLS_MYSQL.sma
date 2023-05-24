@@ -31,6 +31,8 @@ new const g_szWait[] = "* Please wait for the previous request to finish.";
 public plugin_natives() {
     register_native("api_sql_insertcourse", "SQLNative_InsertCourse");
     register_native("api_sql_insertlegacycps", "SQLNative_InsertLegacyCPs");
+    register_native("api_sql_insertrun", "SQLNative_InsertRun");
+    register_native("api_sql_reloadcourses", "SQLNative_ReloadCourses");
     register_library("sw_sql_skills");
 }
 
@@ -43,6 +45,10 @@ public plugin_init()
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
 	g_pCvarOldRuns = register_cvar("sw_sqloldruns", "climb_oldrunstable")       // Cvar for the old runs table
     g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
+}
+
+public SQLNative_ReloadCourses() {
+    sql_loadcourses();
 }
 
 // logic; sql_loadcourses -> api_registercourse 
@@ -364,6 +370,24 @@ public SQLNative_InsertLegacyCPs( Data[] ) {
 public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
     if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
         DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
+    }
+
+    return PLUGIN_HANDLED;
+}
+public SQLNative_InsertRun(iPluign, iParams) {
+    new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3);
+    if (course <= 0) { DebugPrintLevel(0,"SQLNative_InsertRun <= 0 exception (course was %d)", course); return; }
+    new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
+    new iClass = pev(id,pev_playerclass);
+    //requires %d/courseid %f/runtime %d/class %s/steamid
+    //new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, szSteamID);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+
+}
+public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
     }
 
     return PLUGIN_HANDLED;

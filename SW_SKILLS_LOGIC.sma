@@ -4,6 +4,7 @@
 #include <fakemeta>
 #include "include/utils"
 #include "include/api_skills_mapentities"
+#include "include/api_skills_mysql"
 
 
 //enum to store the player's session data
@@ -74,6 +75,7 @@ public plugin_precache() {
     precache_sound(CHECKPOINT_SOUND);
     g_iIndexSprite = precache_model("sprites/lgtning.spr")
     g_iIndex_Flaremodel = precache_model("sprites/flare6.spr");
+    precache_sound("sound/misc/party1.wav");
     g_iIndexClocksprite = precache_model(CLOCK_SPRITE);
     g_iIndex_CPmarker_red = precache_model(CP_MARKER_RED);
     g_iIndex_CPmarker_yellow = precache_model(CP_MARKER_YELLOW);
@@ -399,26 +401,36 @@ public pub_cptouch(touched, toucher) {
 }
 
 public pub_sub_endtouch(touched, toucher) {
-    if (g_sPlayerData[toucher][m_bCourseFinished]) { return; }                      //return if the player has already finished the course
-    if (api_is_team_allowed(toucher,touched)) {                                     //check if the player is in the correct team to touch this cp
+    if (g_sPlayerData[toucher][m_bCourseFinished]) { return; }                                  //return if the player has already finished the course
+    if (api_is_team_allowed(toucher,touched)) {                                                 //check if the player is in the correct team to touch this cp
         new Float:fTime = floatsub(get_gametime(), g_sPlayerData[toucher][m_fRunStarttime]);
-        if (fTime < 5.0) { client_print(toucher, print_chat, "* Your time is too short to be saved"); return; }
-        g_sPlayerData[toucher][m_bCourseFinished] = true;                           //set the player's course finished to true
-        new szName[32]; get_user_name(toucher, szName, charsmax(szName));           //get the player's name
-        new szBigHudTXT[128]; new szCourseName[32];
-        api_get_coursename(pev(touched, pev_iuser2), szCourseName, charsmax(szCourseName));
+        if (g_sPlayerData[toucher][m_bInRun] == false) { fTime = 0.0; }                         // he completed the map without being in a run
+        g_sPlayerData[toucher][m_bCourseFinished] = true;                                       //set the player's course finished to true
+        new szName[32]; get_user_name(toucher, szName, charsmax(szName));                       //get the player's name
+        new szBigHudTXT[128]; new szCourseName[32]; new iCourseID; new szChatTXT[128];          //declare some strings
+        iCourseID = pev(touched, pev_iuser2);
+        api_get_coursename(iCourseID, szCourseName, charsmax(szCourseName));
         g_sPlayerData[toucher][m_bInRun] = false; //set the player's inrun to false
-        new iTotalSeconds = floatround(fTime, floatround_floor); new iHours = iTotalSeconds / 3600; new iSeconds = iTotalSeconds % 60; new iMinutes = iTotalSeconds / 60; new iMillis = floatround(fTime*100.0, floatround_floor) % 100;
-
-        if (iHours > 0) {
-            formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iMillis);
+        if (fTime > 0.0) {
+            new iTotalSeconds = floatround(fTime, floatround_floor); new iHours = iTotalSeconds / 3600; new iSeconds = iTotalSeconds % 60; new iMinutes = iTotalSeconds / 60; new iMillis = floatround(fTime*100.0, floatround_floor) % 100;
+            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
+            if (iHours > 0) {
+                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iMillis);
+            } else {
+                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iMillis);
+            }
         } else {
-            formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iMillis);
+            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s (%d cps used)", szName, szCourseName, g_sPlayerData[toucher][m_iTotalCPsUsed]);
+            formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s \n\nSay /reset to start over.", szName, szCourseName);
         }
+        // play sound
+        //			sprintf(sound, "speak \"sound/misc/party1.wav\"\n");
+        client_cmd(0, "speak \"sound/misc/party1.wav\"\n");
+        new iMysqlCourseID = api_get_course_mysqlid(iCourseID);
+        api_sql_insertrun(toucher, fTime, iMysqlCourseID);
         set_hudmessage(200,100,0,-1.0, 0.35, 0, 0.0, 19.0, 1.0, 0.0, 2);
         show_hudmessage(0, szBigHudTXT);
-        new szChatTXT[128];
-        formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
+
         client_print(0, print_chat, szChatTXT);
         SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);
         message_begin(MSG_ONE, SVC_TEMPENTITY, .player = toucher);

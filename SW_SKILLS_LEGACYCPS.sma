@@ -42,6 +42,7 @@ public plugin_natives() {
     register_native("api_registercourse", "Native_RegisterCourse");
     register_native("api_registercheckpoint", "Native_RegisterCP");
     register_native("api_spawnallcourses", "Native_SpawnAllCourses");
+    register_native("api_get_course_mysqlid", "Native_GetCourseMySQLID");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -244,7 +245,6 @@ public parse_skillsconfig() {
 
         new iNextCourseID = ArraySize(g_Courses);                   //get the next course id (if no course this is 0 or the amount of courses)
         tempCourseData[mC_iCourseID] = iNextCourseID + 1;           //set the course id to the next course id by adding 1 to the current amount of courses
-        ArrayPushArray(g_Courses, tempCourseData);                  //push the course to the array of courses
         api_sql_insertcourse( tempCourseData );                     //insert the course into the database
 
         new aStartCP[eCheckPoints_t];                               //array to store the start cp
@@ -253,7 +253,6 @@ public parse_skillsconfig() {
         aStartCP[mCP_iCourseID] = tempCourseData[mC_iCourseID];     //course id
         aStartCP[mCP_fOrigin] = startCP;                            //origin
         aStartCP[mCP_sqlCourseID] = -100;                           //workaround for legacy courses
-        internal_register_cp(aStartCP);                             //register the cp in the array
         api_sql_insertlegacycps( aStartCP );                        //insert the cp into the database
 
         new aEndCP[eCheckPoints_t];                                 //array to store the end cp
@@ -262,7 +261,6 @@ public parse_skillsconfig() {
         aEndCP[mCP_iCourseID] = tempCourseData[mC_iCourseID];       //course id
         aEndCP[mCP_fOrigin] = endCP;                                //origin
         aEndCP[mCP_sqlCourseID] = -100;                             //workaround for legacy courses  
-        internal_register_cp(aEndCP);                               //register the cp in the array
         api_sql_insertlegacycps( aEndCP );                          //insert the cp into the database
 
         new iCount = ArraySize(tempCheckpoints);                    //get the number of checkpoints loaded from the file
@@ -270,11 +268,10 @@ public parse_skillsconfig() {
         for (new i; i < iCount; i++) {                              //loop through the checkpoints loaded from the file
             ArrayGetArray(tempCheckpoints, i, Buffer);              //get the checkpoint data
             Buffer[mCP_iCourseID] = tempCourseData[mC_iCourseID]    //set the course id to the course id of the course
-            internal_register_cp(Buffer);                           //register the cp in the array
             api_sql_insertlegacycps( Buffer );                      //insert the cp into the database
         }
         ArrayDestroy(tempCheckpoints);                              //destroy the temp array
-        spawn_checkpoints_of_course(tempCourseData[mC_iCourseID]);  //spawn the checkpoints of the course loaded from the file
+        api_sql_reloadcourses();                                    //reload the courses from the database
         
     }
 } 
@@ -386,7 +383,6 @@ public Native_GetCourseDescription(iPlugin, iParams) {
 
 public Native_GetCourseName(iIndex) {
     new id = get_param(1);
-    DebugPrintLevel(0, "Getting course name for id %d", id);
     new szReturn[MAX_COURSE_NAME];
     formatex(szReturn, charsmax(szReturn), "__Undefined");
 
@@ -458,6 +454,19 @@ public Native_IsTeamAllowed(iPluign, iParams) {
     if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMGREEN && iTeam == 4) { result = true; }
     if (CourseBuffer[mC_iFlags] & SRFLAG_TEAMYELLOW && iTeam == 3) { result = true; } 
     return result;
+}
+
+public Native_GetCourseMySQLID(iPluign, iParams)  {
+    new id = get_param(1);
+    new iCount = ArraySize(g_Courses);
+    new Buffer[eCourseData_t];
+    for (new i; i < iCount; i++) {
+        ArrayGetArray(g_Courses, i, Buffer);
+        if (Buffer[mC_iCourseID] == id) {  
+            return Buffer[mC_sqlCourseID];
+        }
+    }
+    return -1;
 }
 
 /*

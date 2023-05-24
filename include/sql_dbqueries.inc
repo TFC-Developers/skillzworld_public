@@ -34,3 +34,6 @@ new const sql_serverlog[] = "INSERT INTO server_logs (steamid, time, ip, nicknam
 
 //require %s/steamid %s/ip %s/nickname %server %/map %s/action_type %s/steamid
 new const sql_serverlogdata[] = "INSERT INTO server_logs (steamid, time, ip, nickname, server, map, userid, action_type, data) SELECT '%s', CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', id, '%s', '%s' FROM players WHERE steamid = '%s';"
+
+//requires %d/courseid %f/runtime %d/class %s/steamid
+new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = '%s';"
