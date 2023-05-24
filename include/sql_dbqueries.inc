@@ -37,3 +37,14 @@ new const sql_serverlogdata[] = "INSERT INTO server_logs (steamid, time, ip, nic
 
 //requires %d/courseid %f/runtime %d/class %s/steamid
 new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = '%s';"
+
+//requires %s/steamid %s/nickname
+new const sql_updatenamequery[] = "INSERT INTO nicknames (steamid, nickname, usage_count) VALUES ('%s', '%s', 1) ON DUPLICATE KEY UPDATE usage_count = usage_count + 1;"
+
+//requires %s/mapname
+new const sql_getrunsformap[] = "SELECT runs.*, players.steamid, (SELECT nickname FROM nicknames WHERE \
+nicknames.steamid = players.steamid ORDER BY usage_count DESC LIMIT 1) as most_used_nickname FROM runs JOIN courses ON runs.course_id = courses.id \
+JOIN maps ON courses.map_id = maps.id JOIN players ON runs.player_id = players.id WHERE maps.name = '%s' AND runs.time != 0 ORDER BY runs.time ASC LIMIT 500;";
+
+//requires %s/name
+new const sql_get_common_name[] = "SELECT nickname, usage_count FROM nicknames WHERE steamid = '%s' ORDER BY usage_count DESC LIMIT 10;"

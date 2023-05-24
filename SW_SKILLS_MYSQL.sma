@@ -23,7 +23,29 @@ new const g_szNoData[] = "* No data found in the database.";
 new const g_szError[] = "* Failed to load the statistics from the database. Please try again later.";
 new const g_szWait[] = "* Please wait for the previous request to finish.";
 //end strings
+/*
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 5
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 18787
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:22:04
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:1:14778066
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = Ilupuusikuniluusi*/
+enum eSpeedTop_t
+{
+	m_iTopPlayerIdent,                          // The player's ident (sql player id)
+	m_sTopPlayerAuthid[MAX_AUTHID_LEN],         // The player's authid
+	m_sTopPlayerName[MAX_NAME_LEN],             // The player's name
+	Float:m_fTime,                                    // The player's time
+    m_iCourseID,                                // The course id (Mysql ID not local id)
+    m_CreatedAt[64],                            // The date the run was created
+    m_iPlayerClass,                             // The player's class
 
+}
+new Array:g_TopList = Invalid_Array;            // Array for the top 100 players
+new g_iTopCount = -1;
+#define MAX_MOTD_RANKS 20
 
 #define define_inrequest { if(g_bInRequest[id]) { client_print(id, print_chat, g_szWait); return; } }
 #define define_sql_error { if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { client_print(id, print_chat, g_szError); g_bInRequest[id] = false; return PLUGIN_HANDLED; } }
@@ -42,11 +64,18 @@ public plugin_init()
 	register_clcmd("say /oldtop5", "cmd_oldtop5");                              // Shows the old top5
 	register_clcmd("say /oldstatsme", "cmd_oldstatsme");                        // Shows the old stats of the player
 	register_clcmd("say /oldstats", "menu_deploy");                             // Shows the old stats menu
+	register_clcmd("say", "Handle_Say");                                        // Handle the say command
+	register_clcmd("say_team", "Handle_Say");                                   // Handle the say_team command
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
 	g_pCvarOldRuns = register_cvar("sw_sqloldruns", "climb_oldrunstable")       // Cvar for the old runs table
     g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
-}
+    g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
+}  
 
+public plugin_unload()
+{
+    ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
+}
 public SQLNative_ReloadCourses() {
     sql_loadcourses();
 }
@@ -55,6 +84,7 @@ public SQLNative_ReloadCourses() {
 //              |-done-> load all cps for map (done in Handle_QueryLoadCourses) and check there if a legacy course was if not call the api function to load the cps from file                   
 public plugin_precache() {
     sql_loadcourses();
+    sql_loadruns();
 }
 //loads all courses from the database
 public sql_loadcourses() {
@@ -391,4 +421,194 @@ public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[]
     }
 
     return PLUGIN_HANDLED;
+}
+
+public sql_loadruns() {
+    new szMapName[64]; get_mapname(szMapName, charsmax(szMapName));
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_getrunsformap, szMapName);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadRuns", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+}
+
+public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to load runs: %s", sError);
+    }
+    new Buffer[eSpeedTop_t];
+    g_iTopCount = 0;    // plugin is now ready to process requests
+    /*eSpeedTop_t*/
+	while(SQL_MoreResults(hQuery))
+	{
+        
+        new iFieldNumSteamID = SQL_FieldNameToNum(hQuery,"steamid");
+        new iFieldNumTime = SQL_FieldNameToNum(hQuery,"time");
+        new iFieldNumClass = SQL_FieldNameToNum(hQuery,"player_class");
+        new iFieldNumNickname = SQL_FieldNameToNum(hQuery,"most_used_nickname");
+        new iFieldNumCourseID = SQL_FieldNameToNum(hQuery,"course_id");
+        new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
+        new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
+        new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
+        if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
+            DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
+            return PLUGIN_HANDLED;
+        }
+        //now load the data into the struct
+        dump_sqldata(hQuery);
+        /*//end strings
+/*
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 5
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 18787
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:22:04
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:1:14778066
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = Ilupuusikuniluusi
+enum eSpeedTop_t
+{
+	m_iTopPlayerIdent,                          // The player's ident (sql player id)
+	m_sTopPlayerAuthid[MAX_AUTHID_LEN],         // The player's authid
+	m_sTopPlayerName[MAX_NAME_LEN],             // The player's name
+	m_fTime,                                    // The player's time
+    m_iCourseID,                                // The course id (Mysql ID not local id)
+    m_CreatedAt[64],                            // The date the run was created
+    m_iPlayerClass,                             // The player's class
+
+}*/
+        Buffer[m_iTopPlayerIdent] = SQL_ReadResult(hQuery, iFieldNumPlayerID);
+        SQL_ReadResult(hQuery, iFieldNumSteamID, Buffer[m_sTopPlayerAuthid], charsmax(Buffer[m_sTopPlayerAuthid]));
+        SQL_ReadResult(hQuery, iFieldNumNickname, Buffer[m_sTopPlayerName], charsmax(Buffer[m_sTopPlayerName]));
+        SQL_ReadResult(hQuery, iFieldNumTime,Buffer[m_fTime]);
+        Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
+        SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
+        Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
+        //now add the run to the list
+        ArrayPushArray(g_TopList, Buffer);
+        g_iTopCount++;
+        /*
+         DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 4DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 2DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:16:58DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
+DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:0:438030DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = [HCG] Mr.Coala#
+**/
+        SQL_NextRow(hQuery);
+    }
+
+    return PLUGIN_HANDLED;
+}
+
+//modified from fm / benwatch
+public ShowTop(id, iStart)
+{ 
+	if (!g_iTopCount)
+	{
+		client_print(id, print_chat, "* No players have completed a speedrun on the currentmap")
+		return
+	}
+
+	if (iStart < 0)
+		iStart = 0	
+	else if (iStart > g_iTopCount)
+		iStart = g_iTopCount - 1
+	
+	new iEnd = iStart + MAX_MOTD_RANKS
+	if (iEnd > g_iTopCount)
+		iEnd = g_iTopCount
+
+	static sBuffer[1024]
+	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
+	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
+
+	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
+	for(new i = iStart; i < iEnd; i++) 
+	{
+		ArrayGetArray(g_TopList, i, TopInfo)
+        DebugPrintLevel(0, "TopInfo: %f", TopInfo[m_fTime]);
+        new Float:fTime = TopInfo[m_fTime];
+		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
+	}
+
+	if (iEnd != g_iTopCount)
+		send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d", iPos, MAX_MOTD_RANKS)
+
+	display_motd(id, "Speedrun Ranks")
+	
+	return
+}
+
+public ShowMapstats(id) {
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    send_motd(id, "<<<=========== [ Mapstats - %s ] ===========>>>\n\n", szMapname);
+    new iNumCourses = api_get_number_courses();
+
+    if (iNumCourses == 0) {
+        send_motd(id, "No courses found for this map.\n");
+    } else {
+        send_motd(id, "Found %d courses for this map:\n", iNumCourses);
+        //iterate through all courses
+        for (new i = 0; i < iNumCourses; i++) {
+            new szCourseName[64]; api_get_coursename(i+1, szCourseName, charsmax(szCourseName));
+            new szCourseDesc[128]; api_get_coursedescription(i+1, szCourseDesc, charsmax(szCourseDesc));
+            new iDiff = api_get_mapdifficulty(i+1);
+            send_motd(id, "%d. %s\n   Description: %s\n   Difficulty: %d\n", i, szCourseName, szCourseDesc, iDiff); 
+
+        }
+    }
+    new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
+    //check if player has completed any courses by iterating through g_TopList
+    new iNumCompletedCourses = 0;
+    new Buffer[eSpeedTop_t];
+    for (new i = 0; i < g_iTopCount; i++) {
+        ArrayGetArray(g_TopList, i, Buffer);
+        //compare steamids
+        if (i == 0) {           //record the top player
+            new szRunTime[64]; format_seconds(szRunTime, Buffer[m_fTime], charsmax(szRunTime)); 
+            formatex(szRunTime, charsmax(szRunTime), "%s, %d milliseconds", szRunTime, floatround(Buffer[m_fTime]*1000.0, floatround_floor) % 1000);
+            send_motd(id, "\nSpeedrun record set by %s <%s>\n >>> %s\n\n", Buffer[m_sTopPlayerName], Buffer[m_sTopPlayerAuthid], szRunTime);
+        }
+        if (equal(Buffer[m_sTopPlayerAuthid], szSteamID)) {
+            iNumCompletedCourses++;
+
+            if (iNumCompletedCourses == 1) {
+                new Float:fTime = Buffer[m_fTime];
+		        new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+                send_motd(id, "\nYour best time on this map is: %s (%s) currently we only have legacy courses enabled.\n", sTime, Buffer[m_CreatedAt]);
+            }
+        }
+    }
+    if (iNumCompletedCourses == 0) {
+        send_motd(id, "No one has completed any courses on this map.\n");
+    } else {
+        send_motd(id, "You have %d runs on this map :)\n", iNumCompletedCourses);
+    }
+    display_motd(id, "Mapstats");
+
+}
+public Handle_Say(id)
+{
+	new sArgs[192]; read_args(sArgs, charsmax(sArgs))
+	remove_quotes(sArgs)
+	
+	if (!sArgs[0])
+		return PLUGIN_HANDLED
+
+     if (equali(sArgs, "/top", 4)) 
+	{			
+		if (sArgs[4] == ' ')
+		{
+			ShowTop(id, str_to_num(sArgs[5]) - 1)
+			return PLUGIN_HANDLED
+		}
+		else if (!sArgs[4])
+		{	
+			ShowTop(id, 0)
+			return PLUGIN_HANDLED
+		}
+	}
+    if (equali(sArgs, "/mapstats", 9)) 
+    {			
+        ShowMapstats(id);
+        return PLUGIN_HANDLED
+    }
+	return PLUGIN_CONTINUE
 }

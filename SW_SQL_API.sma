@@ -60,7 +60,7 @@ CreateSQLTuple()
 
 	g_SqlTuple = SQL_MakeDbTuple(sHostname, sUsername, sPassword, sDatabase, get_pcvar_num(g_pCvarTimeout))	
 	log_amx("Database tuple created. Host: \"%s\"", sHostname)
-
+	SQL_SetCharset(g_SqlTuple, "utf8mb4");
 	if (!g_iForward)
 	{
 		g_iForward = register_forward(FM_Sys_Error, "plugin_end")
