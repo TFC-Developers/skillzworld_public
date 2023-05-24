@@ -17,6 +17,7 @@ It's not very good.
 The Sven Co-op team made a wise decision when integrating the more sensible AngelScript language into their mod with their own API, eliminating any possible use case for AMX Mod X.
 
 - AMX Mod X only allows the precache to be interacted with in the plugin_precache forward using the precache_\* natives, offering no means to just check if a model is already precached. This could easily have been made available by exposing a native function that reads from the server_t struct.
+	- The engine function accessible with `id = engfunc(EngFunc_ModelIndex, modelpath)` comes close to this functionality, but it's set to raise a system error if the model isn't precached instead of returning a value representing this.
 
 - The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin](https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
@@ -59,7 +60,7 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 		Floats can also be parsed from hexadecimal with the 0x prefix and an optional fractional part, or scientific notation.
 	
 - The documentation for [fwrite](https://www.amxmodx.org/api/file/fwrite) is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
-	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
+	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the [fwrite_blocks](https://www.amxmodx.org/api/file/fwrite_blocks) documentation.
 
 - The documentation for [get_user_aiming](https://www.amxmodx.org/api/amxmodx/get_user_aiming) uses the wrong terminology, or centers the description around aiming at clients, making it sound like it can't be used for anything else.
 	- This function is in fact used to aim at any entity at all, not just clients.
@@ -82,6 +83,8 @@ The documentation says to use:
 `contain(original, substring)`  
 But you should use:  
 `contain(substring, original)`
+
+- [equal](https://www.amxmodx.org/api/string/equal) and [equali](https://www.amxmodx.org/api/string/equali) return true or false, but are tagged to return integers, not booleans.
 
 ## The language
 The Small language is not a particularly bad one, but it has some questionable design decisions and strange syntax rules that are always waiting to trip the user.
