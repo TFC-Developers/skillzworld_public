@@ -20,3 +20,17 @@ new const sql_insertlegacycps[] = "INSERT INTO checkpoints(course_id, x, y, z, c
 //requires %s/mapname
 new const sql_loadcps[] = "SELECT cp.* FROM checkpoints cp JOIN courses c ON cp.course_id = c.id JOIN maps m ON m.id = c.map_id WHERE m.name = '%s';"
 
+//requires %s/steamid %s/nickname
+new const sql_insertplayer[] = "INSERT INTO players (steamid, userlevel, firstnick, timer, totaltime, userflags) VALUES ('%s', 0, '%s', 0, 0, 0) ON DUPLICATE KEY UPDATE id = id;"
+
+//requires %s/steamid
+new const sql_loadplayer[] = "SELECT * FROM players WHERE steamid = '%s';"
+
+//requires %f/time %s/steamid
+new const sql_updatetime[] = "UPDATE players SET totaltime = totaltime + %f WHERE steamid = '%s';"
+
+//require %s/steamid %s/ip %s/nickname %server %/map %s/action_type %s/steamid
+new const sql_serverlog[] = "INSERT INTO server_logs (steamid, time, ip, nickname, server, map, userid, action_type) SELECT '%s', CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', id, '%s' FROM players WHERE steamid = '%s';"
+
+//require %s/steamid %s/ip %s/nickname %server %/map %s/action_type %s/steamid
+new const sql_serverlogdata[] = "INSERT INTO server_logs (steamid, time, ip, nickname, server, map, userid, action_type, data) SELECT '%s', CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', id, '%s', '%s' FROM players WHERE steamid = '%s';"
