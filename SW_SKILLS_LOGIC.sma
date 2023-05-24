@@ -603,9 +603,10 @@ public pub_loadlastcp(id) {
         client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 3]");
         return;
     }
-    //// Adjusting the position does not appear necessary, teleporting works identically to metamod sw without, and it would be at odds with the FL_DUCKING code below
-    //// Should this be re-added, these should be compatible features and we need examples where they are needed
-    //fOrigin[2] += 20.0;
+    //// This position adjustment is necessary for now, as the premade checkpoints in the database have their centre points glued to the floor rather than represent a player position,
+    //// which causes a teleported player's hitbox to intersect with slopes and get stuck. These checkpoints need to be fixed so this patch can be removed.
+    //// This position adjustment is at odds with the FL_DUCKING flag below, it will not be possible to load a checkpoint made while crouched while it's here.
+    fOrigin[2] += 20.0;
     
     CreateTeleportEffect(id,g_iIndexSprite);                                            //create teleport effect
     emit_sound(id, CHAN_ITEM, "misc/teleport_out.wav", 0.5, ATTN_NORM, 0, PITCH_HIGH);  //play teleport sound
