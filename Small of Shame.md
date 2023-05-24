@@ -60,6 +60,12 @@ Confused user: https://forums.alliedmods.net/showthread.php?t=14870
 - The documentation for [fwrite](https://www.amxmodx.org/api/file/fwrite) is wrong. The data parameter claims to hold an item (a simple cell) while the mode parameter refers to an array. This is contradictory information.
 	- The function actually writes a single cell to a file using mode as the byte width that the cell will occupy in the file, it has nothing to do with arrays. This error probably came from lazy copy pasting of the fwrite_blocks documentation.
 
+- The documentation for [get_user_aiming](https://www.amxmodx.org/api/amxmodx/get_user_aiming) uses the wrong terminology, or centers the description around aiming at clients, making it sound like it can't be used for anything else.
+	- This function is in fact used to aim at any entity at all, not just clients.
+
+- The precache_\* family of functions fails to state the reason for there being multiple functions. The function [precache_generic](https://www.amxmodx.org/api/amxmodx/precache_generic) does not work with precaching sprites, and it doesn't clearly state what it's *for* -- what is a generic file, if not also a sprite?
+	- Use [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model) to precache sprites. This is also not documented behaviour, unless you're supposed to already know that .spr sprites and .mdl models are considered the one and same type of resource.
+
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
 
@@ -121,6 +127,14 @@ The language has lax syntax with optional semicolons. This appears to be a half-
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
+- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with vector syntax. This will fail to compile:
+```
+message_begin MSG_BROADCAST, SVC_TEMPENTITY
+{
+	write_byte TE_BEAMENTPOINT
+}
+```
+
 - Forward declarations have mandatory semicolons:
 `public func();`
 
@@ -133,7 +147,6 @@ These examples show that here is no catch-all solution, aside from redefining th
 	* `VEC_TO_FVEC(vec_i, vec_f);`
 	* `if (id == target) VEC_TO_FVEC(vec_i, vec_f)`
 	* `if (id == target) {found = true; VEC_TO_FVEC(vec_i, vec_f);}`
-
 
 ### Compiling
 The compiler is just as weird as the language. Some of its problems may have been introduced by the AMX Mod X team.
