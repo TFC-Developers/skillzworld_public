@@ -149,6 +149,48 @@ stock display_motd(id, const sFormat[], any:...) {
 	}
 }
 
+stock format_seconds(target[], Float:s, target_sz = sizeof target) {
+	target_sz -= 1 // As charsmax
+	new iTotalSeconds = floatround(s)      ; new iSeconds = iTotalSeconds % 60
+	new iTotalMinutes = iTotalSeconds / 60 ; new iMinutes = iTotalMinutes % 60
+	new iTotalHours   = iTotalMinutes / 60 ; new iHours = iTotalHours % 24
+	new iTotalDays    = iTotalHours   / 24 ; new iDays = iTotalDays % 7
+	new iWeeks        = iTotalDays / 7
+	new write_i = 0
+	if (iWeeks) {
+		if (iWeeks == 1) formatex target[write_i], target_sz, "1 week, "
+		else              formatex target[write_i], target_sz, "%d weeks, ", iWeeks
+		write_i += strlen(target[write_i]); target_sz -= write_i
+	}
+	if (iDays) {
+		if (iDays == 1) formatex target[write_i], target_sz, "1 day, "
+		else             formatex target[write_i], target_sz, "%d days, ", iDays % 7
+		write_i += strlen(target[write_i]); target_sz -= write_i
+	}
+	if (iHours) {
+		if (iHours == 1) formatex target[write_i], target_sz, "1 hour, "
+		else              formatex target[write_i], target_sz, "%d hours, ", iHours % 60
+		write_i += strlen(target[write_i]); target_sz -= write_i
+	}
+	if (iMinutes) {
+		if (iMinutes == 1) formatex target[write_i], target_sz, "1 minute, "
+		else                formatex target[write_i], target_sz, "%d minutes, ", iMinutes % 60
+		write_i += strlen(target[write_i]); target_sz -= write_i
+	}
+	if (iSeconds || !write_i) { // Any seconds, or nothing at all else was written
+		if (iSeconds == 1) formatex target[write_i], target_sz, "1 second"
+		else                formatex target[write_i], target_sz, "%d seconds", iSeconds % 60
+	} else if (write_i) /* Something else was written, so remove comma */ target[write_i - 2] = EOS
+}
+
+public plugin_init() {
+	new Squanch[0x100]
+	format_seconds Squanch, 5340.0; console_print 0, Squanch
+	format_seconds Squanch, 13080.0; console_print 0, Squanch
+	format_seconds Squanch, 604800.0; console_print 0, Squanch
+	format_seconds Squanch, 3600.0; console_print 0, Squanch
+}
+
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */
