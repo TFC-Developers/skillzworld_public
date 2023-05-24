@@ -9,7 +9,7 @@ new Array: g_PlayerData = Invalid_Array;
 public plugin_natives()
 {
 	set_task(60.0, "task_increase_playtime", _, _, _, "b");					//increase playtime in database every 60 seconds
-	register_library("api_player");											//register natives
+	register_library("api_player");											//register plugin as library
 }
 
 
@@ -35,6 +35,20 @@ public plugin_unload()
 	}
 }
 
+public Handle_GetCommonname(iPluign, iParams) {
+    new id = get_param(1); 													// Get the first parameter
+	new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));	// Get the player's authid
+	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_get_common_name, szSteamID);	// Create the query string INSERT
+	new Data[1]; Data[0] = id;													// Create the data array to pass to the query which contains the player's id
+	api_SQLAddThreadedQuery(szQuery,"Handle_GetCommonname", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);	// Add the query to the queue
+	return PLUGIN_HANDLED;
+}
+
+public Handle_GetCommonname_Results(Query, Error, Data[], Rows) {
+	new id = Data[0];															// Get the player's id
+
+}
+
 public Forward_ClientUserInfoChanged(id, Buffer)
 {
 	if (!is_user_connected(id))
@@ -46,8 +60,12 @@ public Forward_ClientUserInfoChanged(id, Buffer)
 	new sNewName[MAX_NAME_LEN]; engfunc(EngFunc_InfoKeyValue, Buffer, "name", sNewName, charsmax(sNewName))	
 	//only call when old and new name mismatch
 	if (!equal(sOldName, sNewName))
-	{
-		sql_insertserverlog_data(id, "namechange", sNewName)
+	{	
+		sql_insertserverlog_data(id, "namechange", sNewName);
+		new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));										// Get the player's authid
+		new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_updatenamequery, szSteamID, sNewName);			// Create the query string INSERT
+		new Data[1]; Data[0] = id;																					// Create the data array to pass to the query which contains the player's id
+		api_SQLAddThreadedQuery(szQuery,"Handle_UpdateName", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);			// Add the query to the queue
 	}
 
 
@@ -106,6 +124,7 @@ public client_putinserver(id)
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_insertplayer, sAuthid, szName);				// Create the query string INSERT 	
 	api_SQLAddThreadedQuery(szQuery,"Handle_ConnectQuery", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);	// Add the query to the queue
+	sql_updatenickname(id);																					// Update the player's nickname
 	return PLUGIN_HANDLED;
 }
 public Handle_ConnectQuery(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) 
@@ -259,4 +278,24 @@ public Handle_Say(id) {
 	szMSG[strlen(sArgs) - 2] = '\0';								//add null terminator
 	sql_insertserverlog_data(id, "say", szMSG);
 
+}
+
+public sql_updatenickname(id) {
+	new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));										// Get the player's authid
+	new szName[64]; get_user_name(id, szName, charsmax(szName));												// Get the player's name
+	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_updatenamequery, szSteamID, szName);			// Create the query string INSERT
+	new Data[1]; Data[0] = id;																					// Create the data array to pass to the query which contains the player's id
+	api_SQLAddThreadedQuery(szQuery,"Handle_UpdateName", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);			// Add the query to the queue
+}
+
+public Handle_UpdateName(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) 
+{
+	new id; if (iLen > 0) { id = Data[0]; } 																		// Get the player's id from the data array
+	new szName[64]; get_user_name(id, szName, charsmax(szName));													// Get the player's name
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) 
+	{
+		WarningLog("Failed to update name for <%s> in database", szName)
+		return PLUGIN_HANDLED;
+	}
+	return PLUGIN_HANDLED;	
 }

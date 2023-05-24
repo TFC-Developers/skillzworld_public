@@ -43,6 +43,7 @@ public plugin_natives() {
     register_native("api_registercheckpoint", "Native_RegisterCP");
     register_native("api_spawnallcourses", "Native_SpawnAllCourses");
     register_native("api_get_course_mysqlid", "Native_GetCourseMySQLID");
+    register_native("api_get_number_courses", "Native_GetNumberCourses");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -469,6 +470,9 @@ public Native_GetCourseMySQLID(iPluign, iParams)  {
     return -1;
 }
 
+public Native_GetNumberCourses(iPlugin, iParams) {
+    return ArraySize(g_Courses);
+}
 /*
 * Spawn the entities
 */

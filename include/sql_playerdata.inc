@@ -38,4 +38,3 @@ enum ePlayerStruct_t
   mPD_iPlayerID,                // [INTERNAL] Player ID (1-32)
   Float:mPD_ftLastPTUpdate      // [INTERNAL] Last player time update in the database (float) will be set to gametime upon connect and every 5 minutes
 }
-
