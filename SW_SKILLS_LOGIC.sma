@@ -588,9 +588,19 @@ public pub_loadlastcp(id) {
         client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 3]");
         return;
     }
-    fOrigin[2] += 20.0;                                                                 //add 20 to z axis to prevent getting stuck in the cp
+    //// Adjusting the position does not appear necessary, teleporting works identically to metamod sw without, and it would be at odds with the FL_DUCKING code below
+    //// Should this be re-added, these should be compatible features and we need examples where they are needed
+    //fOrigin[2] += 20.0;
+    
     CreateTeleportEffect(id,g_iIndexSprite);                                            //create teleport effect
     emit_sound(id, CHAN_ITEM, "misc/teleport_out.wav", 0.5, ATTN_NORM, 0, PITCH_HIGH);  //play teleport sound
+    
+    //// Setting the player to crouched fixes bug where a standing player loads a crouched cp and gets stuck.
+    //// Example: Crouching under one of the very first jumps in the-climb and using a custom checkpoint
+    //// Visual bug: loading a crouched checkpoint makes your view height higher than it should be, though the hitbox is correct (so you can jump and peek through the world geometry).
+    ////    Probably caused by being stood on one frame and crouched on the next, it tries to do an animated transition so you get a half-half view height
+    set_pev id, pev_flags, pev(id, pev_flags) | FL_DUCKING
+    
     entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});                      //reset velocity / momentum
     stock_teleport(id, fOrigin);                                                        //teleport the player to the cp
     g_sPlayerData[id][m_iTotalCPsUsed] += 1;                                            //add 1 to the total cp used counter
