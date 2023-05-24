@@ -182,15 +182,6 @@ stock format_seconds(target[], Float:s, target_sz = sizeof target) {
 		else                formatex target[write_i], target_sz, "%d seconds", iSeconds % 60
 	} else if (write_i) /* Something else was written, so remove comma */ target[write_i - 2] = EOS
 }
-
-public plugin_init() {
-	new Squanch[0x100]
-	format_seconds Squanch, 5340.0; console_print 0, Squanch
-	format_seconds Squanch, 13080.0; console_print 0, Squanch
-	format_seconds Squanch, 604800.0; console_print 0, Squanch
-	format_seconds Squanch, 3600.0; console_print 0, Squanch
-}
-
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */

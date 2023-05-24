@@ -52,10 +52,7 @@ public plugin_natives() {
 
 public plugin_init() {
     RegisterPlugin();
-
     register_clcmd("say /loadfile", "parse_skillsconfig");
-    register_clcmd("say /listcps", "debug_list_all_cps_in_world");
-
 }
 
 public plugin_unload() {

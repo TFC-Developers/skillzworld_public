@@ -372,6 +372,9 @@ public update_hud(id) {
 public pub_cptouch(touched, toucher) {
     new szClass[32];
     new szClassToucher[32];
+    if (is_valid_ent(touched) == 0 || is_valid_ent(toucher) == 0) {
+        return;
+    }
     entity_get_string(touched, EV_SZ_classname, szClass, charsmax(szClass));
     entity_get_string(toucher, EV_SZ_classname, szClassToucher, charsmax(szClassToucher));
     if (!equali(szClass, "sw_checkpoint") || !equali(szClassToucher, "player")) {

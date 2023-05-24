@@ -17,7 +17,9 @@ public plugin_init()
 {
 	RegisterPlugin();	
 	g_PlayerData = ArrayCreate(ePlayerStruct_t);							//create global array of playerdata
-	register_message(get_user_msgid("SayText"), "Handle_SayText");			//register message SayText
+	//register_message(get_user_msgid("SayText"), "Handle_SayText");			//register message SayText
+	register_clcmd("say", "Handle_Say");							//register command /stats
+	register_clcmd("say_team", "Handle_Say");								//register command /top
 	register_forward(FM_ClientUserInfoChanged, "Forward_ClientUserInfoChanged") //register forward ClientUserInfoChanged
 }
 
@@ -246,18 +248,15 @@ public Handle_ServerLog(iFailState, Handle:hQuery, sError[], iError, Data[], iLe
 	return PLUGIN_HANDLED;	
 }
 
-public Handle_SayText(iMsgId, iDest, iReciever)
-{
-	new sArgs[MAX_CHAT_LEN]; get_msg_arg_string(2, sArgs, charsmax(sArgs));
-	new iSender = get_msg_arg_int(1);
-	if (!is_connected_user(iSender) || is_user_hltv(iSender)) { return PLUGIN_HANDLED; }								// Ignore bots and HLTV and unconnected players
-	//native strtok2(const text[], left[], const llen, right[], const rlen, const token = ' ', const trim = 0);
-	new sName[MAX_NAME_LEN]; get_user_name(iSender, sName, charsmax(sName));
-	new iStart = strlen(sName);
-	new szChatMsg[MAX_CHAT_LEN]; new szLeft[32];
-	//Yuri Tarded: test
-	strtok2(sArgs, szLeft, charsmax(szLeft), szChatMsg, charsmax(szChatMsg), ':');
-	if (strlen(szChatMsg) == 0) { return PLUGIN_CONTINUE; }
-	sql_insertserverlog_data(iSender, "say", szChatMsg);
-	return PLUGIN_CONTINUE	
+
+public Handle_Say(id) {
+	//get the second argument
+	new sArgs[MAX_CHAT_LEN];  read_args(sArgs, charsmax(sArgs));	//get the second argument
+	if (strlen(sArgs) <= 2) { return PLUGIN_CONTINUE; }				//empty message
+	new szMSG[MAX_CHAT_LEN];										//create buffer for message
+	//copy sArgs to szMSG but skip the first and last character
+	for(new i = 1; i < strlen(sArgs) - 1; i++) { szMSG[i-1] = sArgs[i]; }
+	szMSG[strlen(sArgs) - 2] = '\0';								//add null terminator
+	sql_insertserverlog_data(id, "say", szMSG);
+
 }
