@@ -124,7 +124,7 @@ The language has lax syntax with optional semicolons. This appears to be a half-
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
-- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope. This will fail:
+- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with vector syntax. This will fail to compile:
 ```
 message_begin MSG_BROADCAST, SVC_TEMPENTITY
 {
