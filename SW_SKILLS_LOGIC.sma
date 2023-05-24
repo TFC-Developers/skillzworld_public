@@ -425,13 +425,14 @@ public pub_sub_endtouch(touched, toucher) {
         }
         // play sound
         //			sprintf(sound, "speak \"sound/misc/party1.wav\"\n");
+        client_print(0, print_chat, szChatTXT);
         client_cmd(0, "speak \"sound/misc/party1.wav\"\n");
         new iMysqlCourseID = api_get_course_mysqlid(iCourseID);
+        DebugPrintLevel(0, "pub_sub_endtouch iMysqlCourseID: %d player %d time %f", iMysqlCourseID,toucher, fTime);
         api_sql_insertrun(toucher, fTime, iMysqlCourseID);
         set_hudmessage(200,100,0,-1.0, 0.35, 0, 0.0, 19.0, 1.0, 0.0, 2);
         show_hudmessage(0, szBigHudTXT);
 
-        client_print(0, print_chat, szChatTXT);
         SkillsEffectGoalTouch(toucher, true, g_iIndexSprite, g_iIndex_Flaremodel);
         message_begin(MSG_ONE, SVC_TEMPENTITY, .player = toucher);
         {
@@ -605,7 +606,7 @@ public pub_loadlastcp(id) {
     }
     //// Adjusting the position does not appear necessary, teleporting works identically to metamod sw without, and it would be at odds with the FL_DUCKING code below
     //// Should this be re-added, these should be compatible features and we need examples where they are needed
-    //fOrigin[2] += 20.0;
+    fOrigin[2] += 20.0;
     
     CreateTeleportEffect(id,g_iIndexSprite);                                            //create teleport effect
     emit_sound(id, CHAN_ITEM, "misc/teleport_out.wav", 0.5, ATTN_NORM, 0, PITCH_HIGH);  //play teleport sound

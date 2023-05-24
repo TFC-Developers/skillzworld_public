@@ -276,6 +276,8 @@ public Handle_Say(id) {
 	//copy sArgs to szMSG but skip the first and last character
 	for(new i = 1; i < strlen(sArgs) - 1; i++) { szMSG[i-1] = sArgs[i]; }
 	szMSG[strlen(sArgs) - 2] = '\0';								//add null terminator
+	//dont log commands beginning with /
+	if (szMSG[0] == '/') { return PLUGIN_CONTINUE; }
 	sql_insertserverlog_data(id, "say", szMSG);
 
 }

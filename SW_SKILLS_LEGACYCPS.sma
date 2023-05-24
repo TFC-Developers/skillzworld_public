@@ -54,7 +54,6 @@ public plugin_natives() {
 
 public plugin_init() {
     RegisterPlugin();
-    register_clcmd("say /loadfile", "parse_skillsconfig");
 }
 
 public plugin_unload() {

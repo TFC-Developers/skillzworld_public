@@ -6,6 +6,7 @@
 #include <fakemeta>
 #include "include/utils"                        // Include file for utility functions
 #include "include/sql_dbqueries"                // Include file for database queries (provides the strings)
+#include "include/effects"                      // Include file for effects
 
 //global variables
 new g_pCvarOldRanks; new g_pCvarOldRuns;            // Cvars for the old ranks and runs table
@@ -13,6 +14,7 @@ new bool:g_bInRequest[32];                          // Array to check if a playe
 new g_iRequestFor[32];                                 // Array to check for which player the request is
 new g_iRequest[32];                                   // Array to check which request is being made 
 new bool:g_bLegacyFound;                                   // Boolean to check if a legacy course was found in the database
+new bool:g_bReloaded = false;                          // Boolean to check if the courses were reloaded
 //array of requests number => description
 new const g_szRequest[3][32] = { "Retrieve legacy stats", "","" };
 //end global variables
@@ -46,6 +48,7 @@ enum eSpeedTop_t
 new Array:g_TopList = Invalid_Array;            // Array for the top 100 players
 new g_iTopCount = -1;
 #define MAX_MOTD_RANKS 20
+#define RECORD_SOUND "Trumpet1.wav" 		// The sound played when the all time speedrun record is broken
 
 #define define_inrequest { if(g_bInRequest[id]) { client_print(id, print_chat, g_szWait); return; } }
 #define define_sql_error { if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { client_print(id, print_chat, g_szError); g_bInRequest[id] = false; return PLUGIN_HANDLED; } }
@@ -64,6 +67,7 @@ public plugin_init()
 	register_clcmd("say /oldtop5", "cmd_oldtop5");                              // Shows the old top5
 	register_clcmd("say /oldstatsme", "cmd_oldstatsme");                        // Shows the old stats of the player
 	register_clcmd("say /oldstats", "menu_deploy");                             // Shows the old stats menu
+    register_clcmd("say /debugeffect", "cmd_effect");                               // Shows the old top menu
 	register_clcmd("say", "Handle_Say");                                        // Handle the say command
 	register_clcmd("say_team", "Handle_Say");                                   // Handle the say_team command
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
@@ -71,18 +75,25 @@ public plugin_init()
     g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
     g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
 }  
-
+public cmd_effect(id) {
+    api_firework(id,5);
+}
 public plugin_unload()
 {
     ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
 }
 public SQLNative_ReloadCourses() {
-    sql_loadcourses();
+    // set a task of 5 seconds to reload the courses
+   // native set_task(Float:time, const function[], id = 0, const any:parameter[] = "", len = 0, const flags[] = "", repeat = 0);
+   if (g_bReloaded == true) { return; }
+   g_bReloaded = true;
+   set_task(5.0, "sql_loadcourses", 1407, "");
 }
 
 // logic; sql_loadcourses -> api_registercourse 
 //              |-done-> load all cps for map (done in Handle_QueryLoadCourses) and check there if a legacy course was if not call the api function to load the cps from file                   
 public plugin_precache() {
+    precache_sound(RECORD_SOUND);
     sql_loadcourses();
     sql_loadruns();
 }
@@ -98,6 +109,11 @@ public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data
 		DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
 	}
 	new Buffer[eCourseData_t];
+    if (SQL_NumResults(hQuery) == 0) {
+        //no courses... call the api function to load the cps from file
+        api_legacycheck();
+        return;
+    }
 	while (SQL_MoreResults(hQuery)) {
 		if (SQL_FieldNameToNum(hQuery,"id") >= 0) { Buffer[mC_sqlCourseID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"id")); }
 		if (SQL_FieldNameToNum(hQuery,"creator_id") >= 0) { Buffer[mC_iCreatorID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"creator_id")); }
@@ -414,12 +430,43 @@ public SQLNative_InsertRun(iPluign, iParams) {
     new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, szSteamID);
     api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_DISPOSABLE, PRIORITY_NORMAL);
 
+    // check if run is the best run for this map
+
+    new bool:bIsBestRun = false;
+    if (ArraySize(g_TopList) == 0) { bIsBestRun = true; }
+    else if (fTime > 0.0) {
+        new Buffer[eSpeedTop_t]; ArrayGetArray(g_TopList,0,Buffer);
+        new Float:fBestTime = Buffer[m_fTime];
+        if (fTime < fBestTime) { bIsBestRun = true; }
+    }
+
+    if (bIsBestRun) {
+        // announce to server
+        new szPlayerName[32]; get_user_name(id, szPlayerName, charsmax(szPlayerName));
+		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+        new szMessage[128]; formatex(szMessage, charsmax(szMessage), "New record by %s with a time of %s!",  szPlayerName, sTime);
+        client_print(0, print_chat, szMessage);
+        client_cmd(0,"play %s",RECORD_SOUND);
+        api_firework(id, 3);
+        //cycle through all other players and give them firework too
+        for (new i = 1; i <= get_maxplayers(); i++) {
+            if (is_user_connected(i) && i != id) {
+                api_firework(i, 1);
+            }
+        }
+
+    }
+
 }
 public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
     if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
         DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
     }
-
+    //reload the top list
+    g_TopList = ArrayDestroy(g_TopList);
+    g_TopList = ArrayCreate(eSpeedTop_t);
+    g_iTopCount = 0;
+    sql_loadruns();
     return PLUGIN_HANDLED;
 }
 
@@ -605,7 +652,7 @@ public Handle_Say(id)
 			return PLUGIN_HANDLED
 		}
 	}
-    if (equali(sArgs, "/mapstats", 9)) 
+    if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) 
     {			
         ShowMapstats(id);
         return PLUGIN_HANDLED

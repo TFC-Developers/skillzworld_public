@@ -246,7 +246,7 @@ public timer_FindEntityInSphere()
   static ent;
   for (new i = 1; i <= get_maxplayers(); i++)
   {
-        if (is_connected_user(i)) {
+        if (is_connected_user(i) && (pev(i, pev_team) >= 1 && pev(i, pev_team) <= 4)) {
 
             // set player to not solid if not in temporary noclip
             if (!g_bPlayerTempNoClip[i]) {
