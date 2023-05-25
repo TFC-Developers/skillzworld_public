@@ -153,7 +153,7 @@ public Handle_QueryLoadCheckpoints(iFailState, Handle:hQuery, sError[], iError, 
     	api_registercheckpoint(Buffer);
         SQL_NextRow(hQuery);
     }
-    api_spawnallcourses();
+    api_spawnallcourses(); // only called ONCE because it iterated through all cps already for the
 
     if (!g_bLegacyFound) {
         DebugPrintLevel(0, "No legacy course found in the database, loading from file...");
@@ -448,13 +448,6 @@ public SQLNative_InsertRun(iPluign, iParams) {
         client_print(0, print_chat, szMessage);
         client_cmd(0,"play %s",RECORD_SOUND);
         api_firework(id, 3);
-        //cycle through all other players and give them firework too
-        for (new i = 1; i <= get_maxplayers(); i++) {
-            if (is_user_connected(i) && i != id) {
-                api_firework(i, 1);
-            }
-        }
-
     }
 
 }
@@ -499,28 +492,6 @@ public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[],
             return PLUGIN_HANDLED;
         }
         //now load the data into the struct
-        dump_sqldata(hQuery);
-        /*//end strings
-/*
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 5
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 18787
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:22:04
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:1:14778066
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = Ilupuusikuniluusi
-enum eSpeedTop_t
-{
-	m_iTopPlayerIdent,                          // The player's ident (sql player id)
-	m_sTopPlayerAuthid[MAX_AUTHID_LEN],         // The player's authid
-	m_sTopPlayerName[MAX_NAME_LEN],             // The player's name
-	m_fTime,                                    // The player's time
-    m_iCourseID,                                // The course id (Mysql ID not local id)
-    m_CreatedAt[64],                            // The date the run was created
-    m_iPlayerClass,                             // The player's class
-
-}*/
         Buffer[m_iTopPlayerIdent] = SQL_ReadResult(hQuery, iFieldNumPlayerID);
         SQL_ReadResult(hQuery, iFieldNumSteamID, Buffer[m_sTopPlayerAuthid], charsmax(Buffer[m_sTopPlayerAuthid]));
         SQL_ReadResult(hQuery, iFieldNumNickname, Buffer[m_sTopPlayerName], charsmax(Buffer[m_sTopPlayerName]));
@@ -531,12 +502,6 @@ enum eSpeedTop_t
         //now add the run to the list
         ArrayPushArray(g_TopList, Buffer);
         g_iTopCount++;
-        /*
-         DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 4DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 2DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:16:58DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:0:438030DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = [HCG] Mr.Coala#
-**/
         SQL_NextRow(hQuery);
     }
 
@@ -655,6 +620,15 @@ public Handle_Say(id)
     if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) 
     {			
         ShowMapstats(id);
+        return PLUGIN_HANDLED
+    }
+    if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) 
+    {	
+        new iInCourse = api_get_player_course(id);		
+        new iDiff = api_get_mapdifficulty(iInCourse);
+        new szCourseName[64]; api_get_coursename(iInCourse, szCourseName, charsmax(szCourseName));
+        new szString[128]; formatex(szString, charsmax(szString), "* The difficulty for the course [%s] is %d", szCourseName, iDiff);
+        client_print(id, print_chat, szString);
         return PLUGIN_HANDLED
     }
 	return PLUGIN_CONTINUE
