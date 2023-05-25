@@ -557,43 +557,44 @@ public pub_undo(id) {
         new iSize = ArraySize(g_sPlayerData[id][m_CustomCPs]);
         if (iSize == 0) {
             client_print(id, print_chat, "* You have not saved any custom cps yet");
-            return;
+            return PLUGIN_HANDLED;
         }
         if (!is_user_alive(id)) {
             client_print(id, print_chat, "* You have to respawn first in order to use your last cp");
-            return;
+            return PLUGIN_HANDLED;
         }
         ArrayDeleteItem(g_sPlayerData[id][m_CustomCPs], iSize - 1);
         client_print(id, print_chat, "* Your last saved custom cp has been removed");
         pub_loadlastcp(id);
-        return;
+        return PLUGIN_HANDLED;
     }
     // if the player is not in custom cps mode, remove the last touched cp
     if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
         client_print(id, print_chat, "* You have not touched any cps yet");
-        return;
+        return PLUGIN_HANDLED;
     }
     new iSize = ArraySize(g_sPlayerData[id][m_touchedCPs]);
     if (iSize == 0) {
         client_print(id, print_chat, "* You have not touched any cps yet");
-        return;
+        return PLUGIN_HANDLED;
     }
     if (iSize == 1) {
         client_print(id, print_chat, "* You reached your first saved cp");
-        return;
+        return PLUGIN_HANDLED;
     }
     if (!is_user_alive(id)) {
         client_print(id, print_chat, "* You have to respawn first in order to use your last cp");
-        return;
+        return PLUGIN_HANDLED;
     }
     ArrayDeleteItem(g_sPlayerData[id][m_touchedCPs], iSize - 1);
     pub_loadlastcp(id);
+    return PLUGIN_HANDLED;
 }
 public pub_loadlastcp(id) {
 
     if (!is_user_alive(id)) {
         client_print(id, print_chat, "* You have to respawn first in order to use your last cp");
-        return;
+        return PLUGIN_HANDLED;
     }
     new Float:fOrigin[3]; fOrigin = Float:{0.0, 0.0, 0.0};
 
@@ -602,7 +603,7 @@ public pub_loadlastcp(id) {
         new Buffer[eCustomCP];
         if (iSize == 0) {
             client_print(id, print_chat, "* You have not saved any custom cps yet");
-            return;
+            return PLUGIN_HANDLED;
         }
         ArrayGetArray(g_sPlayerData[id][m_CustomCPs], iSize - 1, Buffer);
         fOrigin[0] = Buffer[m_vOrigin][0];
@@ -611,28 +612,28 @@ public pub_loadlastcp(id) {
     } else {
         if (g_sPlayerData[id][m_touchedCPs] == Invalid_Array) {
             client_print(id, print_chat, "* You have not touched any cps yet");
-            return;
+            return PLUGIN_HANDLED;
         }
         new iSize = ArraySize(g_sPlayerData[id][m_touchedCPs]);
         new iLastCP = 0;
 
         if (iSize == 0) {
             client_print(id, print_chat, "* You have not touched any cps yet");
-            return;
+            return PLUGIN_HANDLED;
         }
         iLastCP = ArrayGetCell(g_sPlayerData[id][m_touchedCPs], iSize - 1);
         new szClass[32];
         entity_get_string(iLastCP, EV_SZ_classname, szClass, charsmax(szClass));
         if (!equali(szClass, "sw_checkpoint")) {
             client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 1]");
-            return;
+            return PLUGIN_HANDLED;
         }
         entity_get_vector(iLastCP, EV_VEC_origin, fOrigin);                             //get the origin of the cp
     }
 
     if (fOrigin[0] == 0.0 && fOrigin[1] == 0.0 && (fOrigin[2] == 20.0 || fOrigin[2] == 5.0)) {
         client_print(id, print_chat, "* Something weird happened here.. please report this to an admin [error: 3]");
-        return;
+        return PLUGIN_HANDLED;
     }
     //// This position adjustment is necessary for now, as the premade checkpoints in the database have their centre points glued to the floor rather than represent a player position,
     //// which causes a teleported player's hitbox to intersect with slopes and get stuck. These checkpoints need to be fixed so this patch can be removed.
@@ -651,7 +652,7 @@ public pub_loadlastcp(id) {
     entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});                      //reset velocity / momentum
     stock_teleport(id, fOrigin);                                                        //teleport the player to the cp
     g_sPlayerData[id][m_iTotalCPsUsed] += 1;                                            //add 1 to the total cp used counter
-
+    return PLUGIN_HANDLED;
 }
 public pub_reset(id) {
 	/* discussion: should we allow resetting if the player has not started a run yet?
