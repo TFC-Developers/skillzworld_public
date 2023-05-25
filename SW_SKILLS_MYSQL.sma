@@ -421,13 +421,13 @@ public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, 
     return PLUGIN_HANDLED;
 }
 public SQLNative_InsertRun(iPluign, iParams) {
-    new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3);
+    new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3); new iCpsUsed = get_param(4);
     if (course <= 0) { DebugPrintLevel(0,"SQLNative_InsertRun <= 0 exception (course was %d)", course); return; }
     new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
     new iClass = pev(id,pev_playerclass);
     //requires %d/courseid %f/runtime %d/class %s/steamid
     //new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
-    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, szSteamID);
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, szSteamID);
     api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_DISPOSABLE, PRIORITY_NORMAL);
 
     // check if run is the best run for this map
@@ -534,7 +534,6 @@ public ShowTop(id, iStart)
 	for(new i = iStart; i < iEnd; i++) 
 	{
 		ArrayGetArray(g_TopList, i, TopInfo)
-        DebugPrintLevel(0, "TopInfo: %f", TopInfo[m_fTime]);
         new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);

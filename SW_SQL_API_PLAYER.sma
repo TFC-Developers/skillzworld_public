@@ -65,7 +65,7 @@ public Forward_ClientUserInfoChanged(id, Buffer)
 		new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));										// Get the player's authid
 		new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_updatenamequery, szSteamID, sNewName);			// Create the query string INSERT
 		new Data[1]; Data[0] = id;																					// Create the data array to pass to the query which contains the player's id
-		api_SQLAddThreadedQuery(szQuery,"Handle_UpdateName", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);			// Add the query to the queue
+		api_SQLAddThreadedQuery(szQuery,"Handle_UpdateName", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);			// Add the query to the queue
 	}
 
 
@@ -78,7 +78,7 @@ public sql_serverlog_detailed(id, const name[], const ip[], action_type[]) {
 	new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));									// Get the player's authid
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_serverlog, szSteamID, ip, name, szHostname, szMapName, action_type, szSteamID);				// Create the query string INSERT
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
-	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);		// Add the query to the queue
+	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 
 }
 public sql_insertserverlog(id, action_type[]) {
@@ -89,7 +89,7 @@ public sql_insertserverlog(id, action_type[]) {
 	new szName[64]; get_user_name(id, szName, charsmax(szName));											// Get the player's name
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_serverlog, szSteamID, szIP, szName, szHostname, szMapName, action_type, szSteamID);				// Create the query string INSERT
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
-	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);		// Add the query to the queue
+	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 }
 public sql_insertserverlog_data(id, action_type[], data[]) {
 	new szHostname[64];  get_cvar_string("hostname", szHostname, 63);										// Get the hostname
@@ -99,7 +99,7 @@ public sql_insertserverlog_data(id, action_type[], data[]) {
 	new szName[64]; get_user_name(id, szName, charsmax(szName));											// Get the player's name
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_serverlogdata, szSteamID, szIP, szName, szHostname, szMapName, action_type, data, szSteamID);				// Create the query string INSERT
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
-	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);		// Add the query to the queue
+	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 }
 public client_disconnected(id) {
 
@@ -110,6 +110,8 @@ public client_disconnected(id) {
 		if (Buffer[mPD_iPlayerID] == id) { 
 			DebugPrintLevel(0,"Removing player %d from array at index %d", id, i);
 		 }
+		 //remove his data from the array
+		ArrayDeleteItem(g_PlayerData, i);
 	}
 	sql_insertserverlog(id,"disconnect");																			//log player disconnect
 	
@@ -222,6 +224,7 @@ public task_increase_playtime() {
 	new Float:fPlayTime;																			//create float for playtime
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)												//cycle through all players
 	{
+		if (!is_connected_user(i)) continue;														//skip if not connected
 		ArrayGetArray(g_PlayerData, i, Buffer);														//get playerdata from array
 		//DebugPrintLevel(0,"Player connected at %f", Buffer[mPD_ftLastPTUpdate]);					//debug
 		fPlayTime = floatsub(get_gametime(),Buffer[mPD_ftLastPTUpdate]);							//get playtime since last update
