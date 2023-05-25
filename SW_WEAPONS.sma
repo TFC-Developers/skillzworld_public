@@ -5,7 +5,7 @@
 #include <fakemeta>
 #include <hamsandwich>
 #include <orpheu>
-#include "include/orpheu_stocks"
+#include <orpheu_stocks>
 
 #define PLUGIN "SkillzWorld Weapons"
 #define VERSION "1.0"
@@ -32,6 +32,7 @@ public plugin_init() {
 }
 
 public player_spawn_spot(gameRules, id) {
+	if (!is_user_alive(id)) return
 	tfc_setbammo id, TFC_AMMO_BULLETS, 137
 	tfc_setbammo id, TFC_AMMO_SHELLS, 137
 	give_item id, "tf_weapon_ac"
