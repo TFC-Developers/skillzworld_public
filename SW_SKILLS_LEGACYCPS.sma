@@ -471,7 +471,7 @@ public Native_GetTotalCPS(iPlugin, iParams) {
     new Buffer[eCheckPoints_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
-        if (Buffer[mCP_iCourseID] == id) {
+        if (Buffer[mCP_iCourseID] == id && Buffer[mCP_iType] == 1) {
             iTotal++;
         }
     }

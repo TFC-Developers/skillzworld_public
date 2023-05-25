@@ -58,6 +58,9 @@ public stock_slay(id) {
 		write_coord(pos[2]);
 	}
 	message_end();
+
+	//remove the entity
+	remove_entity(entity);
 	
 	return PLUGIN_HANDLED
 }

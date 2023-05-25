@@ -5,6 +5,7 @@
 #include "include/utils"
 #include "include/api_skills_mapentities"
 #include "include/api_skills_mysql"
+#include <xs>
 
 
 //enum to store the player's session data
@@ -25,7 +26,9 @@ enum ePlayerSessionData {
     Float:m_fCustomCPsNextDr,   //next time the custom cps should be drawn
     bool:m_bResetConsent,      //if the player has consented to reset his time without menu
     Float:m_fMenuCooldown,      //the cooldown for the menu
-    m_iCourseID                 //the course id
+    bool:m_bUsedExtras,         //if the player has used extras
+    bool:m_bXtraSJ,              //if the player is in super jump mode
+    m_iXtraCurCP,               //the current cp the player is in
 }
 
 enum eCustomCP {
@@ -67,10 +70,23 @@ public plugin_init() {
     register_clcmd("say /savecp", "pub_savecustomcp");
     register_clcmd("say save", "pub_savecustomcp");
     register_clcmd("say /mapcps", "pub_mapcps");
+    register_clcmd("say /extras", "menu_extras_deploy");
+    register_clcmd("say /setmedone", "pub_setmedone");
+    register_forward(FM_PlayerPreThink, "Hook_PlayerPreThink",0);
     set_task(5.0, "spawn_thinker"); 
     g_iThinker = 0;
 }
+public pub_setmedone(id) {
+    if (!is_connected_admin(id)) {
+        client_print(id, print_chat, "* You are not an admin");
+        return PLUGIN_HANDLED;
+    }
 
+    g_sPlayerData[id][m_bCourseFinished] = true;
+    client_cmd(id, "spk \"ok run is over\"\n");
+    client_print(id, print_chat, "* Done");
+    return PLUGIN_HANDLED
+}
 public plugin_precache() {
     precache_sound(CHECKPOINT_SOUND);
     g_iIndexSprite = precache_model("sprites/lgtning.spr")
@@ -113,6 +129,9 @@ public reset_struct(id) {
     g_sPlayerData[id][m_fCustomCPsNextDr] = 0.0;
     g_sPlayerData[id][m_bResetConsent] = false;
     g_sPlayerData[id][m_fMenuCooldown] = 0.0;
+    g_sPlayerData[id][m_bUsedExtras] = false;
+    g_sPlayerData[id][m_bXtraSJ] = false;
+    g_sPlayerData[id][m_iXtraCurCP] = 0;
 }
 
 public client_connect(id) {
@@ -388,6 +407,14 @@ public pub_cptouch(touched, toucher) {
     }   
 
     if (pev(touched, pev_iuser1) == 0) {                                                //check if the checkpoint is a start orb (0 = start orb, 1 = checkpoint, 2 = finish orb)
+        //don't sed the menu if:
+        if (g_sPlayerData[toucher][m_bUsedExtras] && g_sPlayerData[toucher][m_fGenericCooldown] < get_gametime()) { 
+            client_print(toucher, print_chat, "* You can't do this, since you used extras to get here. User your /extras menu to suicide and start over.");
+            g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;                                                    //set the player's touchcooldown to 2 seconds
+            return;
+        } //because player used extras 
+        if (g_sPlayerData[toucher][m_bUsedExtras]) { return; }
+
         if (g_sPlayerData[toucher][m_bInRun]                                            //check if the player is in a run
             && ((g_sPlayerData[toucher][m_fRunStarttime] + 2.0) <= get_gametime())      //check if the player has touched the start orb at least 2 seconds ago
             && !g_sPlayerData[toucher][m_bResetConsent]) {                              //check if the player has consented to reset his time without menu
@@ -396,7 +423,7 @@ public pub_cptouch(touched, toucher) {
             pub_sub_starttouch(touched, toucher);                                       //start the run
         }
     } 
-    if (pev(touched, pev_iuser1) == 1) {
+    if ((pev(touched, pev_iuser1) == 1) && !(g_sPlayerData[toucher][m_bCourseFinished])) {
         pub_sub_cptouch(touched, toucher);
     }
     if (pev(touched, pev_iuser1) == 2) {
@@ -494,7 +521,6 @@ public pub_sub_starttouch(touched, toucher) {
         g_sPlayerData[toucher][m_fTouchCooldown] = get_gametime() + 2.0;                                                    //set the player's touchcooldown to 2 seconds
         g_sPlayerData[toucher][m_iTotalCPsUsed] = 0;                                                                        //set the player's totalcpsused to 0
         g_sPlayerData[toucher][m_bOwnCPs] = false;                                                                          //set the player's owncps to false
-        g_sPlayerData[toucher][m_iCourseID] = pev(touched, pev_iuser2);                                                     //set the player's courseid to the touched cp's courseid
         g_sPlayerData[toucher][m_bCourseFinished] = false;                                                                  //set the player's coursefinished to false
 
         if (!g_sPlayerData[toucher][m_bGotCourseInfo]) {
@@ -637,7 +663,7 @@ public pub_reset(id) {
 	ent = -1;
 	new eSearch = -1;
 	while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
-		if(!pev_valid(ent) || pev(ent, pev_iuser2) != g_sPlayerData[id][m_iCourseID]) continue;
+		if(!pev_valid(ent) || pev(ent, pev_iuser2) != api_get_player_course(id)) continue;
 		
 		if (pev(ent, pev_iuser1) == 0) {
 			eSearch = ent;
@@ -713,7 +739,7 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
         if (equali(szClass,"sw_checkpoint") && g_sPlayerData[host][m_bOwnCPs] && pev(ent, pev_iuser1) == 1) { 
             set_es(es_handle, ES_Effects, (get_es(es_handle, ES_Effects) | EF_NODRAW));
         }
-        if ( (g_sPlayerData[host][m_touchedCPs] != Invalid_Array) && (ArraySize(g_sPlayerData[host][m_touchedCPs]) >= 2) && equali(szClass,"sw_checkpoint")) {
+        if ( (g_sPlayerData[host][m_touchedCPs] != Invalid_Array) && (ArraySize(g_sPlayerData[host][m_touchedCPs]) >= 2) && equali(szClass,"sw_checkpoint") && !g_sPlayerData[host][m_bUsedExtras]) {
 
             if (ent == ArrayGetCell(g_sPlayerData[host][m_touchedCPs], ArraySize(g_sPlayerData[host][m_touchedCPs]) - 1) ||
                 ent == ArrayGetCell(g_sPlayerData[host][m_touchedCPs], ArraySize(g_sPlayerData[host][m_touchedCPs]) - 2)) {
@@ -734,9 +760,6 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
 /* Effect when touching the goal */
 stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
 {
-    new szClass[32];
-    entity_get_string(id, EV_SZ_classname, szClass, charsmax(szClass));
-    DebugPrintLevel(0, "SkillsEffectGoalTouch: %d touched a %s", id, szClass);
     new origin[3]; get_user_origin(id, origin);  // Integer player position
     
     // Use particle burst for colors
@@ -852,4 +875,202 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
         }
         message_end();
     }
+}
+
+
+//add a menu /extras which is available as soon as the player finishes the map
+public menu_extras_deploy(id) {
+    //check if he finished the map if not return
+    if (!g_sPlayerData[id][m_bCourseFinished]) {
+        client_print(id, print_chat, "* You have to finish the map first!");
+        return;
+    }
+  new szHeader[128];
+  formatex(szHeader, charsmax(szHeader), "\\yCongrats!\nChoose your goodies\n");
+  new menu = menu_create(szHeader, "menu_extras_clicked");
+  //gray string if player is in noclip
+  if (pev(id,pev_movetype) & MOVETYPE_NOCLIP) {
+    menu_additem(menu,"Noclip off","1")
+  } else {
+    menu_additem(menu,"\\dNoclip on","1");
+  } 
+
+  if (g_sPlayerData[id][m_bXtraSJ]) {
+    menu_additem(menu,"Superjump off","2");
+  } else {
+    menu_additem(menu,"\\dSuperjump on","2");
+  }
+  menu_additem(menu, "TP to start","4");
+  menu_additem(menu, "TP to end","5");
+  menu_additem(menu, "Cycle through checkpoints","6");
+  menu_additem(menu,"\\rPrepare for new run (slayme)","3");
+  menu_display(id, menu);
+}
+
+
+public menu_extras_clicked(id, menu, item) {
+    if( item == MENU_EXIT )
+    {
+        menu_destroy( menu );
+        return PLUGIN_HANDLED;
+    }
+
+    //check if he finished the map if not return
+    if (!g_sPlayerData[id][m_bCourseFinished]) {
+        client_print(id, print_chat, "* You have to finish the map first!");
+        return PLUGIN_HANDLED;
+    }
+    // he clicked on any extras so set m_bUsedExtras
+    g_sPlayerData[id][m_bUsedExtras] = true;
+    g_sPlayerData[id][m_fGenericCooldown] = get_gametime();  
+    new data[ 6 ], iName[ 64 ];
+    new access, callback;
+    menu_item_getinfo( menu, item, access, data,5, iName, 63, callback );
+    new tempid = str_to_num( data );
+    menu_destroy( menu );
+    switch( tempid )
+    {
+        case 1: //noclip
+        {
+            if (pev(id,pev_movetype) & MOVETYPE_NOCLIP) {
+                entity_set_int(id, EV_INT_movetype, MOVETYPE_WALK);
+                client_print(id, print_chat, "* Noclip off");
+            } else {
+                entity_set_int(id, EV_INT_movetype, MOVETYPE_NOCLIP);
+                client_print(id, print_chat, "* Noclip on");
+            }
+        }
+        case 2: //superjump
+        {
+            if (g_sPlayerData[id][m_bXtraSJ]) {
+                g_sPlayerData[id][m_bXtraSJ] = false;
+                client_print(id, print_chat, "* Superjump off");
+            } else {
+                g_sPlayerData[id][m_bXtraSJ] = true;
+                client_print(id, print_chat, "* Superjump on");
+            }
+        }
+        case 3: //reset & slay
+        {
+            set_pev(id, pev_takedamage, DAMAGE_AIM);
+            stock_slay(id);
+            reset_struct(id);
+
+        }
+        case 4: //tp to start
+        {
+            new ent;
+            ent = -1;
+            new eSearch = -1;
+            while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
+                if(!pev_valid(ent) || pev(ent, pev_iuser2) != api_get_player_course(id)) continue;
+                
+                if (pev(ent, pev_iuser1) == 0) {
+                    eSearch = ent;
+                    break;
+                }
+            }  
+            //check if ent is valid
+            if (!pev_valid(eSearch)) {
+                client_print(id, print_chat, "* Something weird happened here.. did you already start a run? [error: 4]");
+                return PLUGIN_HANDLED;
+            }
+            new Float:fOrigin[3];                                           //create a new origin vector
+	        pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+            fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
+            CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
+            entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
+            stock_teleport(id, fOrigin);   
+        }  
+        case 5: //tp to end
+        {
+            new ent;
+            ent = -1;
+            new eSearch = -1;
+            while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
+                if(!pev_valid(ent) || pev(ent, pev_iuser2) != api_get_player_course(id)) continue;
+                
+                if (pev(ent, pev_iuser1) == 2) {
+                    eSearch = ent;
+                    break;
+                }
+            }  
+            //check if ent is valid
+            if (!pev_valid(eSearch)) {
+                client_print(id, print_chat, "* Something weird happened here.. did you already finish the map? [error: 5]");
+                return PLUGIN_HANDLED;
+            }
+            new Float:fOrigin[3];                                           //create a new origin vector
+	        pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+            fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
+            CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
+            entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
+            stock_teleport(id, fOrigin);   
+        } 
+        case 6:
+        {
+            new ent =  g_sPlayerData[id][m_iXtraCurCP]; new eSearch = -1; new found = false;
+            while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
+                if(!pev_valid(ent) || pev(ent, pev_iuser2) != api_get_player_course(id)) continue;
+                //cycling through all normal cps in course
+                
+                if (pev(ent, pev_iuser1) == 1) {
+                    g_sPlayerData[id][m_iXtraCurCP] = ent;
+                    eSearch = ent;
+                    found = true;
+                    break;
+                }
+            }  
+            if (!found) {
+                client_print(id, print_chat, "* You reached the last checkpoint, clicking again will cycle again through all cps");
+                g_sPlayerData[id][m_iXtraCurCP] = 0;
+                menu_extras_deploy(id); 
+                return PLUGIN_HANDLED;
+            }
+            //check if ent is valid
+            if (!pev_valid(eSearch)) {
+                client_print(id, print_chat, "* Something weird happened here.. did you already finish the map? [error: 6]");
+                return PLUGIN_HANDLED;
+            }
+            new Float:fOrigin[3];                                           //create a new origin vector
+            pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+            fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
+            CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
+            entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
+            stock_teleport(id, fOrigin);   
+            menu_extras_deploy(id); 
+        }
+    }
+    //check if he is in noclip
+    return PLUGIN_HANDLED;
+
+}
+
+
+public Hook_PlayerPreThink(id) {
+    //check the players fallvelocity
+    new Float:vel = entity_get_float(id, EV_FL_flFallVelocity);
+
+/*
+	if (SKUSER(pEntity).bExtraJump) {
+		if (pEntity->v.button & IN_ATTACK2 && pEntity->v.flags & FL_ONGROUND)
+		{
+			UTIL_MakeVectors(pEntity->v.v_angle);
+			Vector velocity = gpGlobals->v_forward * 1200;
+			pEntity->v.velocity = velocity;
+		}
+	}
+*/
+     if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id,pev_flags) & FL_ONGROUND) && (pev(id,pev_button) & IN_ATTACK2)) {
+        new Float:vec[3];
+        pev(id, pev_angles,vec);
+        //stock xs_anglevectors(const Float:angles[3], Float:fwd[3], Float:right[3], Float:up[3])
+        new Float:fwd[3], right[3], up[3];
+        xs_anglevectors(vec, fwd, right, up);
+        fwd[0] = fwd[0] * 1200;
+        fwd[1] = fwd[1] * 1200;
+        fwd[2] = fwd[2] * 1200;
+        set_pev(id, pev_velocity, fwd);
+     }     
+
 }
