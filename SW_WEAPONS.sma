@@ -32,6 +32,7 @@ public plugin_init() {
 }
 
 public player_spawn_spot(gameRules, id) {
+	if (!is_user_alive(id)) return
 	tfc_setbammo id, TFC_AMMO_BULLETS, 137
 	tfc_setbammo id, TFC_AMMO_SHELLS, 137
 	give_item id, "tf_weapon_ac"
