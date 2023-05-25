@@ -382,7 +382,12 @@ public pub_cptouch(touched, toucher) {
     if (!equali(szClass, "sw_checkpoint") || !equali(szClassToucher, "player")) {
         return;
     }
-    if (pev(touched, pev_iuser1) == 0) {
+    //check if he is allowed to touch the entity no matter what type it is
+    if (pev(touched,pev_iuser2) != api_get_player_course(toucher)) {                    //check if the player is on the same course as the checkpoint
+        return;                                                                         //if not, return
+    }   
+
+    if (pev(touched, pev_iuser1) == 0) {                                                //check if the checkpoint is a start orb (0 = start orb, 1 = checkpoint, 2 = finish orb)
         if (g_sPlayerData[toucher][m_bInRun]                                            //check if the player is in a run
             && ((g_sPlayerData[toucher][m_fRunStarttime] + 2.0) <= get_gametime())      //check if the player has touched the start orb at least 2 seconds ago
             && !g_sPlayerData[toucher][m_bResetConsent]) {                              //check if the player has consented to reset his time without menu
@@ -708,6 +713,19 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
         if (equali(szClass,"sw_checkpoint") && g_sPlayerData[host][m_bOwnCPs] && pev(ent, pev_iuser1) == 1) { 
             set_es(es_handle, ES_Effects, (get_es(es_handle, ES_Effects) | EF_NODRAW));
         }
+        if ( (g_sPlayerData[host][m_touchedCPs] != Invalid_Array) && (ArraySize(g_sPlayerData[host][m_touchedCPs]) >= 2) && equali(szClass,"sw_checkpoint")) {
+
+            if (ent == ArrayGetCell(g_sPlayerData[host][m_touchedCPs], ArraySize(g_sPlayerData[host][m_touchedCPs]) - 1) ||
+                ent == ArrayGetCell(g_sPlayerData[host][m_touchedCPs], ArraySize(g_sPlayerData[host][m_touchedCPs]) - 2)) {
+                // Draw the last two checkpoints in the array
+            } else if (ArrayFindValue(g_sPlayerData[host][m_touchedCPs], ent) != -1) {
+                // Checkpoint has already been touched, don't draw it
+                set_es(es_handle, ES_Effects, (get_es(es_handle, ES_Effects) | EF_NODRAW));
+            } else {
+                // Draw all other checkpoints
+            }
+        }
+
     }
 
     return FMRES_HANDLED;

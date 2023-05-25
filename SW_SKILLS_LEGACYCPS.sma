@@ -27,6 +27,8 @@ new Array: g_Courses = Invalid_Array;                      // array to store the
 new g_iCPCount;                                            // number of checkpoints    
 new g_iModelID;                                            // model id of the goal model   
 new g_bWorldSpawned;                                       // true if the worldspawn entity has been spawned
+new g_iPlayerInCourse[32];                                 //array to store the player's course id
+new g_iLegacyCourse = -1;
 
 /* 
  * 	Functions
@@ -44,6 +46,7 @@ public plugin_natives() {
     register_native("api_spawnallcourses", "Native_SpawnAllCourses");
     register_native("api_get_course_mysqlid", "Native_GetCourseMySQLID");
     register_native("api_get_number_courses", "Native_GetNumberCourses");
+    register_native("api_get_player_course", "Native_GetPlayerCourse");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -64,12 +67,38 @@ public plugin_unload() {
 public plugin_precache() {
     g_iModelID = precache_model(LEGACY_MODEL);
 }
+
+public client_putinserver(id) {
+    DebugPrintLevel(0, "Client %d connected", id);
+    set_task(4.0, "set_player_course", id);
+    set_player_course(id, g_iLegacyCourse);
+}
+public client_disconnect(id) {
+    g_iPlayerInCourse[id] = -1;
+}
+
+public set_player_course_connect(id) {          //nasty workaround to set the player's course after he has connected
+    set_player_course(id, g_iLegacyCourse);
+}
+public set_player_course(id, course) {
+    if (course <= 0) {
+        return;
+    }
+    g_iPlayerInCourse[id] = course;
+    //only print if team > 0 and < 5
+    if (get_user_team(id) > 0 && get_user_team(id) < 5) {
+        client_print(id, print_chat, "* You are now in course %d (%s)", course, get_course_name(course));
+    }
+}
 //called by mysql plugin after the database has been loaded
 //and no legacy courses have been found
 public Native_LegacyCheck() {
     parse_skillsconfig();
 }
-
+public Native_GetPlayerCourse(iPlugin, iParams) {
+    new id = get_param(1);
+    return g_iPlayerInCourse[id];
+}
 public fm_spawn(id) {
     if (g_bWorldSpawned) { return; } //worldspawn has already been spawned
     
@@ -89,12 +118,26 @@ public get_course_description(id) {
     for (new i = 0; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
         if (Buffer[mC_iCourseID] == id) {
+            formatex(szDescription, charsmax(szDescription), "%s", Buffer[mC_szCourseDescription]);
+        }
+    }
+    return szDescription;
+}
+//function to return the description of the course by its id
+public get_course_name(id) {
+    new iCount = ArraySize(g_Courses);
+    new szDescription[MAX_COURSE_NAME];
+    new Buffer[eCourseData_t];
+    formatex(szDescription, charsmax(szDescription), "__Unknown");
+
+    for (new i = 0; i < iCount; i++) {
+        ArrayGetArray(g_Courses, i, Buffer);
+        if (Buffer[mC_iCourseID] == id) {
             formatex(szDescription, charsmax(szDescription), "%s", Buffer[mC_szCourseName]);
         }
     }
     return szDescription;
 }
-
 public parse_skillsconfig() {
     DebugPrintLevel(0, "Parsing skills config..");
     new mapname[32];  get_mapname(mapname, charsmax(mapname));                          // get the map name
@@ -286,7 +329,7 @@ public push_checkpoint_array( Buffer[eCheckPoints_t], id ) {
     if (Buffer[mCP_iCourseID] == -1) {
         Buffer[mCP_iCourseID] = id;
     }
-    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_description(id));
+    DebugPrintLevel(0, "Pushing checkpoint %d (%f, %f, %f) of course %s to array", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_name(id));
     api_sql_insertlegacycps( Buffer );
     ArrayPushArray(g_Checkpoints, Buffer);
 }
@@ -342,13 +385,32 @@ public Native_RegisterCP(iPlugin, iParams) {
     internal_register_cp(Buffer);
 }
 
+/* TO DO: if there is NO legacy course on a map then the player won't be able to participate in any course for now */
 public Native_SpawnAllCourses() {
+
     new iCount = ArraySize(g_Courses);
     new Buffer[eCourseData_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
+
+        if (Buffer[mC_bLegacy] == 1) {
+            g_iLegacyCourse = Buffer[mC_iCourseID];
+
+        } 
+        DebugPrintLevel(0, "Legacy course is now: %s", get_course_name(g_iLegacyCourse));
         spawn_checkpoints_of_course(Buffer[mC_iCourseID]);
     }
+    set_legacy_course_for_all();
+}
+public set_legacy_course_for_all() {
+    if (g_iLegacyCourse >= 0) {
+    //loop through all connected players and set course
+    for (new j = 0; j < MAX_PLAYERS; j++) {
+        if (is_connected_user(j)) {
+            set_player_course(j, g_iLegacyCourse);
+        } 
+    }
+}
 }
 public Native_GetMapDifficulty(iPlugin, iParams) {
     new iCourseID = get_param(1);  new iCount = ArraySize(g_Courses); new iDifficulty = 0; new Buffer[eCourseData_t];
@@ -483,7 +545,7 @@ public spawn_checkpoint(id) {
 
     new Buffer[eCheckPoints_t];
     ArrayGetArray(g_Checkpoints, id, Buffer);
-    //DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_description(Buffer[mCP_iCourseID]));
+    //DebugPrintLevel(0, "Attempting to spawn checkpoint %d (%f, %f, %f) of course %s", Buffer[mCP_iID], Buffer[mCP_fOrigin][0], Buffer[mCP_fOrigin][1], Buffer[mCP_fOrigin][2], get_course_name(Buffer[mCP_iCourseID]));
 
     new entity = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"));
     entity_set_string(entity, EV_SZ_classname, "sw_checkpoint");
@@ -516,7 +578,7 @@ public spawn_checkpoint(id) {
     //set the m_iEntID of the checkpoint
     Buffer[mCP_iEntID] = entity;
 
-    DebugPrintLevel(0, " -> Spawned checkpoint at %f, %f, %f (EntID: %d) of course #%d (%s)", origin[0], origin[1], origin[2], Buffer[mCP_iEntID], Buffer[mCP_iCourseID], get_course_description(Buffer[mCP_iCourseID]));
+    DebugPrintLevel(0, " -> Spawned checkpoint at %f, %f, %f (EntID: %d) of course #%d (%s)", origin[0], origin[1], origin[2], Buffer[mCP_iEntID], Buffer[mCP_iCourseID], get_course_name(Buffer[mCP_iCourseID]));
 
     ArraySetArray(g_Checkpoints, id, Buffer); //update the array
 }
@@ -527,17 +589,17 @@ public spawn_checkpoints_of_course(id) {
     new iCount = ArraySize(g_Checkpoints);
     new Buffer[eCheckPoints_t];
     new iTotal = 0;
-    DebugPrintLevel(0, "Spawning checkpoints of course %s", get_course_description(id));
+    DebugPrintLevel(0, "Spawning checkpoints of course %s", get_course_name(id));
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Checkpoints, i, Buffer);
         if (Buffer[mCP_iCourseID] == id) {
-            //DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[mCP_iID], get_course_description(id));
+            //DebugPrintLevel(0, "Spawning checkpoint %d of course %s", Buffer[mCP_iID], get_course_name(id));
             spawn_checkpoint(i);
             iTotal++;
         }
     }
 
-    DebugPrintLevel(0, "Finished spawning checkpoints of course %s (total number of cps in course: %d)", get_course_description(id), iTotal);
+    DebugPrintLevel(0, "Finished spawning checkpoints of course %s (total number of cps in course: %d)", get_course_name(id), iTotal);
 }
 
 public debug_list_all_cps_in_world() {

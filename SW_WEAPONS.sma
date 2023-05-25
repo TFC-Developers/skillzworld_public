@@ -5,7 +5,7 @@
 #include <fakemeta>
 #include <hamsandwich>
 #include <orpheu>
-#include "include/orpheu_stocks"
+#include <orpheu_stocks>
 
 #define PLUGIN "SkillzWorld Weapons"
 #define VERSION "1.0"
