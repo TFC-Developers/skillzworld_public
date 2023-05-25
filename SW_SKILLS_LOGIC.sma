@@ -75,7 +75,7 @@ public plugin_precache() {
     precache_sound(CHECKPOINT_SOUND);
     g_iIndexSprite = precache_model("sprites/lgtning.spr")
     g_iIndex_Flaremodel = precache_model("sprites/flare6.spr");
-    precache_sound("sound/misc/party1.wav");
+    precache_sound("misc/party1.wav");
     g_iIndexClocksprite = precache_model(CLOCK_SPRITE);
     g_iIndex_CPmarker_red = precache_model(CP_MARKER_RED);
     g_iIndex_CPmarker_yellow = precache_model(CP_MARKER_YELLOW);
