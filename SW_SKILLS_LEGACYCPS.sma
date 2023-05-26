@@ -18,6 +18,7 @@
 #include <file>
 
 
+
 /* 
  * 	global variables
 */
@@ -28,7 +29,9 @@ new g_iCPCount;                                            // number of checkpoi
 new g_iModelID;                                            // model id of the goal model   
 new g_bWorldSpawned;                                       // true if the worldspawn entity has been spawned
 new g_iPlayerInCourse[32];                                 //array to store the player's course id
-new g_iLegacyCourse = -1;
+new g_iLegacyCourse = -1;                                  //course id of the legacy course
+new g_bHopMode = false;                                    //true if the map is in bhop mode
+new g_iCvarBhopmode;                                   // Cvar for the bhopmode
 
 /* 
  * 	Functions
@@ -47,6 +50,7 @@ public plugin_natives() {
     register_native("api_get_course_mysqlid", "Native_GetCourseMySQLID");
     register_native("api_get_number_courses", "Native_GetNumberCourses");
     register_native("api_get_player_course", "Native_GetPlayerCourse");
+    register_native("api_process_mapflags", "Native_ProcessMapFlags");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -57,6 +61,7 @@ public plugin_natives() {
 
 public plugin_init() {
     RegisterPlugin();
+    g_iCvarBhopmode = create_cvar("sw_bhopmode","0",FCVAR_EXTDLL);
 }
 
 public plugin_unload() {
@@ -88,6 +93,20 @@ public set_player_course(id, course) {
     //only print if team > 0 and < 5
     if (get_user_team(id) > 0 && get_user_team(id) < 5) {
         client_print(id, print_chat, "* You are now in course %d (%s)", course, get_course_name(course));
+    }
+}
+public Native_ProcessMapFlags(iPlugin, iParams) {
+    new iFlags = get_param(1); //get the mapflags
+    if (iFlags & MAPFLAG_SURFMODE) {
+        DebugPrintLevel(0, "Surfmode enabled");
+        set_cvar_float("sv_airaccelerate", 100.0);
+    } else {
+        DebugPrintLevel(0, "Surfmode disabled");
+        set_cvar_float("sv_airaccelerate", 10.0);
+    }
+
+    if (iFlags & MAPFLAG_BHOPMODE) {
+        g_bHopMode = true;
     }
 }
 //called by mysql plugin after the database has been loaded
@@ -148,6 +167,7 @@ public parse_skillsconfig() {
     new Float:startCP[3];               // temp array to store the start checkpoint origin
     new Float:endCP[3];                 // temp array to store the end checkpoint origin
     new Array:tempCheckpoints = ArrayCreate(eCheckPoints_t);          // temp array to store the checkpoints
+    new iTempMapFlags = 0;                                             // temp int to store the mapflags    
 
     //set the tempCourseData difficulty to -1
     tempCourseData[mC_iDifficulty] = -1;
@@ -168,6 +188,18 @@ public parse_skillsconfig() {
 
             new szKey[64], szValue[128];                                                 // key and value strings
             strtok2(szLineData, szKey, charsmax(szKey), szValue, charsmax(szValue));    // split the line into key and value
+
+            //check if map is a surf map
+            if (equali(szKey, "surfmode") || equali(szKey, "surfs")) {
+                DebugPrintLevel(0, "Map is a surf map");
+                iTempMapFlags |= MAPFLAG_SURFMODE;
+            }
+
+            //check wether the map is a bhop map
+            if (equali(szKey, "bhops")) {
+                DebugPrintLevel(0, "Map is a bhop map");
+                iTempMapFlags |= MAPFLAG_BHOPMODE;
+            }
 
             //check if key is "sv_difficulty" and set the difficulty
             if (equali(szKey, "sv_difficulty")) {
@@ -314,6 +346,7 @@ public parse_skillsconfig() {
             api_sql_insertlegacycps( Buffer );                      //insert the cp into the database
         }
         ArrayDestroy(tempCheckpoints);                              //destroy the temp array
+        api_sql_updatemapflags( iTempMapFlags );                    //update the map flags (if needed)
         api_sql_reloadcourses();                                    //reload the courses from the database
         
     }

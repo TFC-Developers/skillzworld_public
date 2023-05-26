@@ -47,4 +47,10 @@ nicknames.steamid = players.steamid ORDER BY usage_count DESC LIMIT 1) as most_u
 JOIN maps ON courses.map_id = maps.id JOIN players ON runs.player_id = players.id WHERE maps.name = '%s' AND runs.time != 0 ORDER BY runs.time ASC LIMIT 500;";
 
 //requires %s/name
-new const sql_get_common_name[] = "SELECT nickname, usage_count FROM nicknames WHERE steamid = '%s' ORDER BY usage_count DESC LIMIT 10;"
+new const sql_get_common_name[] = "SELECT nickname, usage_count FROM nicknames WHERE steamid = '%s' ORDER BY usage_count DESC LIMIT 10;";
+
+//requires %s/mapname
+new const sql_updatemapflags[] = "UPDATE maps SET flags = %d WHERE name = '%s';"
+
+//requires %s/mapname
+new const sql_retrievemapflags[] = "SELECT flags FROM maps WHERE name = '%s';"

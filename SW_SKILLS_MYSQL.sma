@@ -58,6 +58,7 @@ public plugin_natives() {
     register_native("api_sql_insertlegacycps", "SQLNative_InsertLegacyCPs");
     register_native("api_sql_insertrun", "SQLNative_InsertRun");
     register_native("api_sql_reloadcourses", "SQLNative_ReloadCourses");
+    register_native("api_sql_updatemapflags", "SQLNative_UpdateMapFlags");
     register_library("sw_sql_skills");
 }
 
@@ -82,6 +83,32 @@ public plugin_unload()
 {
     ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
 }
+
+public SQLNative_UpdateMapFlags(iPlugin, iParams) {
+    new iFlags[1];
+    iFlags[0] = get_param(1);
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new szQuery[256]; formatex(szQuery, charsmax(szQuery), sql_insertmap, szMapname);
+    api_SQLAddThreadedQuery(szQuery, "Handle_UpdateMapFlags", QUERY_NOT_DISPOSABLE, PRIORITY_HIGHEST, iFlags, 1);
+}
+public Handle_UpdateMapFlags(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to update map flags: %s", sError);
+    }
+
+    new iFlags = 0;
+    if (iLen > 0) {
+        iFlags = Data[0];
+    }
+    new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
+    new szQuery[256]; formatex(szQuery, charsmax(szQuery), sql_updatemapflags, iFlags, szMapname);
+    api_SQLAddThreadedQuery(szQuery, "Handle_UpdateMapFlagsTWO", QUERY_NOT_DISPOSABLE, PRIORITY_HIGHEST);
+}
+public Handle_UpdateMapFlagsTWO(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to update map flags: %s", sError);
+    }
+}
 public SQLNative_ReloadCourses() {
     // set a task of 5 seconds to reload the courses
    // native set_task(Float:time, const function[], id = 0, const any:parameter[] = "", len = 0, const flags[] = "", repeat = 0);
@@ -101,7 +128,25 @@ public plugin_precache() {
 public sql_loadcourses() {
     new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
     new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_selectcourses, szMapname);
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCourses", QUERY_DISPOSABLE, PRIORITY_HIGHEST);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCourses", QUERY_NOT_DISPOSABLE, PRIORITY_HIGHEST);
+
+    new szQuery2[512]; formatex(szQuery2, charsmax(szQuery2), sql_retrievemapflags, szMapname);
+    api_SQLAddThreadedQuery(szQuery2, "Handle_QueryLoadMapFlags", QUERY_NOT_DISPOSABLE, PRIORITY_HIGHEST);
+}
+
+public Handle_QueryLoadMapFlags(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+        DebugPrintLevel(0, "Failed to load map flags: %s", sError);
+    }
+    new iFlags = 0;
+	if (SQL_NumResults(hQuery) > 0)									// check if we have any results and use first row
+	{	
+        if (SQL_FieldNameToNum(hQuery,"flags") >= 0) { iFlags = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"flags")); }
+
+    } else {
+        DebugPrintLevel(0, "No map flags found for current map");
+    }
+    api_process_mapflags(iFlags);
 }
 
 public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
@@ -137,7 +182,7 @@ public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data
 	}
 	new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_loadcps, szMapname);
-	api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCheckpoints", QUERY_DISPOSABLE, PRIORITY_HIGHEST);
+	api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadCheckpoints", QUERY_NOT_DISPOSABLE, PRIORITY_HIGHEST);
 }
 public Handle_QueryLoadCheckpoints(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
     if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
@@ -236,7 +281,7 @@ public sql_requestoldstats(id, id2) {
     //write_file("debug.txt", szQuery);
     g_bInRequest[id] = true;
     new sData[2]; sData[0] = id; sData[1] = id2;
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldStatsme", QUERY_DISPOSABLE, PRIORITY_NORMAL, sData, 2);  
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldStatsme", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, sData, 2);  
     client_print(id, print_console, g_szPleaseWait);    
 }
 public Handle_QueryOldStatsme(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
@@ -282,7 +327,7 @@ public cmd_oldtop5(id) {
     new szQuery[256]; formatex(szQuery, charsmax(szQuery), "SELECT nickNames, primaryRank,nFinnished FROM %s WHERE nFinnished>=100 ORDER BY primaryRank DESC LIMIT 10", szRunsTable);
     g_bInRequest[id] = true;
     new sData[2]; sData[0] = id; sData[1] = 1;
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
     client_print(id, print_console, g_szPleaseWait);
 
 }
@@ -291,14 +336,14 @@ public sql_getoldtop_highrank(id) {
     new szRunsTable[64]; get_pcvar_string(g_pCvarOldRanks, szRunsTable, charsmax(szRunsTable));
     new szQuery[256]; formatex(szQuery, charsmax(szQuery), "SELECT nickNames, primaryRank FROM %s ORDER BY `primaryRank` DESC LIMIT 10", szRunsTable);
     new sData[2]; sData[0] = id; sData[1] = 2;
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
 
 }
 public sql_getoldtop_mapcount(id) {
     new szRunsTable[64]; get_pcvar_string(g_pCvarOldRanks, szRunsTable, charsmax(szRunsTable));
     new szQuery[256]; formatex(szQuery, charsmax(szQuery), "SELECT * FROM %s ORDER BY `nFinnished` DESC LIMIT 10", szRunsTable);
     new sData[2]; sData[0] = id; sData[1] = 3;
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryOldTop5", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, sData, 2);
 }
 
 public Handle_QueryOldTop5(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent)
@@ -390,7 +435,7 @@ public SQLNative_InsertCourse(Data[]) {
     new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertcourse, szMapname, iCreatorID, szCourseName, szCourseDescription, bLegacy, iDifficulty, 1, iFlags);
     new szFinalQuery[1024]; formatex(szFinalQuery, charsmax(szFinalQuery), "%s %s", szPreQuery, szQuery);
     write_file("debug.txt", szFinalQuery);
-    api_SQLAddThreadedQuery(szFinalQuery, "Handle_QueryInsertCourse", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+    api_SQLAddThreadedQuery(szFinalQuery, "Handle_QueryInsertCourse", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 }   //http://database.gruk.io:9000/index.php
 public Handle_QueryInsertCourse(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent)
 {
@@ -410,7 +455,7 @@ public SQLNative_InsertLegacyCPs( Data[] ) {
     new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
     new Float:x, Float:y, Float:z; x = Buffer[mCP_fOrigin][0]; y = Buffer[mCP_fOrigin][1]; z = Buffer[mCP_fOrigin][2];
     new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertlegacycps, szMapname, x, y, z, Buffer[mCP_iType]);
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertLegacyCPs", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertLegacyCPs", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 }
 
 public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
@@ -428,7 +473,7 @@ public SQLNative_InsertRun(iPluign, iParams) {
     //requires %d/courseid %f/runtime %d/class %s/steamid
     //new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
     new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, szSteamID);
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 
     // check if run is the best run for this map
 
@@ -466,7 +511,7 @@ public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[]
 public sql_loadruns() {
     new szMapName[64]; get_mapname(szMapName, charsmax(szMapName));
     new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_getrunsformap, szMapName);
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadRuns", QUERY_DISPOSABLE, PRIORITY_NORMAL);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadRuns", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 }
 
 public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {

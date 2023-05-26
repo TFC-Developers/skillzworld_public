@@ -16,6 +16,7 @@
 #include "include/utils"
 
 
+new g_bBhopMode = false;
 new const BEAM_SPRITE[] = "sprites/laserbeam.spr"
 new g_Beamsprite = 0;
 new g_bPlayerNearby[33];
@@ -23,10 +24,12 @@ new g_bPlayerTempNoClip[33];
 new Float:g_fPlayerOrigin[33][3];
 new g_iPlayerTeam[33];
 new g_bPlayerFalling[33];
+new g_pCVAR_Bhop = 0;
 
 
 public plugin_precache() {
     precache_sound("ambience/thunder_clap.wav"); //used in stock_slay
+    precache_sound("player/plyrjmp8.wav"); //used in stock_slay
     g_Beamsprite = precache_model(BEAM_SPRITE); //used in cmd_tempnoclip
 
 }
@@ -44,6 +47,7 @@ public plugin_init() {
 
     register_clcmd("say /slaytest", "cmd_slaytest");
     set_task(0.5, "timer_FindEntityInSphere",_, _,_,"b");
+    set_task(2.0, "timer_checkcvar",_, _,_,"b");
 }
 
 
@@ -247,10 +251,34 @@ public timer_FindEntityInSphere()
   for (new i = 1; i <= get_maxplayers(); i++)
   {
         if (is_connected_user(i) && (pev(i, pev_team) >= 1 && pev(i, pev_team) <= 4)) {
+/*		if (pEntity->v.button & IN_JUMP) {
+			if ((pEntity->v.flags & FL_ONGROUND) && (pEntity->v.waterlevel < 2) && !(pEntity->v.flags & FL_WATERJUMP)) {
+				pEntity->v.velocity.z += 250;
 
-            // set player to not solid if not in temporary noclip
-            if (!g_bPlayerTempNoClip[i]) {
-                entity_set_int(i, EV_INT_solid, 5);
+				EMIT_SOUND(pEntity, CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM);
+				pEntity->v.gaitsequence = 6;
+
+			}
+		}
+	}*/
+
+                // set player to not solid if not in temporary noclip
+                if (!g_bPlayerTempNoClip[i]) {
+                    entity_set_int(i, EV_INT_solid, 5);
+
+                    //check if player is pressing the buttin IN_JUMP
+                    if ((pev(i, pev_button) & IN_JUMP) && g_bBhopMode) {
+                    //check if player is on ground
+                        if ((pev(i, pev_flags) & FL_ONGROUND) && (pev(i, pev_waterlevel) < 2) && !(pev(i, pev_flags) & FL_WATERJUMP)) {
+                            //add velocity to player
+                            new Float:vel[3];
+                            pev(i, pev_velocity, vel);
+                            vel[2] += 250;
+                            set_pev(i, pev_velocity, vel);
+                            emit_sound(i, CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, 100);
+                            set_pev(i, pev_gaitsequence, 6);
+                    }
+                }
             }
 
             g_bPlayerNearby[i] = false; // Reset the player nearby flag
@@ -274,3 +302,15 @@ public timer_FindEntityInSphere()
         }
     }
 }
+
+public timer_checkcvar() {
+    if (g_pCVAR_Bhop == 0) {
+        g_pCVAR_Bhop = get_cvar_pointer("sw_bhopmode");
+    }
+    if (get_pcvar_num(g_pCVAR_Bhop) >= 1) {
+        g_bBhopMode = true;
+    } else {
+        g_bBhopMode = false;
+    }
+}
+

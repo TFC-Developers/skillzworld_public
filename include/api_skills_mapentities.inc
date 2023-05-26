@@ -21,6 +21,9 @@
 #define SRFLAG_TEAMGREEN  (1<<3)
 
 
+#define MAPFLAG_SURFMODE (1<<0)
+#define MAPFLAG_BHOPMODE (1<<1)
+
 
 /* 
  * 	Structs
@@ -73,7 +76,8 @@ native api_registercheckpoint( Buffer[] );            //params: Buffer[] - check
 native api_spawnallcourses();                         //params: none  
 native api_get_course_mysqlid(id);                    //params: id - course id
 native api_get_number_courses();                      //params: none  
-native api_get_player_course(id);                            //params: id - player id
+native api_get_player_course(id);                     //params: id - player id
+native api_process_mapflags(flags);                   //params: flags - map flags
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */
