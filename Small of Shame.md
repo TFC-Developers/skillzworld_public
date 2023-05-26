@@ -35,6 +35,8 @@ The parameters have the wrong names, which belong to floatdiv.
 
 - [register_event](https://www.amxmodx.org/api/amxmodx/register_event) provides a workaround for a bug, leaving it unfixed.
 
+- [client_disconnect](https://www.amxmodx.org/api/amxmodx/client_disconnect) has been deprecated [since 2015](https://github.com/alliedmodders/amxmodx/commit/ed4faf7c114495db7426023c2b47914523fcdfd1) and will never be removed.
+
 ### Bad documentation
 The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
 
