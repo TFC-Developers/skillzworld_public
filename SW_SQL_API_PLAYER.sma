@@ -101,7 +101,7 @@ public sql_insertserverlog_data(id, action_type[], data[]) {
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
 	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 }
-public client_disconnected(id) {
+public client_disconnect(id) {
 
 	new Buffer[ePlayerStruct_t];
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)
@@ -109,9 +109,10 @@ public client_disconnected(id) {
 		ArrayGetArray(g_PlayerData, i, Buffer);
 		if (Buffer[mPD_iPlayerID] == id) { 
 			DebugPrintLevel(0,"Removing player %d from array at index %d", id, i);
+			ArrayDeleteItem(g_PlayerData, i);
 		 }
 		 //remove his data from the array
-		ArrayDeleteItem(g_PlayerData, i);
+
 	}
 	sql_insertserverlog(id,"disconnect");																			//log player disconnect
 	
@@ -223,8 +224,7 @@ public task_increase_playtime() {
 	new Buffer[ePlayerStruct_t];																	//create buffer
 	new Float:fPlayTime;																			//create float for playtime
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)												//cycle through all players
-	{
-		if (!is_connected_user(i)) continue;														//skip if not connected
+	{																			
 		ArrayGetArray(g_PlayerData, i, Buffer);														//get playerdata from array
 		//DebugPrintLevel(0,"Player connected at %f", Buffer[mPD_ftLastPTUpdate]);					//debug
 		fPlayTime = floatsub(get_gametime(),Buffer[mPD_ftLastPTUpdate]);							//get playtime since last update

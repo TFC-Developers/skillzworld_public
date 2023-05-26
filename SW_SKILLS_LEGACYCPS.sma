@@ -30,7 +30,6 @@ new g_iModelID;                                            // model id of the go
 new g_bWorldSpawned;                                       // true if the worldspawn entity has been spawned
 new g_iPlayerInCourse[32];                                 //array to store the player's course id
 new g_iLegacyCourse = -1;                                  //course id of the legacy course
-new g_bHopMode = false;                                    //true if the map is in bhop mode
 new g_iCvarBhopmode;                                   // Cvar for the bhopmode
 
 /* 
@@ -106,7 +105,9 @@ public Native_ProcessMapFlags(iPlugin, iParams) {
     }
 
     if (iFlags & MAPFLAG_BHOPMODE) {
-        g_bHopMode = true;
+        set_pcvar_num(g_iCvarBhopmode, 1);
+    } else {
+        set_pcvar_num(g_iCvarBhopmode, 0);
     }
 }
 //called by mysql plugin after the database has been loaded

@@ -216,6 +216,21 @@ public Hook_PlayerPreThink(id) {
     } else {
         g_bPlayerFalling[id] = false;
     }
+    //check if player is pressing the buttin IN_JUMP
+    if ((pev(id, pev_button) & IN_JUMP) && g_bBhopMode) {
+    //check if player is on ground
+        if ((pev(id, pev_flags) & FL_ONGROUND) && (pev(id, pev_waterlevel) < 2) && !(pev(id, pev_flags) & FL_WATERJUMP)) {
+            //add velocity to player
+            /*new Float:vel[3];
+            pev(id, pev_velocity, vel);
+            vel[2] += 250.0;
+            set_pev(id, pev_velocity, vel);
+            emit_sound(id, CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, 100);
+            set_pev(id, pev_gaitsequence, 6);*/
+            //remove from EV_INT_oldbuttons the flag IN_JUMP
+            entity_set_int(id, EV_INT_oldbuttons, entity_get_int(id, EV_INT_oldbuttons) & ~IN_JUMP);
+    }
+}
 
 }
 
@@ -251,34 +266,12 @@ public timer_FindEntityInSphere()
   for (new i = 1; i <= get_maxplayers(); i++)
   {
         if (is_connected_user(i) && (pev(i, pev_team) >= 1 && pev(i, pev_team) <= 4)) {
-/*		if (pEntity->v.button & IN_JUMP) {
-			if ((pEntity->v.flags & FL_ONGROUND) && (pEntity->v.waterlevel < 2) && !(pEntity->v.flags & FL_WATERJUMP)) {
-				pEntity->v.velocity.z += 250;
 
-				EMIT_SOUND(pEntity, CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM);
-				pEntity->v.gaitsequence = 6;
 
-			}
-		}
-	}*/
 
                 // set player to not solid if not in temporary noclip
                 if (!g_bPlayerTempNoClip[i]) {
                     entity_set_int(i, EV_INT_solid, 5);
-
-                    //check if player is pressing the buttin IN_JUMP
-                    if ((pev(i, pev_button) & IN_JUMP) && g_bBhopMode) {
-                    //check if player is on ground
-                        if ((pev(i, pev_flags) & FL_ONGROUND) && (pev(i, pev_waterlevel) < 2) && !(pev(i, pev_flags) & FL_WATERJUMP)) {
-                            //add velocity to player
-                            new Float:vel[3];
-                            pev(i, pev_velocity, vel);
-                            vel[2] += 250;
-                            set_pev(i, pev_velocity, vel);
-                            emit_sound(i, CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, 100);
-                            set_pev(i, pev_gaitsequence, 6);
-                    }
-                }
             }
 
             g_bPlayerNearby[i] = false; // Reset the player nearby flag

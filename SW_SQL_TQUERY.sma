@@ -353,7 +353,7 @@ GetQueryIndexByIdent(iIdent)
 	return -1
 }
 
-public api_ScreenMessage(sBuffer[], iSize)
+public fwd_ScreenMessage(sBuffer[], iSize)
 {
 	formatex(sBuffer, iSize, "Since mapchange we've executed %d queries on the SQL database!", g_iTotalQueryCount)
 }
