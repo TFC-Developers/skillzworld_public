@@ -36,7 +36,7 @@ public plugin_unload()
 }
 
 public Handle_GetCommonname(iPluign, iParams) {
-    new id = get_param(1); 													// Get the first parameter
+	new id = get_param(1); 													// Get the first parameter
 	new szSteamID[64]; get_user_authid(id, szSteamID, charsmax(szSteamID));	// Get the player's authid
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_get_common_name, szSteamID);	// Create the query string INSERT
 	new Data[1]; Data[0] = id;													// Create the data array to pass to the query which contains the player's id
@@ -101,7 +101,7 @@ public sql_insertserverlog_data(id, action_type[], data[]) {
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
 	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 }
-public client_disconnect(id) {
+public client_disconnected(id) {
 
 	new Buffer[ePlayerStruct_t];
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)
@@ -282,7 +282,7 @@ public Handle_Say(id) {
 	//dont log commands beginning with /
 	if (szMSG[0] == '/') { return PLUGIN_CONTINUE; }
 	sql_insertserverlog_data(id, "say", szMSG);
-
+	return PLUGIN_CONTINUE
 }
 
 public sql_updatenickname(id) {

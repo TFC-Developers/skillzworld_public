@@ -9,7 +9,7 @@ new ls_dot, fire, white, sprSmoke, sprLightning, sprBflare, sprRflare, sprGflare
 
 public plugin_init()
 {
-    RegisterPlugin();
+	RegisterPlugin();
 	register_think("sw_idle_fireworks","fireworks_think");
 	register_think("sw_firework","fireworks_think");
 
@@ -19,8 +19,8 @@ public plugin_init()
 }
 
 public plugin_natives() {
-    register_native("api_firework", "HandleFirework");
-    register_library("sw_effects");
+	register_native("api_firework", "HandleFirework");
+	register_library("sw_effects");
 }
 
 
@@ -39,7 +39,6 @@ public plugin_precache() {
 
 	if (file_exists("sound/fireworks/rocket1.wav")) {
 		precache_sound("fireworks/rocket1.wav")
-
 	} else {
 
 	}
@@ -123,7 +122,7 @@ public fireworks_spawn(id,type[],effects[]) {
 
 	dllfunc(DLLFunc_Spawn,Ent)
 
-    new r,g,b;
+	new r,g,b;
 	r = random_num(0,255)
 	g = random_num(0,255)
 	b = random_num(0,255)
@@ -152,6 +151,7 @@ public fireworks_spawn(id,type[],effects[]) {
 	set_pev(Ent,pev_movetype,5)
 
 	message_begin(MSG_BROADCAST, SVC_TEMPENTITY)
+	{
 		write_byte(22)
 		write_short(Ent)
 		write_short(sprSmoke)
@@ -161,6 +161,7 @@ public fireworks_spawn(id,type[],effects[]) {
 		write_byte(g)
 		write_byte(b)
 		write_byte(255)
+	}
 	message_end()
 
  	new Float:vVelocity[3]

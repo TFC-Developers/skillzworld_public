@@ -77,7 +77,7 @@ public client_putinserver(id) {
     set_task(4.0, "set_player_course", id);
     set_player_course(id, g_iLegacyCourse);
 }
-public client_disconnect(id) {
+public client_disconnected(id) {
     g_iPlayerInCourse[id] = -1;
 }
 
@@ -427,7 +427,7 @@ public Native_SpawnAllCourses() {
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
 
-        if (Buffer[mC_bLegacy] == 1) {
+        if (Buffer[mC_bLegacy]) {
             g_iLegacyCourse = Buffer[mC_iCourseID];
 
         } 
@@ -647,15 +647,15 @@ public debug_list_all_cps_in_world() {
 
 
 public internal_register_cp( Buffer[eCheckPoints_t] ) {
-      new CourseBuffer[eCourseData_t];                                    // temp array to store the course data
-    new iCount = ArraySize(g_Courses);                                  // get the number of courses
-    for (new i; i < iCount; i++) {                                      // loop through all courses
-        ArrayGetArray(g_Courses, i, CourseBuffer);                      // get the course data^
-        if (CourseBuffer[mC_sqlCourseID] == Buffer[mCP_sqlCourseID]) {     // if the sql course id matches
-            Buffer[mCP_iCourseID] = CourseBuffer[mC_iCourseID];          // set the internal course id
-        }
-    }
-    g_iCPCount++;
-    Buffer[mCP_iID] = g_iCPCount;
-    ArrayPushArray(g_Checkpoints, Buffer);
+	new CourseBuffer[eCourseData_t];                                    // temp array to store the course data
+	new iCount = ArraySize(g_Courses);                                  // get the number of courses
+	for (new i; i < iCount; i++) {                                      // loop through all courses
+		ArrayGetArray(g_Courses, i, CourseBuffer);                      // get the course data^
+		if (CourseBuffer[mC_sqlCourseID] == Buffer[mCP_sqlCourseID]) {     // if the sql course id matches
+			Buffer[mCP_iCourseID] = CourseBuffer[mC_iCourseID];          // set the internal course id
+		}
+	}
+	g_iCPCount++;
+	Buffer[mCP_iID] = g_iCPCount;
+	ArrayPushArray(g_Checkpoints, Buffer);
 }
