@@ -957,6 +957,7 @@ public menu_extras_clicked(id, menu, item) {
             set_pev(id, pev_takedamage, DAMAGE_AIM);
             stock_slay(id);
             reset_struct(id);
+            dllfunc(DLLFunc_Spawn, id);
 
         }
         case 4: //tp to start
