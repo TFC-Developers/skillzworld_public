@@ -152,17 +152,18 @@ DisplayMessage(sMessage[])
 {
 	// Get a VALID random colour from the FM_COLOUR_API plugin
 	new iColours[3]; 
-    iColours[0] = random_num(0, 255);
-    iColours[1] = random_num(0, 255);
-    iColours[2] = random_num(0, 255);
+	iColours[0] = random_num(0, 255);
+	iColours[1] = random_num(0, 255);
+	iColours[2] = random_num(0, 255);
 		
 	set_hudmessage(iColours[0], iColours[1], iColours[2], 
-	-1.0,  0.01, 	// Hud position
-	2, 1.0, 	// Effect & Effect delay
-	10.0, 		// Holdtime
-	0.03, 		// Fade In Time
-	1.0, 		// Fade Out Time
-	get_pcvar_num(g_pCvarMessageHudChannel)) // HudChannel to use
+		-1.0,  0.01, 	// Hud position
+		2, 1.0, 	// Effect & Effect delay
+		10.0, 		// Holdtime
+		0.03, 		// Fade In Time
+		1.0, 		// Fade Out Time
+		get_pcvar_num(g_pCvarMessageHudChannel) // HudChannel to use
+	)
 		
 	show_hudmessage(0, sMessage)
 	client_print(0, print_console, sMessage)

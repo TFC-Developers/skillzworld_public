@@ -882,31 +882,31 @@ stock SkillsEffectGoalTouch(id, bool:speedrun, model_lightning, model_flare)
 
 //add a menu /extras which is available as soon as the player finishes the map
 public menu_extras_deploy(id) {
-    //check if he finished the map if not return
-    if (!g_sPlayerData[id][m_bCourseFinished]) {
-        client_print(id, print_chat, "* You have to finish the map first!");
-        return;
-    }
-  new szHeader[128];
-  formatex(szHeader, charsmax(szHeader), "\\yCongrats!\nChoose your goodies\n");
-  new menu = menu_create(szHeader, "menu_extras_clicked");
-  //gray string if player is in noclip
-  if (pev(id,pev_movetype) & MOVETYPE_NOCLIP) {
-    menu_additem(menu,"Noclip off","1")
-  } else {
-    menu_additem(menu,"\\dNoclip on","1");
-  } 
-
-  if (g_sPlayerData[id][m_bXtraSJ]) {
-    menu_additem(menu,"Superjump off","2");
-  } else {
-    menu_additem(menu,"\\dSuperjump on","2");
-  }
-  menu_additem(menu, "TP to start","4");
-  menu_additem(menu, "TP to end","5");
-  menu_additem(menu, "Cycle through checkpoints","6");
-  menu_additem(menu,"\\rPrepare for new run (slayme)","3");
-  menu_display(id, menu);
+	//check if he finished the map if not return
+	if (!g_sPlayerData[id][m_bCourseFinished]) {
+		client_print(id, print_chat, "* You have to finish the map first!");
+		return;
+	}
+	new szHeader[128];
+	formatex(szHeader, charsmax(szHeader), "\\yCongrats!\nChoose your goodies\n");
+	new menu = menu_create(szHeader, "menu_extras_clicked");
+	//gray string if player is in noclip
+	if (pev(id,pev_movetype) & MOVETYPE_NOCLIP) {
+		menu_additem(menu,"Noclip off","1")
+	} else {
+		menu_additem(menu,"\\dNoclip on","1");
+	} 
+	
+	if (g_sPlayerData[id][m_bXtraSJ]) {
+	menu_additem(menu,"Superjump off","2");
+	} else {
+		menu_additem(menu,"\\dSuperjump on","2");
+	}
+	menu_additem(menu, "TP to start","4");
+	menu_additem(menu, "TP to end","5");
+	menu_additem(menu, "Cycle through checkpoints","6");
+	menu_additem(menu,"\\rPrepare for new run (slayme)","3");
+	menu_display(id, menu);
 }
 
 
@@ -978,7 +978,7 @@ public menu_extras_clicked(id, menu, item) {
                 return PLUGIN_HANDLED;
             }
             new Float:fOrigin[3];                                           //create a new origin vector
-	        pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+            pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
             fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
             CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
             entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
@@ -1003,7 +1003,7 @@ public menu_extras_clicked(id, menu, item) {
                 return PLUGIN_HANDLED;
             }
             new Float:fOrigin[3];                                           //create a new origin vector
-	        pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
+            pev(eSearch, pev_origin, fOrigin);                              //get the origin of the cp
             fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
             CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
             entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
@@ -1063,16 +1063,15 @@ public Hook_PlayerPreThink(id) {
 		}
 	}
 */
-     if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id,pev_flags) & FL_ONGROUND) && (pev(id,pev_button) & IN_ATTACK2)) {
+    if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id,pev_flags) & FL_ONGROUND) && (pev(id,pev_button) & IN_ATTACK2)) {
         new Float:vec[3];
         pev(id, pev_angles,vec);
         //stock xs_anglevectors(const Float:angles[3], Float:fwd[3], Float:right[3], Float:up[3])
-        new Float:fwd[3], right[3], up[3];
+        new Float:fwd[3], Float:right[3], Float:up[3];
         xs_anglevectors(vec, fwd, right, up);
-        fwd[0] = fwd[0] * 1200;
-        fwd[1] = fwd[1] * 1200;
-        fwd[2] = fwd[2] * 1200;
+        fwd[0] = fwd[0] * 1200.0;
+        fwd[1] = fwd[1] * 1200.0;
+        fwd[2] = fwd[2] * 1200.0;
         set_pev(id, pev_velocity, fwd);
-     }     
-
+    }
 }

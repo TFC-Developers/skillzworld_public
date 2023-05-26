@@ -260,40 +260,29 @@ public Hook_AddToFullPack(es_handle, e, ent, host, hostflags, player, pSet){
 
 public timer_FindEntityInSphere()
 {
-  static Float:origin[3];
-  static class[32];
-  static ent;
-  for (new i = 1; i <= get_maxplayers(); i++)
-  {
-        if (is_connected_user(i) && (pev(i, pev_team) >= 1 && pev(i, pev_team) <= 4)) {
-
-
-
-                // set player to not solid if not in temporary noclip
-                if (!g_bPlayerTempNoClip[i]) {
-                    entity_set_int(i, EV_INT_solid, 5);
-            }
-
-            g_bPlayerNearby[i] = false; // Reset the player nearby flag
-            ent = -1;                   // Reset the entity index
-            pev(i, pev_origin, origin); // Get the player origin
-            while((ent = engfunc(EngFunc_FindEntityInSphere, ent, origin, 150.0)))
-            {
-                // We don't want our own entity
-                if(ent == i)
-                    continue;
-                
-                pev(ent, pev_classname, class, charsmax(class)); // Get the entity classname
-
-                if(equal(class, "player") && pev(ent, pev_team) >= 1 && pev(ent, pev_team) <= 4) // Check if the entity is a player
-                {                    
-                    g_bPlayerNearby[i] = true;
-                    break;
-                }
-
-            }
-        }
-    }
+	static Float:origin[3];
+	static class[32];
+	static ent;
+	for (new i = 1; i <= get_maxplayers(); i++) {
+		if (is_connected_user(i) && 1 <= pev(ent, pev_team) <= 4) {
+			// set player to not solid if not in temporary noclip
+			if (!g_bPlayerTempNoClip[i]) {
+				entity_set_int(i, EV_INT_solid, 5);
+			}
+			
+			g_bPlayerNearby[i] = false; // Reset the player nearby flag
+			ent = -1;                   // Reset the entity index
+			pev(i, pev_origin, origin); // Get the player origin
+			while((ent = engfunc(EngFunc_FindEntityInSphere, ent, origin, 150.0))) {
+				if (ent == i) continue; // We don't want our own entity
+				pev(ent, pev_classname, class, charsmax(class)); // Get the entity classname
+				if(equal(class, "player") && 1 <= pev(ent, pev_team) <= 4) { // Check if the entity is a player
+					g_bPlayerNearby[i] = true;
+					break;
+				}
+			}
+		}
+	}
 }
 
 public timer_checkcvar() {

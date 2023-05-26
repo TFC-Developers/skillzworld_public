@@ -50,22 +50,16 @@ ReadFactFile()
 
 public fwd_ScreenMessage(sBuffer[], iSize)
 {
-	if (!g_iMessageCount)
-	{
+	if (!g_iMessageCount) {
 		// Error handling needs to be added to FM_MESSAGE.amxx
 		formatex(sBuffer, iSize, "")
 		return PLUGIN_HANDLED	
 	}
-
-    new iSize = ArraySize(g_MessageList);
-	if (iSize == 0)
-	{
-        return PLUGIN_HANDLED;
-	}
-    new iRand = random(g_iMessageCount);
+	new iSize = ArraySize(g_MessageList);
+	if (iSize == 0) return PLUGIN_HANDLED;
+	
+	new iRand = random(g_iMessageCount);
 	ArrayGetString(g_MessageList, iRand, sBuffer, iSize);
-    ArrayDeleteItem(g_MessageList, iRand);
-
-
+	ArrayDeleteItem(g_MessageList, iRand);
 	return PLUGIN_HANDLED
 }

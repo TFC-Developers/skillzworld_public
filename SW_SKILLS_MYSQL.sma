@@ -68,13 +68,13 @@ public plugin_init()
 	register_clcmd("say /oldtop5", "cmd_oldtop5");                              // Shows the old top5
 	register_clcmd("say /oldstatsme", "cmd_oldstatsme");                        // Shows the old stats of the player
 	register_clcmd("say /oldstats", "menu_deploy");                             // Shows the old stats menu
-    register_clcmd("say /debugeffect", "cmd_effect");                               // Shows the old top menu
+	register_clcmd("say /debugeffect", "cmd_effect");                               // Shows the old top menu
 	register_clcmd("say", "Handle_Say");                                        // Handle the say command
 	register_clcmd("say_team", "Handle_Say");                                   // Handle the say_team command
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
 	g_pCvarOldRuns = register_cvar("sw_sqloldruns", "climb_oldrunstable")       // Cvar for the old runs table
-    g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
-    g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
+	g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
+	g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
 }  
 public cmd_effect(id) {
     api_firework(id,5);
@@ -135,18 +135,16 @@ public sql_loadcourses() {
 }
 
 public Handle_QueryLoadMapFlags(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
-    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
-        DebugPrintLevel(0, "Failed to load map flags: %s", sError);
-    }
-    new iFlags = 0;
-	if (SQL_NumResults(hQuery) > 0)									// check if we have any results and use first row
-	{	
-        if (SQL_FieldNameToNum(hQuery,"flags") >= 0) { iFlags = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"flags")); }
-
-    } else {
-        DebugPrintLevel(0, "No map flags found for current map");
-    }
-    api_process_mapflags(iFlags);
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+		DebugPrintLevel(0, "Failed to load map flags: %s", sError);
+	}
+	new iFlags = 0;
+	if (SQL_NumResults(hQuery) > 0) {	
+		if (SQL_FieldNameToNum(hQuery,"flags") >= 0) { iFlags = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"flags")); }
+	} else {
+		DebugPrintLevel(0, "No map flags found for current map");
+	}
+	api_process_mapflags(iFlags);
 }
 
 public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
@@ -154,18 +152,18 @@ public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data
 		DebugPrintLevel(0, "Failed to insert course into database: %s", sError);
 	}
 	new Buffer[eCourseData_t];
-    if (SQL_NumResults(hQuery) == 0) {
-        //no courses... call the api function to load the cps from file
-        api_legacycheck();
-        return;
-    }
+	if (SQL_NumResults(hQuery) == 0) {
+		//no courses... call the api function to load the cps from file
+		api_legacycheck();
+		return;
+	}
 	while (SQL_MoreResults(hQuery)) {
 		if (SQL_FieldNameToNum(hQuery,"id") >= 0) { Buffer[mC_sqlCourseID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"id")); }
 		if (SQL_FieldNameToNum(hQuery,"creator_id") >= 0) { Buffer[mC_iCreatorID] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"creator_id")); }
 		if (SQL_FieldNameToNum(hQuery,"name") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"name"), Buffer[mC_szCourseName], charsmax(Buffer[mC_szCourseName])); }
 		if (SQL_FieldNameToNum(hQuery,"description") >= 0) { SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"description"), Buffer[mC_szCourseDescription], charsmax(Buffer[mC_szCourseDescription])); }
 		if (SQL_FieldNameToNum(hQuery,"legacy") >= 0) { Buffer[mC_bLegacy] = bool:SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"legacy")); }
-        if (Buffer[mC_bLegacy]) { g_bLegacyFound = true; }
+		if (Buffer[mC_bLegacy]) { g_bLegacyFound = true; }
 		if (SQL_FieldNameToNum(hQuery,"difficulty") >= 0) { Buffer[mC_iDifficulty] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"difficulty")); }
 		if (SQL_FieldNameToNum(hQuery,"active") >= 0) { Buffer[mC_bSQLActive] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"active")); }
 		if (SQL_FieldNameToNum(hQuery,"flags") >= 0) { Buffer[mC_iFlags] = SQL_ReadResult(hQuery, SQL_FieldNameToNum(hQuery,"flags")); }
@@ -177,7 +175,6 @@ public Handle_QueryLoadCourses(iFailState, Handle:hQuery, sError[], iError, Data
 			Buffer[mC_szCreated_at], Buffer[mC_iCreatorID], Buffer[mC_szCreatorName]
 		);
 		api_registercourse(Buffer);
-		
 		SQL_NextRow(hQuery);
 	}
 	new szMapname[64]; get_mapname(szMapname, charsmax(szMapname));
@@ -466,34 +463,33 @@ public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, 
     return PLUGIN_HANDLED;
 }
 public SQLNative_InsertRun(iPluign, iParams) {
-    new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3); new iCpsUsed = get_param(4);
-    if (course <= 0) { DebugPrintLevel(0,"SQLNative_InsertRun <= 0 exception (course was %d)", course); return; }
-    new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
-    new iClass = pev(id,pev_playerclass);
-    //requires %d/courseid %f/runtime %d/class %s/steamid
-    //new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
-    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, szSteamID);
-    api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
+	new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3); new iCpsUsed = get_param(4);
+	if (course <= 0) { DebugPrintLevel(0,"SQLNative_InsertRun <= 0 exception (course was %d)", course); return; }
+	new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
+	new iClass = pev(id,pev_playerclass);
+	//requires %d/courseid %f/runtime %d/class %s/steamid
+	//new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
+	new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, szSteamID);
+	api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 
-    // check if run is the best run for this map
+	// check if run is the best run for this map
 
-    new bool:bIsBestRun = false;
-    if (ArraySize(g_TopList) == 0) { bIsBestRun = true; }
-    else if (fTime > 0.0) {
-        new Buffer[eSpeedTop_t]; ArrayGetArray(g_TopList,0,Buffer);
-        new Float:fBestTime = Buffer[m_fTime];
-        if (fTime < fBestTime) { bIsBestRun = true; }
-    }
+	new bool:bIsBestRun = false;
+	if (ArraySize(g_TopList) == 0) { bIsBestRun = true; }
+	else if (fTime > 0.0) {
+		new Buffer[eSpeedTop_t]; ArrayGetArray(g_TopList,0,Buffer);
+		new Float:fBestTime = Buffer[m_fTime];
+		if (fTime < fBestTime) { bIsBestRun = true; }
+	}
 
-    if (bIsBestRun) {
-        // announce to server
-        new szPlayerName[32]; get_user_name(id, szPlayerName, charsmax(szPlayerName));
+	if (bIsBestRun) { // announce to server
+		new szPlayerName[32]; get_user_name(id, szPlayerName, charsmax(szPlayerName));
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
-        new szMessage[128]; formatex(szMessage, charsmax(szMessage), "New record by %s with a time of %s!",  szPlayerName, sTime);
-        client_print(0, print_chat, szMessage);
-        client_cmd(0,"play %s",RECORD_SOUND);
-        api_firework(id, 3);
-    }
+		new szMessage[128]; formatex(szMessage, charsmax(szMessage), "New record by %s with a time of %s!",  szPlayerName, sTime);
+		client_print(0, print_chat, szMessage);
+		client_cmd(0,"play %s",RECORD_SOUND);
+		api_firework(id, 3);
+	}
 
 }
 public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
@@ -501,7 +497,7 @@ public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[]
         DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
     }
     //reload the top list
-    g_TopList = ArrayDestroy(g_TopList);
+    ArrayDestroy(g_TopList);
     g_TopList = ArrayCreate(eSpeedTop_t);
     g_iTopCount = 0;
     sql_loadruns();
@@ -515,42 +511,40 @@ public sql_loadruns() {
 }
 
 public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
-    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
-        DebugPrintLevel(0, "Failed to load runs: %s", sError);
-    }
-    new Buffer[eSpeedTop_t];
-    g_iTopCount = 0;    // plugin is now ready to process requests
-    /*eSpeedTop_t*/
-	while(SQL_MoreResults(hQuery))
-	{
-        
-        new iFieldNumSteamID = SQL_FieldNameToNum(hQuery,"steamid");
-        new iFieldNumTime = SQL_FieldNameToNum(hQuery,"time");
-        new iFieldNumClass = SQL_FieldNameToNum(hQuery,"player_class");
-        new iFieldNumNickname = SQL_FieldNameToNum(hQuery,"most_used_nickname");
-        new iFieldNumCourseID = SQL_FieldNameToNum(hQuery,"course_id");
-        new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
-        new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
-        new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
-        if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
-            DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
-            return PLUGIN_HANDLED;
-        }
-        //now load the data into the struct
-        Buffer[m_iTopPlayerIdent] = SQL_ReadResult(hQuery, iFieldNumPlayerID);
-        SQL_ReadResult(hQuery, iFieldNumSteamID, Buffer[m_sTopPlayerAuthid], charsmax(Buffer[m_sTopPlayerAuthid]));
-        SQL_ReadResult(hQuery, iFieldNumNickname, Buffer[m_sTopPlayerName], charsmax(Buffer[m_sTopPlayerName]));
-        SQL_ReadResult(hQuery, iFieldNumTime,Buffer[m_fTime]);
-        Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
-        SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
-        Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
-        //now add the run to the list
-        ArrayPushArray(g_TopList, Buffer);
-        g_iTopCount++;
-        SQL_NextRow(hQuery);
-    }
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+		DebugPrintLevel(0, "Failed to load runs: %s", sError);
+	}
+	new Buffer[eSpeedTop_t];
+	g_iTopCount = 0;    // plugin is now ready to process requests
+	/*eSpeedTop_t*/
+	while(SQL_MoreResults(hQuery)) {
+		new iFieldNumSteamID = SQL_FieldNameToNum(hQuery,"steamid");
+		new iFieldNumTime = SQL_FieldNameToNum(hQuery,"time");
+		new iFieldNumClass = SQL_FieldNameToNum(hQuery,"player_class");
+		new iFieldNumNickname = SQL_FieldNameToNum(hQuery,"most_used_nickname");
+		new iFieldNumCourseID = SQL_FieldNameToNum(hQuery,"course_id");
+		new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
+		new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
+		new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
+		if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
+			DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
+			return PLUGIN_HANDLED;
+		}
+		//now load the data into the struct
+		Buffer[m_iTopPlayerIdent] = SQL_ReadResult(hQuery, iFieldNumPlayerID);
+		SQL_ReadResult(hQuery, iFieldNumSteamID, Buffer[m_sTopPlayerAuthid], charsmax(Buffer[m_sTopPlayerAuthid]));
+		SQL_ReadResult(hQuery, iFieldNumNickname, Buffer[m_sTopPlayerName], charsmax(Buffer[m_sTopPlayerName]));
+		SQL_ReadResult(hQuery, iFieldNumTime,Buffer[m_fTime]);
+		Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
+		SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
+		Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
+		//now add the run to the list
+		ArrayPushArray(g_TopList, Buffer);
+		g_iTopCount++;
+		SQL_NextRow(hQuery);
+	}
 
-    return PLUGIN_HANDLED;
+	return PLUGIN_HANDLED;
 }
 
 //modified from fm / benwatch
@@ -576,19 +570,15 @@ public ShowTop(id, iStart)
 	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
 
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
-	for(new i = iStart; i < iEnd; i++) 
-	{
+	for(new i = iStart; i < iEnd; i++) {
 		ArrayGetArray(g_TopList, i, TopInfo)
-        new Float:fTime = TopInfo[m_fTime];
+		new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
 	}
 
-	if (iEnd != g_iTopCount)
-		send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d", iPos, MAX_MOTD_RANKS)
-
+	if (iEnd != g_iTopCount) send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d", iPos, MAX_MOTD_RANKS)
 	display_motd(id, "Speedrun Ranks")
-	
 	return
 }
 
@@ -624,10 +614,9 @@ public ShowMapstats(id) {
         }
         if (equal(Buffer[m_sTopPlayerAuthid], szSteamID)) {
             iNumCompletedCourses++;
-
             if (iNumCompletedCourses == 1) {
                 new Float:fTime = Buffer[m_fTime];
-		        new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+                new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
                 send_motd(id, "\nYour best time on this map is: %s (%s) currently we only have legacy courses enabled.\n", sTime, Buffer[m_CreatedAt]);
             }
         }
@@ -645,35 +634,26 @@ public Handle_Say(id)
 	new sArgs[192]; read_args(sArgs, charsmax(sArgs))
 	remove_quotes(sArgs)
 	
-	if (!sArgs[0])
+	if (!sArgs[0]) {
 		return PLUGIN_HANDLED
-
-     if (equali(sArgs, "/top", 4)) 
-	{			
-		if (sArgs[4] == ' ')
-		{
+	} else if (equali(sArgs, "/top", 4)) {			
+		if (sArgs[4] == ' ') {
 			ShowTop(id, str_to_num(sArgs[5]) - 1)
 			return PLUGIN_HANDLED
-		}
-		else if (!sArgs[4])
-		{	
+		} else if (!sArgs[4]) {	
 			ShowTop(id, 0)
 			return PLUGIN_HANDLED
 		}
+	} else if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) {			
+		ShowMapstats(id);
+		return PLUGIN_HANDLED
+	} else if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) {	
+		new iInCourse = api_get_player_course(id);		
+		new iDiff = api_get_mapdifficulty(iInCourse);
+		new szCourseName[64]; api_get_coursename(iInCourse, szCourseName, charsmax(szCourseName));
+		new szString[128]; formatex(szString, charsmax(szString), "* The difficulty for the course [%s] is %d", szCourseName, iDiff);
+		client_print(id, print_chat, szString);
+		return PLUGIN_HANDLED
 	}
-    if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) 
-    {			
-        ShowMapstats(id);
-        return PLUGIN_HANDLED
-    }
-    if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) 
-    {	
-        new iInCourse = api_get_player_course(id);		
-        new iDiff = api_get_mapdifficulty(iInCourse);
-        new szCourseName[64]; api_get_coursename(iInCourse, szCourseName, charsmax(szCourseName));
-        new szString[128]; formatex(szString, charsmax(szString), "* The difficulty for the course [%s] is %d", szCourseName, iDiff);
-        client_print(id, print_chat, szString);
-        return PLUGIN_HANDLED
-    }
 	return PLUGIN_CONTINUE
 }
