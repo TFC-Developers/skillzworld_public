@@ -79,7 +79,7 @@ public plugin_init()
 public cmd_effect(id) {
     api_firework(id,5);
 }
-public plugin_unload()
+public plugin_end()
 {
     ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
 }

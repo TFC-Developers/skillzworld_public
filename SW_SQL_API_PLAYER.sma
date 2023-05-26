@@ -23,7 +23,7 @@ public plugin_init()
 	register_forward(FM_ClientUserInfoChanged, "Forward_ClientUserInfoChanged") //register forward ClientUserInfoChanged
 }
 
-public plugin_unload() 
+public plugin_end() 
 {
 	task_increase_playtime();												//increase playtime in database before unloading
 	ArrayDestroy(g_PlayerData);												//destroy global array of playerdata
@@ -101,7 +101,7 @@ public sql_insertserverlog_data(id, action_type[], data[]) {
 	new Data[1]; Data[0] = id;																				// Create the data array to pass to the query which contains the player's id
 	api_SQLAddThreadedQuery(szQuery,"Handle_ServerLog", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL, Data, 1);		// Add the query to the queue
 }
-public client_disconnected(id) {
+public client_disconnect(id) {
 
 	new Buffer[ePlayerStruct_t];
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)

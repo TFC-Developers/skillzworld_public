@@ -60,8 +60,10 @@ public plugin_init() {
     register_clcmd("say /reset", "menu_resetconsent");
     register_clcmd("say /r", "menu_resetconsent");
     register_clcmd("say /load", "pub_loadlastcp");
+    register_clcmd("say_team /load", "pub_loadlastcp");
     register_clcmd("say load", "pub_loadlastcp");
     register_clcmd("say /l", "pub_loadlastcp");
+    register_clcmd("say_team /l", "pub_loadlastcp"); 
     register_clcmd("say /undo", "pub_undo");
     register_clcmd("say /u", "pub_undo");
     register_clcmd("say /stop", "pub_stoprun");
@@ -198,7 +200,7 @@ public pub_mapcps(id) {
     //return if not in customcps mode
     if (!g_sPlayerData[id][m_bOwnCPs]) {
         client_print(id, print_chat, "* You are not in custom cps mode. Save at least one custom cp (say /s) to enter this mode.");
-        return;
+        return PLUGIN_HANDLED;
     }
     g_sPlayerData[id][m_bOwnCPs] = false;
     ArrayDestroy(g_sPlayerData[id][m_CustomCPs]); g_sPlayerData[id][m_CustomCPs] = Invalid_Array;
@@ -211,7 +213,7 @@ public pub_savecustomcp(id) {
 
     if (get_user_team(id) < 1 || get_user_team(id) > 4) {
         client_print(id, print_chat, "* You are not in a valid team");
-        return;
+        return PLUGIN_HANDLED;
     }
 
     new Float:velocity[3];
@@ -223,7 +225,7 @@ public pub_savecustomcp(id) {
     }*/
     if (!(pev(id, pev_flags) & FL_ONGROUND)) {
         client_print(id, print_chat, "* You are not on the ground");
-        return;
+        return PLUGIN_HANDLED;
     }
 
     if (!g_sPlayerData[id][m_bOwnCPs]) {
@@ -242,6 +244,7 @@ public pub_savecustomcp(id) {
     Buffer[m_ShouldDraw] = true;
     ArrayPushArray(g_sPlayerData[id][m_CustomCPs], Buffer);
     client_print(id, print_chat, "* Your current position has been saved as a custom cp. Say /load to load it");
+    return PLUGIN_HANDLED;
 
 }
 public draw_customcps(id) {
@@ -1013,6 +1016,7 @@ public menu_extras_clicked(id, menu, item) {
         case 6:
         {
             new ent =  g_sPlayerData[id][m_iXtraCurCP]; new eSearch = -1; new found = false;
+
             while((ent = engfunc(EngFunc_FindEntityByString, ent, "classname", "sw_checkpoint"))) {
                 if(!pev_valid(ent) || pev(ent, pev_iuser2) != api_get_player_course(id)) continue;
                 //cycling through all normal cps in course
@@ -1051,28 +1055,17 @@ public menu_extras_clicked(id, menu, item) {
 
 
 public Hook_PlayerPreThink(id) {
-    //check the players fallvelocity
-    new Float:vel = entity_get_float(id, EV_FL_flFallVelocity);
+    if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id, pev_flags) & FL_ONGROUND) && (pev(id, pev_button) & IN_ATTACK2)) {
+        static Float:fAngles[3]; pev(id, pev_v_angle, fAngles)
 
-/*
-	if (SKUSER(pEntity).bExtraJump) {
-		if (pEntity->v.button & IN_ATTACK2 && pEntity->v.flags & FL_ONGROUND)
-		{
-			UTIL_MakeVectors(pEntity->v.v_angle);
-			Vector velocity = gpGlobals->v_forward * 1200;
-			pEntity->v.velocity = velocity;
-		}
-	}
-*/
-    if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id,pev_flags) & FL_ONGROUND) && (pev(id,pev_button) & IN_ATTACK2)) {
-        new Float:vec[3];
-        pev(id, pev_angles,vec);
-        //stock xs_anglevectors(const Float:angles[3], Float:fwd[3], Float:right[3], Float:up[3])
-        new Float:fwd[3], Float:right[3], Float:up[3];
-        xs_anglevectors(vec, fwd, right, up);
-        fwd[0] = fwd[0] * 1200.0;
-        fwd[1] = fwd[1] * 1200.0;
-        fwd[2] = fwd[2] * 1200.0;
-        set_pev(id, pev_velocity, fwd);
+        engfunc(EngFunc_MakeVectors, fAngles) // Convert view angle to normalised vector
+        global_get(glb_v_forward, fAngles) // No longer require angles so use it to hold vector instead
+            
+        for (new i = 0; i < 3; i++)
+        {
+            fAngles[i] *= 1200.0 // Scale up vector
+        }
+
+        set_pev(id, pev_velocity, fAngles)
     }
 }

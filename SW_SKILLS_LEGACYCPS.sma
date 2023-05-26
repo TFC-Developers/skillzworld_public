@@ -63,7 +63,7 @@ public plugin_init() {
     g_iCvarBhopmode = create_cvar("sw_bhopmode","0",FCVAR_EXTDLL);
 }
 
-public plugin_unload() {
+public plugin_end() {
     ArrayDestroy(g_Checkpoints);
     ArrayDestroy(g_Courses);
 }   
@@ -303,7 +303,7 @@ public parse_skillsconfig() {
             formatex(tempCourseData[mC_szGoalTeams], charsmax(tempCourseData[mC_szGoalTeams]), "BRGY");
         }
 
-        formatex(tempCourseData[mC_szCourseName], charsmax(tempCourseData[mC_szCourseName]), "Legacy course");
+        formatex(tempCourseData[mC_szCourseName], charsmax(tempCourseData[mC_szCourseName]), "legacy");
         new szDate[32]; format_time(szDate, charsmax(szDate), "%d.%m.%Y %H:%M:%S", get_systime());
         formatex(tempCourseData[mC_szCourseDescription], charsmax(tempCourseData[mC_szCourseDescription]), "Legacy course imported into the database (%s)", szDate);
 
