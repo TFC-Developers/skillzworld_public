@@ -205,6 +205,7 @@ public pub_mapcps(id) {
     g_sPlayerData[id][m_bOwnCPs] = false;
     ArrayDestroy(g_sPlayerData[id][m_CustomCPs]); g_sPlayerData[id][m_CustomCPs] = Invalid_Array;
     client_print(id, print_chat, "* Custom cps mode disabled. Say /s again to re-enable it. The counter of used cps has not been reset.");
+    return PLUGIN_HANDLED;
 }
 public pub_savecustomcp(id) {
     if (g_sPlayerData[id][m_CustomCPs] == Invalid_Array) {
@@ -895,15 +896,15 @@ public menu_extras_deploy(id) {
 	new menu = menu_create(szHeader, "menu_extras_clicked");
 	//gray string if player is in noclip
 	if (pev(id,pev_movetype) & MOVETYPE_NOCLIP) {
-		menu_additem(menu,"Noclip off","1")
+		menu_additem(menu,"Noclip: on","1")
 	} else {
-		menu_additem(menu,"\\dNoclip on","1");
+		menu_additem(menu,"Noclip: \\roff","1");
 	} 
 	
 	if (g_sPlayerData[id][m_bXtraSJ]) {
-	menu_additem(menu,"Superjump off","2");
+		menu_additem(menu,"Superjump: on","2");
 	} else {
-		menu_additem(menu,"\\dSuperjump on","2");
+		menu_additem(menu,"Superjump: \\roff","2");
 	}
 	menu_additem(menu, "TP to start","4");
 	menu_additem(menu, "TP to end","5");
@@ -944,6 +945,7 @@ public menu_extras_clicked(id, menu, item) {
                 entity_set_int(id, EV_INT_movetype, MOVETYPE_NOCLIP);
                 client_print(id, print_chat, "* Noclip on");
             }
+	   menu_extras_deploy(id);
         }
         case 2: //superjump
         {
@@ -954,6 +956,7 @@ public menu_extras_clicked(id, menu, item) {
                 g_sPlayerData[id][m_bXtraSJ] = true;
                 client_print(id, print_chat, "* Superjump on");
             }
+	   menu_extras_deploy(id);
         }
         case 3: //reset & slay
         {
@@ -961,7 +964,6 @@ public menu_extras_clicked(id, menu, item) {
             stock_slay(id);
             reset_struct(id);
             dllfunc(DLLFunc_Spawn, id);
-
         }
         case 4: //tp to start
         {
@@ -986,7 +988,8 @@ public menu_extras_clicked(id, menu, item) {
             fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
             CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
             entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
-            stock_teleport(id, fOrigin);   
+            stock_teleport(id, fOrigin);
+	   menu_extras_deploy(id);
         }  
         case 5: //tp to end
         {
@@ -1011,9 +1014,10 @@ public menu_extras_clicked(id, menu, item) {
             fOrigin[2] += 20.0;                                             //add 20 to z axis to prevent getting stuck in the cp
             CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
             entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
-            stock_teleport(id, fOrigin);   
+            stock_teleport(id, fOrigin);
+	   menu_extras_deploy(id);
         } 
-        case 6:
+        case 6: //cycle cps
         {
             new ent =  g_sPlayerData[id][m_iXtraCurCP]; new eSearch = -1; new found = false;
 
@@ -1031,7 +1035,6 @@ public menu_extras_clicked(id, menu, item) {
             if (!found) {
                 client_print(id, print_chat, "* You reached the last checkpoint, clicking again will cycle again through all cps");
                 g_sPlayerData[id][m_iXtraCurCP] = 0;
-                menu_extras_deploy(id); 
                 return PLUGIN_HANDLED;
             }
             //check if ent is valid
@@ -1048,7 +1051,6 @@ public menu_extras_clicked(id, menu, item) {
             menu_extras_deploy(id); 
         }
     }
-    //check if he is in noclip
     return PLUGIN_HANDLED;
 
 }
