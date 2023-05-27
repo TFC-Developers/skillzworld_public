@@ -1,5 +1,6 @@
 #include <amxmodx>
 #include <amxmisc>
+#include <engine>
 #include <fun>
 #include <tfcx>
 #include <fakemeta>
@@ -29,6 +30,18 @@ public install_game_rules() {
 public plugin_init() {
 	register_plugin PLUGIN, VERSION, AUTHOR
 	OrpheuRegisterHookFromObject g_pGameRules, "GetPlayerSpawnSpot", "CGameRules", "player_spawn_spot"
+	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_medikit", "medikit_action"
+}
+
+public medikit_action(wid) { // Test code
+	new id = entity_get_edict(wid, EV_ENT_owner);
+	new Float:angles[3]; pev id, pev_v_angle, angles
+	
+	if (angles[0] > 88.0) {
+		console_print id, "Medikit down"
+	} else if (angles[0] < -88.0) {
+		console_print id, "Medikit up"
+	}
 }
 
 public player_spawn_spot(gameRules, id) {
