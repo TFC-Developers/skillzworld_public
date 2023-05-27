@@ -633,7 +633,7 @@ public ShowTop(id, iStart)
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
 	for(new i = iStart; i < iEnd; i++) {
 		ArrayGetArray(g_TopList, i, TopInfo)
-		if (api_get_course_id_by_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
+		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
 		if (iClass != TopInfo[m_iPlayerClass]) continue;
 		new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
