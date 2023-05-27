@@ -50,7 +50,7 @@ public plugin_natives() {
     register_native("api_get_number_courses", "Native_GetNumberCourses");
     register_native("api_get_player_course", "Native_GetPlayerCourse");
     register_native("api_process_mapflags", "Native_ProcessMapFlags");
-    register_native("api_get_course_id_by_mysqlid", "Native_GetCourseIDByMySQLID");
+    register_native("api_get_mysqlid_by_course", "Native_GetMySQLIDByCourse");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -395,14 +395,18 @@ public debug_coursearray() {
 /*
 * Natives
 */
-
-public Native_GetCourseIDByMySQLID(iPlugin, iParams) {
-    new iMysqlID = get_param(1);
+//api_get_mysqlid_by_course 
+public Native_GetMySQLIDByCourse(iPlugin, iParams) {
+    new id = get_param(1);
     new iCount = ArraySize(g_Courses);
+    if (id > iCount) {
+        return -1;
+    }
+
     new Buffer[eCourseData_t];
     for (new i; i < iCount; i++) {
         ArrayGetArray(g_Courses, i, Buffer);
-        if (Buffer[mC_sqlCourseID] == iMysqlID) {
+        if (Buffer[mC_iCourseID] == id) {
             return Buffer[mC_iCourseID];
         }
     }

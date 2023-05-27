@@ -7,6 +7,7 @@
 #include "include/utils"                        // Include file for utility functions
 #include "include/sql_dbqueries"                // Include file for database queries (provides the strings)
 #include "include/effects"                      // Include file for effects
+#include "include/api_skills_mapentities"       // Include file for map entities
 
 //global variables
 new g_pCvarOldRanks; new g_pCvarOldRuns;            // Cvars for the old ranks and runs table
@@ -672,11 +673,10 @@ public ShowGroupedTop(id, iStart)
 	new iPlayerCourse = api_get_player_course(id);
 	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
 	send_motd(id, "[ %s course ]", szCourseName);
-
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
 	for(new i = iStart; i < iEnd; i++) {
 		ArrayGetArray(g_GroupedTopList, i, TopInfo)
-		if (api_get_course_id_by_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
+		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) {  continue; } //only show runs for the current course by comparing the course ids (the mysql ids!)
 		new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
