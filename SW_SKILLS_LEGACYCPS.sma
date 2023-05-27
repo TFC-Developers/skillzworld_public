@@ -172,7 +172,7 @@ public parse_skillsconfig() {
 
     //set the tempCourseData difficulty to -1
     tempCourseData[mC_iDifficulty] = -1;
-
+    formatex(tempCourseData[mC_szGoalTeams], charsmax(tempCourseData[mC_szGoalTeams]), "BRGY"); //in case the map has no goal teams, set it to BRGY
     if (file_exists(path)) // check if the file exists
     {
         new szLineData[256], iLine       // line data and line number
