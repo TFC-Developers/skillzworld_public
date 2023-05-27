@@ -39,13 +39,15 @@ enum eSpeedTop_t
 	m_iTopPlayerIdent,                          // The player's ident (sql player id)
 	m_sTopPlayerAuthid[MAX_AUTHID_LEN],         // The player's authid
 	m_sTopPlayerName[MAX_NAME_LEN],             // The player's name
-	Float:m_fTime,                                    // The player's time
+	Float:m_fTime,                              // The player's time
     m_iCourseID,                                // The course id (Mysql ID not local id)
     m_CreatedAt[64],                            // The date the run was created
     m_iPlayerClass,                             // The player's class
 
 }
 new Array:g_TopList = Invalid_Array;            // Array for the top 100 players
+new Array:g_GroupedTopList = Invalid_Array;		// Array for the grouped top 100 players
+new g_iGroupedTopCount = -1;
 new g_iTopCount = -1;
 #define MAX_MOTD_RANKS 20
 #define RECORD_SOUND "Trumpet1.wav" 		// The sound played when the all time speedrun record is broken
@@ -75,6 +77,7 @@ public plugin_init()
 	g_pCvarOldRuns = register_cvar("sw_sqloldruns", "climb_oldrunstable")       // Cvar for the old runs table
 	g_bLegacyFound = false;                                                     // Set the legacy found boolean to false
 	g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
+	g_GroupedTopList = ArrayCreate(eSpeedTop_t);                                // Create the array for the grouped top 100 players
 }  
 public cmd_effect(id) {
     api_firework(id,5);
@@ -82,6 +85,7 @@ public cmd_effect(id) {
 public plugin_end()
 {
     ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
+	ArrayDestroy(g_GroupedTopList);                                             // Destroy the array for the grouped top 100 players
 }
 
 public SQLNative_UpdateMapFlags(iPlugin, iParams) {
@@ -114,7 +118,7 @@ public SQLNative_ReloadCourses() {
    // native set_task(Float:time, const function[], id = 0, const any:parameter[] = "", len = 0, const flags[] = "", repeat = 0);
    if (g_bReloaded == true) { return; }
    g_bReloaded = true;
-   set_task(5.0, "sql_loadcourses", 1407, "");
+   set_task(15.0, "sql_loadcourses", 1407, "");
 }
 
 // logic; sql_loadcourses -> api_registercourse 
@@ -123,6 +127,7 @@ public plugin_precache() {
     precache_sound(RECORD_SOUND);
     sql_loadcourses();
     sql_loadruns();
+	sql_loadgroupedruns();
 }
 //loads all courses from the database
 public sql_loadcourses() {
@@ -501,6 +506,12 @@ public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[]
     g_TopList = ArrayCreate(eSpeedTop_t);
     g_iTopCount = 0;
     sql_loadruns();
+
+	ArrayDestroy(g_GroupedTopList);
+	g_GroupedTopList = ArrayCreate(eSpeedTop_t);
+	g_iGroupedTopCount = 0;
+	sql_loadgroupedruns();
+
     return PLUGIN_HANDLED;
 }
 
@@ -547,6 +558,50 @@ public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[],
 	return PLUGIN_HANDLED;
 }
 
+public sql_loadgroupedruns() {
+    new szMapName[64]; get_mapname(szMapName, charsmax(szMapName));
+    new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_getgroupedrunsformap, szMapName);
+    api_SQLAddThreadedQuery(szQuery, "Handle_QueryLoadGroupedRuns", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
+}
+
+public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+		DebugPrintLevel(0, "Failed to load runs: %s", sError);
+	}
+	new Buffer[eSpeedTop_t];
+	g_iGroupedTopCount = 0;    // plugin is now ready to process requests
+	/*eSpeedTop_t*/
+	while(SQL_MoreResults(hQuery)) {
+		new iFieldNumSteamID = SQL_FieldNameToNum(hQuery,"steamid");
+		new iFieldNumTime = SQL_FieldNameToNum(hQuery,"time");
+		new iFieldNumClass = SQL_FieldNameToNum(hQuery,"player_class");
+		new iFieldNumNickname = SQL_FieldNameToNum(hQuery,"most_used_nickname");
+		new iFieldNumCourseID = SQL_FieldNameToNum(hQuery,"course_id");
+		new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
+		new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
+		new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
+		if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
+			DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
+			return PLUGIN_HANDLED;
+		}
+		//now load the data into the struct
+		Buffer[m_iTopPlayerIdent] = SQL_ReadResult(hQuery, iFieldNumPlayerID);
+		SQL_ReadResult(hQuery, iFieldNumSteamID, Buffer[m_sTopPlayerAuthid], charsmax(Buffer[m_sTopPlayerAuthid]));
+		SQL_ReadResult(hQuery, iFieldNumNickname, Buffer[m_sTopPlayerName], charsmax(Buffer[m_sTopPlayerName]));
+		SQL_ReadResult(hQuery, iFieldNumTime,Buffer[m_fTime]);
+		Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
+		SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
+		Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
+		//now add the run to the list
+		ArrayPushArray(g_GroupedTopList, Buffer);
+		g_iGroupedTopCount++;
+		SQL_NextRow(hQuery);
+	}
+
+	return PLUGIN_HANDLED;
+}
+
+
 //modified from fm / benwatch
 public ShowTop(id, iStart)
 { 
@@ -568,16 +623,67 @@ public ShowTop(id, iStart)
 	static sBuffer[1024]
 	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
 	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
+	new iClass = pev(id, pev_playerclass);
+	send_motd(id, "\nCurrently only showing the runs for your player class: %s\n\n", g_szClassNames[iClass]);
+	new iPlayerCourse = api_get_player_course(id);
+	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
+	send_motd(id, "[ %s course ]", szCourseName);
 
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
 	for(new i = iStart; i < iEnd; i++) {
 		ArrayGetArray(g_TopList, i, TopInfo)
+		if (api_get_course_id_by_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
+		if (iClass != TopInfo[m_iPlayerClass]) continue;
 		new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
 	}
 
 	if (iEnd != g_iTopCount) send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d", iPos, MAX_MOTD_RANKS)
+	send_motd(id,"\nTo remove duplicate steamids say \"/gtop\"\n");
+	display_motd(id, "Speedrun Ranks")
+	return
+}
+
+//same as abover but dont show duplicate steamids (only show the best run for each player)
+//there is a new structure for this available
+public ShowGroupedTop(id, iStart)
+{ 
+	if (!g_iGroupedTopCount)
+	{
+		client_print(id, print_chat, "* No players have completed a speedrun on the currentmap")
+		return
+	}
+
+	if (iStart < 0)
+		iStart = 0	
+	else if (iStart > g_iGroupedTopCount)
+		iStart = g_iGroupedTopCount - 1
+	
+	new iEnd = iStart + MAX_MOTD_RANKS
+	if (iEnd > g_iGroupedTopCount)
+		iEnd = g_iGroupedTopCount
+
+	static sBuffer[1024]
+	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
+	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
+	new iClass = pev(id, pev_playerclass);
+	send_motd(id, "\nCurrently only showing the runs for your player class: %s\n\n", g_szClassNames[iClass]);
+	new iPlayerCourse = api_get_player_course(id);
+	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
+	send_motd(id, "[ %s course ]", szCourseName);
+
+	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
+	for(new i = iStart; i < iEnd; i++) {
+		ArrayGetArray(g_GroupedTopList, i, TopInfo)
+		if (api_get_course_id_by_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
+		new Float:fTime = TopInfo[m_fTime];
+		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
+	}
+
+	if (iEnd != g_iGroupedTopCount) send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d\nFor more statistics type \"/stats\"", iPos, MAX_MOTD_RANKS)
+	send_motd(id,"\nTo see all runs on this map typr \"/top\"");
 	display_motd(id, "Speedrun Ranks")
 	return
 }
@@ -636,7 +742,8 @@ public Handle_Say(id)
 	
 	if (!sArgs[0]) {
 		return PLUGIN_HANDLED
-	} else if (equali(sArgs, "/top", 4)) {			
+	}
+	if (equali(sArgs, "/top", 4)) {			
 		if (sArgs[4] == ' ') {
 			ShowTop(id, str_to_num(sArgs[5]) - 1)
 			return PLUGIN_HANDLED
@@ -644,10 +751,24 @@ public Handle_Say(id)
 			ShowTop(id, 0)
 			return PLUGIN_HANDLED
 		}
-	} else if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) {			
+	} 
+	//this equali fails for some reason, why?
+	if (equali(sArgs, "/gtop", 5)) {	//"/gtop 1
+		if (sArgs[5] == ' ') {
+			ShowGroupedTop(id, str_to_num(sArgs[5]) - 1)
+			return PLUGIN_HANDLED
+		} else if (!sArgs[5]) {	
+			ShowGroupedTop(id, 0)
+			return PLUGIN_HANDLED
+		}
+	} 
+	
+	if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) {			
 		ShowMapstats(id);
 		return PLUGIN_HANDLED
-	} else if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) {	
+	} 
+	
+	if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) {	
 		new iInCourse = api_get_player_course(id);		
 		new iDiff = api_get_mapdifficulty(iInCourse);
 		new szCourseName[64]; api_get_coursename(iInCourse, szCourseName, charsmax(szCourseName));
@@ -655,5 +776,6 @@ public Handle_Say(id)
 		client_print(id, print_chat, szString);
 		return PLUGIN_HANDLED
 	}
+
 	return PLUGIN_CONTINUE
 }

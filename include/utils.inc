@@ -1,3 +1,33 @@
+new const g_szClassNames[][] = {
+    "None",
+    "Scout",
+    "Sniper",
+    "Soldier",
+    "Demoman",
+    "Medic",
+    "Heavy Weapons Guy",
+    "Pyro",
+    "Spy",
+    "Engineer",
+    "Random",
+    "Civilian"
+};
+
+enum
+{
+	CLASS_SCOUT = 1,
+	CLASS_SNIPER,
+	CLASS_SOLDIER,
+	CLASS_DEMOMAN,
+	CLASS_MEDIC,
+	CLASS_HWGUY,
+	CLASS_PYRO,
+	CLASS_SPY,
+	CLASS_ENGINEER,
+	CLASS_RANDOM,
+	CLASS_CIVILIAN
+}
+
 
 
 //description: Teleport player to given location

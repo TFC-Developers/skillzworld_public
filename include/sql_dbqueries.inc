@@ -44,7 +44,13 @@ new const sql_updatenamequery[] = "INSERT INTO nicknames (steamid, nickname, usa
 //requires %s/mapname
 new const sql_getrunsformap[] = "SELECT runs.*, players.steamid, (SELECT nickname FROM nicknames WHERE \
 nicknames.steamid = players.steamid ORDER BY usage_count DESC LIMIT 1) as most_used_nickname FROM runs JOIN courses ON runs.course_id = courses.id \
-JOIN maps ON courses.map_id = maps.id JOIN players ON runs.player_id = players.id WHERE maps.name = '%s' AND runs.time != 0 ORDER BY runs.time ASC LIMIT 500;";
+JOIN maps ON courses.map_id = maps.id JOIN players ON runs.player_id = players.id WHERE maps.name = '%s' AND runs.time != 0 ORDER BY runs.time ASC LIMIT 5000;";
+
+//requires %s/mapname
+new const sql_getgroupedrunsformap[] = "WITH best_runs AS (SELECT players.steamid, runs.player_class, MIN(runs.time) as best_time FROM runs JOIN courses ON runs.course_id = courses.id \ 
+JOIN maps ON courses.map_id = maps.id JOIN players ON runs.player_id = players.id WHERE maps.name = '%s' AND runs.time != 0 GROUP BY players.steamid, runs.player_class) \
+SELECT runs.*, best_runs.steamid, (SELECT nickname FROM nicknames WHERE nicknames.steamid = best_runs.steamid ORDER BY usage_count DESC LIMIT 1) as most_used_nickname \
+FROM runs JOIN best_runs ON runs.time = best_runs.best_time AND runs.player_class = best_runs.player_class JOIN players ON players.steamid = best_runs.steamid ORDER BY runs.time ASC LIMIT 5000;"
 
 //requires %s/name
 new const sql_get_common_name[] = "SELECT nickname, usage_count FROM nicknames WHERE steamid = '%s' ORDER BY usage_count DESC LIMIT 10;";
