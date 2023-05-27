@@ -1,8 +1,8 @@
 import os, json, subprocess, datetime
 
-KEY_PATH_PLUGINS  = 'plugins_path'
-KEY_PATH_COMPILER = 'compiler_path'
-
+KEY_PATH_PLUGINS  = 'path_plugins'
+KEY_PATH_COMPILER = 'path_compiler'
+KEY_PATH_CONFIGS  = 'path_configs'
 
 def prompt_path():
 	while 1:
@@ -37,18 +37,29 @@ if settings.get(KEY_PATH_PLUGINS) is None:
 if settings.get(KEY_PATH_COMPILER) is None:
 	print('The compiler path is not set up. Enter the directory where amxxpc.exe can be found:')
 	while 1:
-		path_compiler = prompt_path()
-		file_compiler = os.path.join(path_compiler, 'amxxpc.exe')
-		if isfile(file_compiler): break
+		path = prompt_path()
+		file = os.path.join(path, 'amxxpc.exe')
+		if os.path.isfile(file): break
 		print('The compiler amxxpc.exe is not in this directory.')
-	settings[KEY_PATH_COMPILER] = path_compiler
+	settings[KEY_PATH_COMPILER] = path
 	should_save_settings = True
+file_compiler = os.path.join(settings[KEY_PATH_COMPILER], 'amxxpc.exe')
+	
+if settings.get(KEY_PATH_CONFIGS) is None:
+	print('The configs path is not set up. Enter the directory where plugins.ini for AMX Mod X can be found:')
+	while 1:
+		path = prompt_path()
+		file = os.path.join(path, 'plugins.ini')
+		if os.path.isfile(file): break
+		print('The plugins config plugins.ini is not in this directory.')
+	settings[KEY_PATH_CONFIGS] = path
+	should_save_settings = True
+file_config_plugins = os.path.join(settings[KEY_PATH_CONFIGS], 'plugins.ini')
 
 if should_save_settings:
 	with open(file_settings, 'w') as f:
 		json.dump(settings, f, indent = '\t')
 
-file_compiler = os.path.join(settings[KEY_PATH_COMPILER], 'amxxpc.exe')
 path_include = os.path.join(cwd, 'include')
 file_script_version = os.path.join(path_include, 'script_version.inc')
 file_script_name    = os.path.join(path_include, 'script_name.inc')
@@ -60,22 +71,47 @@ print(f'Dumping plugins into directory: "{settings[KEY_PATH_PLUGINS]}"')
 
 compiled_n = 0
 _, _, filenames = next(os.walk(cwd))
+
+compiled_plugins = set()
+
 print() # Empty line
 for filename in filenames:
 	extless, ext = os.path.splitext(filename)
-	file_output = os.path.join(settings[KEY_PATH_PLUGINS], extless)
-	
 	if not ext.lower() == '.sma': continue
-	
 	compiled_n += 1
+	
+	filename_plugin = extless + '.amxx'
+	file_plugin = os.path.join(settings[KEY_PATH_PLUGINS], filename_plugin)
+	compiled_plugins.add(filename_plugin)
 	today_str = datetime.date.today().strftime('%d/%m/%y')
 	print(f'Compiling plugin code: "{filename}"')
 	with open(file_script_version, 'w') as f: f.write(f'stock const _SCRIPT_DATE[] = "{today_str}"')
 	with open(file_script_name   , 'w') as f: f.write(f'stock const _SCRIPT_NAME[] = "{extless}"')
 	subprocess.run(
-		(file_compiler, filename, f'-o{file_output}')
+		(file_compiler, filename, f'-o{file_plugin}')
 	)
 	print() # Empty line
+
+if not os.path.isfile(file_config_plugins):
+	print(f'Could not find plugins.ini in "{file_config_plugins}".\n Ignoring.')
+elif compiled_plugins:
+	config_plugins = set()
+	with open(file_config_plugins) as f:
+		for line in f:
+			line = line.strip() # Prune whitespace
+			if not line: continue
+			line = line.split(';', maxsplit = 1)[0] # Prune comments
+			if not line: continue
+			tokens = line.split()
+			config_plugins.add(tokens[0]) # Add the plugin name.amxx
 	
+	new_plugins = compiled_plugins - config_plugins
+	if new_plugins:
+		print(f'Adding new plugins to plugins.ini:')
+		with open(file_config_plugins, 'a') as f:
+			for new_plugin in sorted(new_plugins):
+				print(f' {new_plugin}')
+				f.write(f'\n{new_plugin} debug ; Added by compile_all.py')
+
 print(f'Compiled {compiled_n} plugins.')
 input('Press enter to quit.\n')
