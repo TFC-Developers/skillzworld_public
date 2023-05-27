@@ -15,7 +15,6 @@
 #define USE_2003 false
 
 public plugin_init() {
-	console_print 0, "Initing speedcap"
 	register_plugin PLUGIN, VERSION, AUTHOR
 	register_concmd "sv_speedcap", "cmd_speedcap", ADMIN_ADMIN, "Sets the damned blasted speedcap"
 }
@@ -38,7 +37,7 @@ stock enable_speedcap() {
 stock disable_speedcap() {
 	if (!g_SpeedcapOn) return
 	g_Speedcap_OriginalLong = OrpheuMemoryGet(SPEEDCAP_PATTERN)
-	console_print 0, "Speedcap: Saved original long: %d", g_Speedcap_OriginalLong
+	//console_print 0, "Speedcap: Saved original long: %d", g_Speedcap_OriginalLong
 	
 	// Opcodes: https://faydoc.tripod.com/cpu/jnc.htm
 	// Linux: Parity of preceding instruction https://www.felixcloutier.com/x86/fcomi:fcomip:fucomi:fucomip
@@ -65,13 +64,7 @@ public cmd_speedcap(id, level, cid) {
 	else disable_speedcap
 }
 
-
-
-public plugin_precache() {
-	console_print 0, "Precaching speedcap"
-	disable_speedcap
-}
 public plugin_end() {
-	console_print 0, "Speedcap: Restoring original long: %d", g_Speedcap_OriginalLong
+	//console_print 0, "Speedcap: Restoring original long: %d", g_Speedcap_OriginalLong
 	enable_speedcap
 }
