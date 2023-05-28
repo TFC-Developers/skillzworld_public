@@ -34,10 +34,10 @@ stock const AMMO_TYPES[][] = { // The indices are the values of the ammo enum in
 }
 public plugin_init() {
 	register_plugin PLUGIN, VERSION, AUTHOR
-	register_concmd "e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
-	register_concmd "e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
-	register_concmd "e_kill", "cmd_kill", ADMIN_ADMIN, "Deletes an entity."
-	register_concmd "e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
+	register_concmd "new_e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
+	register_concmd "new_e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
+	register_concmd "new_e_kill", "cmd_kill", ADMIN_ADMIN, "Deletes an entity."
+	register_concmd "new_e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
 }
 public plugin_precache() {
 	res_lightning = precache_model(SPR_LIGHTNING)
