@@ -85,7 +85,7 @@ public cmd_effect(id) {
 }
 public plugin_end()
 {
-    ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
+	ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
 	ArrayDestroy(g_GroupedTopList);                                             // Destroy the array for the grouped top 100 players
 }
 
@@ -125,9 +125,9 @@ public SQLNative_ReloadCourses() {
 // logic; sql_loadcourses -> api_registercourse 
 //              |-done-> load all cps for map (done in Handle_QueryLoadCourses) and check there if a legacy course was if not call the api function to load the cps from file                   
 public plugin_precache() {
-    precache_sound(RECORD_SOUND);
-    sql_loadcourses();
-    sql_loadruns();
+	precache_sound(RECORD_SOUND);
+	sql_loadcourses();
+	sql_loadruns();
 	sql_loadgroupedruns();
 }
 //loads all courses from the database
@@ -499,21 +499,21 @@ public SQLNative_InsertRun(iPluign, iParams) {
 
 }
 public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
-    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
-        DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
-    }
-    //reload the top list
-    ArrayDestroy(g_TopList);
-    g_TopList = ArrayCreate(eSpeedTop_t);
-    g_iTopCount = 0;
-    sql_loadruns();
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+		DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
+	}
+	//reload the top list
+	ArrayDestroy(g_TopList);
+	g_TopList = ArrayCreate(eSpeedTop_t);
+	g_iTopCount = 0;
+	sql_loadruns();
 
 	ArrayDestroy(g_GroupedTopList);
 	g_GroupedTopList = ArrayCreate(eSpeedTop_t);
 	g_iGroupedTopCount = 0;
 	sql_loadgroupedruns();
 
-    return PLUGIN_HANDLED;
+	return PLUGIN_HANDLED;
 }
 
 public sql_loadruns() {
@@ -606,9 +606,16 @@ public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, 
 //modified from fm / benwatch
 public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 {
-	new top_count = bOnlyPBs ? g_iGroupedTopCount : g_iTopCount
-	if (!top_count)
-	{
+	new top_count, Array:top_list
+	if (bOnlyPBs) {
+		top_list  = g_GroupedTopList
+		top_count = g_iGroupedTopCount
+	} else {
+		top_list = g_TopList
+		top_count = g_iTopCount
+	}
+	
+	if (!top_count) {
 		client_print(id, print_chat, "* No players have completed a speedrun on the current map")
 		return
 	}
@@ -632,8 +639,7 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
 	for(new i = iStart, iAcquired; i < iEnd && iAcquired < MAX_MOTD_RANKS; iAcquired++) {
-		if (bOnlyPBs) ArrayGetArray(g_GroupedTopList, i, TopInfo)
-		else ArrayGetArray(g_TopList, i, TopInfo)
+		ArrayGetArray(top_list, i, TopInfo)
 		i++ // Increment i here because some runs may be skipped
 		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
 		if (iClass != TopInfo[m_iPlayerClass]) continue;
