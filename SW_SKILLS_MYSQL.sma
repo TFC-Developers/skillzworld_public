@@ -85,7 +85,7 @@ public cmd_effect(id) {
 }
 public plugin_end()
 {
-    ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
+	ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
 	ArrayDestroy(g_GroupedTopList);                                             // Destroy the array for the grouped top 100 players
 }
 
@@ -125,9 +125,9 @@ public SQLNative_ReloadCourses() {
 // logic; sql_loadcourses -> api_registercourse 
 //              |-done-> load all cps for map (done in Handle_QueryLoadCourses) and check there if a legacy course was if not call the api function to load the cps from file                   
 public plugin_precache() {
-    precache_sound(RECORD_SOUND);
-    sql_loadcourses();
-    sql_loadruns();
+	precache_sound(RECORD_SOUND);
+	sql_loadcourses();
+	sql_loadruns();
 	sql_loadgroupedruns();
 }
 //loads all courses from the database
@@ -499,21 +499,21 @@ public SQLNative_InsertRun(iPluign, iParams) {
 
 }
 public Handle_QueryInsertRun(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) {
-    if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
-        DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
-    }
-    //reload the top list
-    ArrayDestroy(g_TopList);
-    g_TopList = ArrayCreate(eSpeedTop_t);
-    g_iTopCount = 0;
-    sql_loadruns();
+	if(SQLCheckThreadedError(iFailState, hQuery, sError, iError)) { 
+		DebugPrintLevel(0, "Failed to insert run into database: %s", sError);
+	}
+	//reload the top list
+	ArrayDestroy(g_TopList);
+	g_TopList = ArrayCreate(eSpeedTop_t);
+	g_iTopCount = 0;
+	sql_loadruns();
 
 	ArrayDestroy(g_GroupedTopList);
 	g_GroupedTopList = ArrayCreate(eSpeedTop_t);
 	g_iGroupedTopCount = 0;
 	sql_loadgroupedruns();
 
-    return PLUGIN_HANDLED;
+	return PLUGIN_HANDLED;
 }
 
 public sql_loadruns() {
@@ -604,22 +604,29 @@ public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, 
 
 
 //modified from fm / benwatch
-public ShowTop(id, iStart)
-{ 
-	if (!g_iTopCount)
-	{
-		client_print(id, print_chat, "* No players have completed a speedrun on the currentmap")
+public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
+{
+	new top_count, Array:top_list
+	if (bOnlyPBs) {
+		top_list  = g_GroupedTopList
+		top_count = g_iGroupedTopCount
+	} else {
+		top_list = g_TopList
+		top_count = g_iTopCount
+	}
+	
+	if (!top_count) {
+		client_print(id, print_chat, "* No players have completed a speedrun on the current map")
 		return
 	}
-
-	if (iStart < 0)
-		iStart = 0	
-	else if (iStart > g_iTopCount)
-		iStart = g_iTopCount - 1
 	
-	new iEnd = iStart + MAX_MOTD_RANKS
-	if (iEnd > g_iTopCount)
-		iEnd = g_iTopCount
+	/// Ensure that iStart is in range [0, g_iTopCount), iEnd is in [iStart+1, g_iTopCount]
+	/// iEnd is exclusive, so iEnd-iStart is the amount of items and is in range [1, g_iTopCount]
+	/// This mirrors the way Python slicing works.
+	iStart = clamp(iStart, 0, top_count - 1)
+	iEnd   = clamp(iEnd, iStart+1, top_count)
+	///
+	console_print 0, "ShowTop bounds: %d - %d", iStart, iEnd
 
 	static sBuffer[1024]
 	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
@@ -631,59 +638,22 @@ public ShowTop(id, iStart)
 	send_motd(id, "[ %s course ]", szCourseName);
 
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
-	for(new i = iStart; i < iEnd; i++) {
-		ArrayGetArray(g_TopList, i, TopInfo)
+	for(new i = iStart, iAcquired; i < iEnd && iAcquired < MAX_MOTD_RANKS; iAcquired++) {
+		ArrayGetArray(top_list, i, TopInfo)
+		i++ // Increment i here because some runs may be skipped
 		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
 		if (iClass != TopInfo[m_iPlayerClass]) continue;
 		new Float:fTime = TopInfo[m_fTime];
-		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
+		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d",
+			floatround(fTime /60.0, floatround_floor),
+			floatround(fTime, floatround_floor) % 60,
+			floatround(fTime*100.0, floatround_floor) % 100
+		);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
 	}
 
-	if (iEnd != g_iTopCount) send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d", iPos, MAX_MOTD_RANKS)
-	send_motd(id,"\nTo remove duplicate steamids say \"/gtop\"\n");
-	display_motd(id, "Speedrun Ranks")
-	return
-}
-
-//same as abover but dont show duplicate steamids (only show the best run for each player)
-//there is a new structure for this available
-public ShowGroupedTop(id, iStart)
-{ 
-	if (!g_iGroupedTopCount)
-	{
-		client_print(id, print_chat, "* No players have completed a speedrun on the currentmap")
-		return
-	}
-
-	if (iStart < 0)
-		iStart = 0	
-	else if (iStart > g_iGroupedTopCount)
-		iStart = g_iGroupedTopCount - 1
-	
-	new iEnd = iStart + MAX_MOTD_RANKS
-	if (iEnd > g_iGroupedTopCount)
-		iEnd = g_iGroupedTopCount
-
-	static sBuffer[1024]
-	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
-	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
-	new iClass = pev(id, pev_playerclass);
-	send_motd(id, "\nCurrently only showing the runs for your player class: %s\n\n", g_szClassNames[iClass]);
-	new iPlayerCourse = api_get_player_course(id);
-	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
-	send_motd(id, "[ %s course ]", szCourseName);
-	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
-	for(new i = iStart; i < iEnd; i++) {
-		ArrayGetArray(g_GroupedTopList, i, TopInfo)
-		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) {  continue; } //only show runs for the current course by comparing the course ids (the mysql ids!)
-		new Float:fTime = TopInfo[m_fTime];
-		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", floatround(fTime /60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100);
-		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
-	}
-
-	if (iEnd != g_iGroupedTopCount) send_motd(id, "\n\nClose this window and type \"/top %d\" to view the next %d\nFor more statistics type \"/stats\"", iPos, MAX_MOTD_RANKS)
-	send_motd(id,"\nTo see all runs on this map typr \"/top\"");
+	if (iEnd != top_count) send_motd(id, "\n\nClose this window and type \"/top %d-%d\" to view the next %d", iStart+1, iStart+MAX_MOTD_RANKS, MAX_MOTD_RANKS)
+	if (!bOnlyPBs) send_motd(id,"\nTo remove duplicate steamids say \"/gtop\"\n");
 	display_motd(id, "Speedrun Ranks")
 	return
 }
@@ -740,28 +710,32 @@ public Handle_Say(id)
 	new sArgs[192]; read_args(sArgs, charsmax(sArgs))
 	remove_quotes(sArgs)
 	
-	if (!sArgs[0]) {
+	if (!sArgs[0]) return PLUGIN_HANDLED
+	
+	/// Support these commands: /top 10, /top10, /top10-20
+	new bool:bWantsTop  = false
+	new bool:bWantsGTop = false
+	if       (equali(sArgs, "/top", 4)) bWantsTop = true
+	else if (equali(sArgs, "/gtop", 5)) bWantsTop = bWantsGTop = true
+	console_print 0, "Wants top"
+	if (bWantsTop) {
+		new iOffset
+		new iStart = strtol(sArgs[bWantsGTop ? 5 : 4], .endPos = iOffset, .base = 10)
+		if (!iStart) iStart = 10
+		for (; sArgs[iOffset]; iOffset++) { // Skip whitespace and the hyphen
+			if (sArgs[iOffset] == '-') {
+				iOffset++
+				break
+			}
+		}
+		new iEnd = str_to_num(sArgs[iOffset])
+		console_print 0, "Parsed numbers: %d - %d", iStart, iEnd
+		// iStart is an index, iEnd is an exclusive endpoint
+		if (iEnd) ShowTop id, iStart - 1, iEnd, bWantsGTop // Of the format /top 10-20
+		else       ShowTop id, 0, iStart, bWantsGTop        // Of the format /top 10 (which means 1-10)
 		return PLUGIN_HANDLED
 	}
-	if (equali(sArgs, "/top", 4)) {			
-		if (sArgs[4] == ' ') {
-			ShowTop(id, str_to_num(sArgs[5]) - 1)
-			return PLUGIN_HANDLED
-		} else if (!sArgs[4]) {	
-			ShowTop(id, 0)
-			return PLUGIN_HANDLED
-		}
-	} 
-	//this equali fails for some reason, why?
-	if (equali(sArgs, "/gtop", 5)) {	//"/gtop 1
-		if (sArgs[5] == ' ') {
-			ShowGroupedTop(id, str_to_num(sArgs[5]) - 1)
-			return PLUGIN_HANDLED
-		} else if (!sArgs[5]) {	
-			ShowGroupedTop(id, 0)
-			return PLUGIN_HANDLED
-		}
-	} 
+	///
 	
 	if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) {			
 		ShowMapstats(id);
