@@ -1,4 +1,4 @@
-::@echo off
+@echo off
 
 :: ------------------------------------------------------------------------------------
 :: INSTRUCTIONS TO COMPILE
@@ -11,7 +11,7 @@
 pushd "%~dp0"
 
 ::set output dir for .amxx file
-set PLUGINS_DIR=C:\Users\nesfi\Documents\App\AMX Mod X\TFC-Server\tfc\addons\amxmodx\plugins
+set PLUGINS_DIR="F:\SteamLibrary\steamapps\common\Half-Life\tfc\addons\amxmodx\plugins"
 if not exist %PLUGINS_DIR% mkdir %PLUGINS_DIR%
 
 :: Echo the stuff we need for the plugins into .inc files
@@ -19,7 +19,7 @@ echo stock const _SCRIPT_DATE[] = "%DATE%" > include\script_version.inc
 echo stock const _SCRIPT_NAME[] = "%~n1" > include\script_name.inc 
 
 :: Compile the plugin
-..\tools\amxxpc.exe %1 "-o%PLUGINS_DIR%\%~n1.amxx "
+..\tools\amxxpc.exe %1 -o%PLUGINS_DIR%\%~n1.amxx 
 
 :: Delete these files to prevent other plugins accidently using them
 del include\script_version.inc

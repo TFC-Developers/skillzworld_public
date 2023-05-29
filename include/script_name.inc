@@ -1,1 +1,0 @@
-stock const _SCRIPT_NAME[] = "test"
