@@ -45,6 +45,7 @@ It has its own fair share of problems, too.
 
 - It somehow uses a monospace font where the space character is not monospace.
 
+- The customisable toolbar at the top does not save any layout changes and will break itself into a disconnected mess when starting the program, presumably because of the small default window size, which also does not save changes.
 
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
@@ -157,7 +158,7 @@ The language has lax syntax with optional semicolons. This appears to be a half-
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
-- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with vector syntax. This will fail to compile:
+- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with packed array indexing syntax. This will fail to compile:
 ```
 message_begin MSG_BROADCAST, SVC_TEMPENTITY
 {
