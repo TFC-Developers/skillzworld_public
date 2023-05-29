@@ -23,7 +23,29 @@ The Sven Co-op team made a wise decision when integrating the more sensible Ange
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
 Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
 
+- The standard library is missing a file truncate function. If you want to shorten a file, you have to delete the file and rewrite it.
+
+### AMXX-Studio
+This software is bundled with the AMX Mod X installation package, and is also featured separately on the downloads page, which implies that it is recommended by the AMX Mod X team.  
+It was last updated in 2006, and is soon to be two decades out of date, shipping with documentation for AMX Mod X from that time.  
+It has its own fair share of problems, too.  
+
+- It has strange and unfamiliar shortcuts, like click and hold + mouse wheel to resize text instead of ctrl + mouse wheel, and ctrl + delete to close a tab instead of ctrl + w.
+
+- The keyboard shortcuts are written in German.
+
 - AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
+
+- It does not recognise procedure calling syntax, only recognising function calling syntax to display the function signature.
+	- When displaying the function signature, it loses the ability to autocomplete arguments. You can get them while using procedure calling syntax.
+	
+- It offers indentation support for any amount of spaces, *but only deletes one space at a time*.
+
+- Tab characters are extremely wide and can not be configured.
+
+- It somehow uses a monospace font where the space character is not monospace.
+
+- The customisable toolbar at the top does not save any layout changes and will break itself into a disconnected mess when starting the program, presumably because of the small default window size, which also does not save changes.
 
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
@@ -69,6 +91,16 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 
 - The precache_\* family of functions fails to state the reason for there being multiple functions. The function [precache_generic](https://www.amxmodx.org/api/amxmodx/precache_generic) does not work with precaching sprites, and it doesn't clearly state what it's *for* -- what is a generic file, if not also a sprite?
 	- Use [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model) to precache sprites. This is also not documented behaviour, unless you're supposed to already know that .spr sprites and .mdl models are considered the one and same type of resource.
+
+- [nvault_get](https://www.amxmodx.org/api/nvault/nvault_get) does not mention what happens when the key does not exist.
+	- It returns 0, and it writes 0.0 to a given float reference, and "" to a given string reference.
+	
+- [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) have wrong documentation; it says they returns the number of elements read, but they actually returns the number of bytes read.
+	- This error probably came from lazy copy pasting of the documentation from [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), which correctly returns the number of elements read.
+	
+- [fread](https://www.amxmodx.org/api/file/fread), [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) neglect to mention what happens when reading out of bounds.
+	- The result is garbage memory, sometimes null but effectively random. The garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
+	- They also don't mention what they return when the element read is partially out of bounds, like reading a 4 byte int from a 2 byte file. The result for [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) is that they return 2, the amount of bytes that were available to read, and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) returns 0, it does not count elements that were only partially read.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
@@ -133,7 +165,7 @@ The language has lax syntax with optional semicolons. This appears to be a half-
 Fixing it requires placing a semicolon after the last statement in the multi-statement, placing a line break so the end brace "`}`" gets separated away, or if there's only one statement, removing the curly braces.  
 This problem is generalised to any inner scope.
 
-- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with vector syntax. This will fail to compile:
+- Semicolons or parentheses become mandatory when using procedure call syntax followed by an inner scope, as this clashes with packed array indexing syntax. This will fail to compile:
 ```
 message_begin MSG_BROADCAST, SVC_TEMPENTITY
 {
@@ -182,3 +214,5 @@ Could not locate output file tput Folder/PLUGIN.amx (compile failed).
 ```
 The correct command in this case would be:  
 `amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
+
+- The compiler is generally good at labeling when errors and warnings come from includes, but it reports them as coming from the main source code file if it's an unused symbol warning.

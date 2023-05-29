@@ -17,7 +17,10 @@ def prompt_path():
 		if os.path.isdir(path): return path
 		print(f'The path "{path}" does not exist.')
 
-dir_appdata   = os.path.expandvars('%APPDATA%')
+dir_appdata = (
+	os.path.expandvars('%APPDATA%') if os.name == 'nt' else
+	os.path.expanduser('~')
+)
 dir_sw        = os.path.join(dir_appdata, 'SkillzWorld')
 file_settings = os.path.join(dir_sw     , 'compilehelper.json')
 os.makedirs(dir_sw, exist_ok = True)
@@ -121,7 +124,7 @@ elif compiled_plugins:
 			if not line: continue
 			line = line.split(';', maxsplit = 1)[0] # Prune comments
 			if not line: continue
-			tokens = line.split()
+			tokens = line.split(maxsplit = 1)
 			config_plugins.add(tokens[0]) # Add the plugin name.amxx
 	
 	new_plugins = compiled_plugins - config_plugins
