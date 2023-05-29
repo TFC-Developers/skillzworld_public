@@ -225,8 +225,9 @@ public task_increase_playtime() {
 	new Float:fPlayTime;																			//create float for playtime
 	for(new i = 0; i < ArraySize(g_PlayerData); i++)												//cycle through all players
 	{																			
-		ArrayGetArray(g_PlayerData, i, Buffer);														//get playerdata from array
-		//DebugPrintLevel(0,"Player connected at %f", Buffer[mPD_ftLastPTUpdate]);					//debug
+		ArrayGetArray(g_PlayerData, i, Buffer);
+		new szNickname[32]; 														//get playerdata from array
+		DebugPrintLevel(0,"Increasing #%d (%s) Player connected at %f",i, Buffer[mPD_szFirstName], Buffer[mPD_ftLastPTUpdate]);					//debug
 		fPlayTime = floatsub(get_gametime(),Buffer[mPD_ftLastPTUpdate]);							//get playtime since last update
 		new szName[64]; get_user_name(Buffer[mPD_iPlayerID], szName, charsmax(szName));				// Get the player's name
 		//DebugPrintLevel(0,"Playtime of %d (%s) increased by %f", Buffer[mPD_iPlayerID], szName, fPlayTime);
