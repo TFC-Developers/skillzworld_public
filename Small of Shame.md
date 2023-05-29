@@ -95,14 +95,12 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 - [nvault_get](https://www.amxmodx.org/api/nvault/nvault_get) does not mention what happens when the key does not exist.
 	- It returns 0, and it writes 0.0 to a given float reference, and "" to a given string reference.
 	
-- [fread](https://www.amxmodx.org/api/file/fread) and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) neglect to mention what happens when reading out of bounds.
-	- The result is garbage memory, the garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
-
-- [fread](https://www.amxmodx.org/api/file/fread) and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) neglect to mention what happens when reading out of bounds.
-	- The result is garbage memory, the garbage memory elements read do not count in the return value. For example, fread on an empty file returns 0 rather than 1.
-
-- [fread](https://www.amxmodx.org/api/file/fread) has wrong documentation; it says it returns the number of elements read, but it actually returns the number of bytes read.
-	- This error probably came from lazy copy pasting of the documentation from [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) or [fread_raw](https://www.amxmodx.org/api/file/fread_raw), which correctly returns the number of elements read.
+- [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) have wrong documentation; it says they returns the number of elements read, but they actually returns the number of bytes read.
+	- This error probably came from lazy copy pasting of the documentation from [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), which correctly returns the number of elements read.
+	
+- [fread](https://www.amxmodx.org/api/file/fread), [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) neglect to mention what happens when reading out of bounds.
+	- The result is garbage memory, sometimes null but effectively random. The garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
+	- They also don't mention what they return when the element read is partially out of bounds, like reading a 4 byte int from a 2 byte file. The result for [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) is that they return 2, the amount of bytes that were available to read, and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) returns 0, it does not count elements that were only partially read.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
