@@ -23,7 +23,28 @@ The Sven Co-op team made a wise decision when integrating the more sensible Ange
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
 Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
 
+- The standard library is missing a file truncate function. If you want to shorten a file, you have to delete the file and rewrite it.
+
+### AMXX-Studio
+This software is bundled with the AMX Mod X installation package, and is also featured separately on the downloads page, which implies that it is recommended by the AMX Mod X team.  
+It was last updated in 2006, and is soon to be two decades out of date, shipping with documentation for AMX Mod X from that time.  
+It has its own fair share of problems, too.  
+
+- It has strange and unfamiliar shortcuts, like click and hold + mouse wheel to resize text instead of ctrl + mouse wheel, and ctrl + delete to close a tab instead of ctrl + w.
+
+- The keyboard shortcuts are written in German.
+
 - AMXX-Studio does not recognise and syntax highlight public functions if they're declared with the @ prefix.
+
+- It does not recognise procedure calling syntax, only recognising function calling syntax to display the function signature.
+	- When displaying the function signature, it loses the ability to autocomplete arguments. You can get them while using procedure calling syntax.
+	
+- It offers indentation support for any amount of spaces, *but only deletes one space at a time*.
+
+- Tab characters are extremely wide and can not be configured.
+
+- It somehow uses a monospace font where the space character is not monospace.
+
 
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
@@ -69,6 +90,9 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 
 - The precache_\* family of functions fails to state the reason for there being multiple functions. The function [precache_generic](https://www.amxmodx.org/api/amxmodx/precache_generic) does not work with precaching sprites, and it doesn't clearly state what it's *for* -- what is a generic file, if not also a sprite?
 	- Use [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model) to precache sprites. This is also not documented behaviour, unless you're supposed to already know that .spr sprites and .mdl models are considered the one and same type of resource.
+
+- [nvault_get](https://www.amxmodx.org/api/nvault/nvault_get) does not mention what happens when the key does not exist.
+	- It returns 0 in this case.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
