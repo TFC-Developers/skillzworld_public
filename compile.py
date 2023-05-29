@@ -1,4 +1,10 @@
-import os, json, subprocess, datetime
+####
+# Usage guide:
+#  Run with no arguments to compile all .sma source code files in the current directory.
+#  Run with a .sma file path argument to compile a single file.
+####
+
+import os, json, subprocess, datetime, sys
 
 KEY_PATH_PLUGINS  = 'path_plugins'
 KEY_PATH_COMPILER = 'path_compiler'
@@ -70,25 +76,37 @@ print(f' "{file_script_name}"')
 print(f'Dumping plugins into directory: "{settings[KEY_PATH_PLUGINS]}"')
 
 compiled_n = 0
-_, _, filenames = next(os.walk(cwd))
+if len(sys.argv) > 1: # A file argument was given
+	file = sys.argv[1]
+	assert os.path.splitext(file)[1].lower() == '.sma', 'If an argument is given, it must be .sma source code to compile.'
+	assert os.path.isfile(file), 'The given file argument is not a valid file.'
+	files = (file,)
+else: # Nothing was given, so compile everything in the CWD
+	_, _, filenames = next(os.walk(cwd))
+	files = (os.path.join(cwd, filename) for filename in filenames)
 
 compiled_plugins = set()
 
 print() # Empty line
-for filename in filenames:
-	extless, ext = os.path.splitext(filename)
+for file in files:
+	file_extless, ext = os.path.splitext(file)
 	if not ext.lower() == '.sma': continue
 	compiled_n += 1
 	
-	filename_plugin = extless + '.amxx'
+	filename_extless = os.path.split(file_extless)[1]
+	filename_plugin = filename_extless + '.amxx'
+	
 	file_plugin = os.path.join(settings[KEY_PATH_PLUGINS], filename_plugin)
 	compiled_plugins.add(filename_plugin)
 	today_str = datetime.date.today().strftime('%d/%m/%y')
+	
+	_, filename = os.path.split(file)
 	print(f'Compiling plugin code: "{filename}"')
+	
 	with open(file_script_version, 'w') as f: f.write(f'stock const _SCRIPT_DATE[] = "{today_str}"')
-	with open(file_script_name   , 'w') as f: f.write(f'stock const _SCRIPT_NAME[] = "{extless}"')
+	with open(file_script_name   , 'w') as f: f.write(f'stock const _SCRIPT_NAME[] = "{file_extless}"')
 	subprocess.run(
-		(file_compiler, filename, f'-o{file_plugin}')
+		(file_compiler, file, f'-o{file_plugin}')
 	)
 	print() # Empty line
 
@@ -113,5 +131,5 @@ elif compiled_plugins:
 				print(f' {new_plugin}')
 				f.write(f'\n{new_plugin} debug ; Added by compile_all.py')
 
-print(f'Compiled {compiled_n} plugins.')
-input('Press enter to quit.\n')
+print(f'Compiled {compiled_n} plugin{"s"*(compiled_n != 1)}.')
+#input('Press enter to quit.\n')
