@@ -2,6 +2,7 @@
 # Usage guide:
 #  Run with no arguments to compile all .sma source code files in the current directory.
 #  Run with a .sma file path argument to compile a single file.
+#   The "include" directory will still be searched for in the current directory.
 ####
 
 import os, json, subprocess, datetime, sys
@@ -15,9 +16,6 @@ def prompt_path():
 		path = input(' > ').strip()
 		if os.path.isdir(path): return path
 		print(f'The path "{path}" does not exist.')
-		
-cwd           = os.getcwd()
-print(f'Looking for .sma source files in current directory: "{cwd}"')
 
 dir_appdata   = os.path.expandvars('%APPDATA%')
 dir_sw        = os.path.join(dir_appdata, 'SkillzWorld')
@@ -66,6 +64,7 @@ if should_save_settings:
 	with open(file_settings, 'w') as f:
 		json.dump(settings, f, indent = '\t')
 
+cwd = os.getcwd()
 path_include = os.path.join(cwd, 'include')
 file_script_version = os.path.join(path_include, 'script_version.inc')
 file_script_name    = os.path.join(path_include, 'script_name.inc')
@@ -80,8 +79,10 @@ if len(sys.argv) > 1: # A file argument was given
 	file = sys.argv[1]
 	assert os.path.splitext(file)[1].lower() == '.sma', 'If an argument is given, it must be .sma source code to compile.'
 	assert os.path.isfile(file), 'The given file argument is not a valid file.'
+	print(f'Compiling single file "{file}"')
 	files = (file,)
 else: # Nothing was given, so compile everything in the CWD
+	print(f'Compiling all .sma source files in current directory: "{cwd}"')
 	_, _, filenames = next(os.walk(cwd))
 	files = (os.path.join(cwd, filename) for filename in filenames)
 
@@ -104,7 +105,7 @@ for file in files:
 	print(f'Compiling plugin code: "{filename}"')
 	
 	with open(file_script_version, 'w') as f: f.write(f'stock const _SCRIPT_DATE[] = "{today_str}"')
-	with open(file_script_name   , 'w') as f: f.write(f'stock const _SCRIPT_NAME[] = "{file_extless}"')
+	with open(file_script_name   , 'w') as f: f.write(f'stock const _SCRIPT_NAME[] = "{filename_extless}"')
 	subprocess.run(
 		(file_compiler, file, f'-o{file_plugin}')
 	)
