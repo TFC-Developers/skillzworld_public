@@ -206,3 +206,5 @@ Could not locate output file tput Folder/PLUGIN.amx (compile failed).
 ```
 The correct command in this case would be:  
 `amxxpc.exe PLUGIN.sma "-oOutput Folder/PLUGIN.amxx"`
+
+- The compiler is generally good at labeling when errors and warnings come from includes, but it reports them as coming from the main source code file if it's an unused symbol warning.
