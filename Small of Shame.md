@@ -93,7 +93,10 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 	- Use [precache_model](https://www.amxmodx.org/api/amxmodx/precache_model) to precache sprites. This is also not documented behaviour, unless you're supposed to already know that .spr sprites and .mdl models are considered the one and same type of resource.
 
 - [nvault_get](https://www.amxmodx.org/api/nvault/nvault_get) does not mention what happens when the key does not exist.
-	- It returns 0 in this case.
+	- It returns 0, and it writes 0.0 to a given float reference, and "" to a given string reference.
+	
+- [fread](https://www.amxmodx.org/api/file/fread) and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) neglect to mention what happens when reading out of bounds.
+	- The result is garbage memory.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
