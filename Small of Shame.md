@@ -96,7 +96,7 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 	- It returns 0, and it writes 0.0 to a given float reference, and "" to a given string reference.
 	
 - [fread](https://www.amxmodx.org/api/file/fread) and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) neglect to mention what happens when reading out of bounds.
-	- The result is garbage memory, the garbage memory elements read do not count in the return value. For example, fread on an empty file returns 0 rather than 1.
+	- The result is garbage memory, the garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
 
 - [fread](https://www.amxmodx.org/api/file/fread) and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) neglect to mention what happens when reading out of bounds.
 	- The result is garbage memory, the garbage memory elements read do not count in the return value. For example, fread on an empty file returns 0 rather than 1.
