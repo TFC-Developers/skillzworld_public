@@ -21,7 +21,7 @@ new const sql_insertlegacycps[] = "INSERT INTO checkpoints(course_id, x, y, z, c
 new const sql_loadcps[] = "SELECT cp.* FROM checkpoints cp JOIN courses c ON cp.course_id = c.id JOIN maps m ON m.id = c.map_id WHERE m.name = '%s';"
 
 //requires %s/steamid %s/nickname
-new const sql_insertplayer[] = "INSERT INTO players (steamid, userlevel, firstnick, timer, totaltime, userflags) VALUES ('%s', 0, '%s', 0, 0, 0) ON DUPLICATE KEY UPDATE id = id;"
+new const sql_insertplayer[] = "INSERT INTO players (steamid, userlevel, firstnick, totaltime, userflags) VALUES ('%s', 0, '%s', 0, 0) ON DUPLICATE KEY UPDATE id = id;"
 
 //requires %s/steamid
 new const sql_loadplayer[] = "SELECT * FROM players WHERE steamid = '%s';"

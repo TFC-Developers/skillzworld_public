@@ -481,7 +481,7 @@ public SQLNative_InsertRun(iPluign, iParams) {
 	// check if run is the best run for this map
 
 	new bool:bIsBestRun = false;
-	if (ArraySize(g_TopList) == 0) { bIsBestRun = true; }
+	if ((ArraySize(g_TopList) == 0) && (fTime > 0.0)) { bIsBestRun = true; }
 	else if (fTime > 0.0) {
 		new Buffer[eSpeedTop_t]; ArrayGetArray(g_TopList,0,Buffer);
 		new Float:fBestTime = Buffer[m_fTime];
