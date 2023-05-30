@@ -133,7 +133,7 @@ elif compiled_plugins:
 		with open(file_config_plugins, 'a') as f:
 			for new_plugin in sorted(new_plugins):
 				print(f' {new_plugin}')
-				f.write(f'\n{new_plugin} debug ; Added by compile_all.py')
+				f.write(f'\n{new_plugin} debug ; Added by compile.py')
 
 print(f'Compiled {compiled_n} plugin{"s"*(compiled_n != 1)}.')
 #input('Press enter to quit.\n')

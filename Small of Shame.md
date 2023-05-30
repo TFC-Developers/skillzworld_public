@@ -60,7 +60,8 @@ The parameters have the wrong names, which belong to floatdiv.
 - [client_disconnect](https://www.amxmodx.org/api/amxmodx/client_disconnect) has been deprecated [since 2015](https://github.com/alliedmodders/amxmodx/commit/ed4faf7c114495db7426023c2b47914523fcdfd1) and will never be removed.
 
 ### Bad documentation
-The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.
+The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.  
+It's often hard to judge whether the problem sits with the documentation or the library. In those cases it's probably both. An example is [fread](https://www.amxmodx.org/api/file/fread)'s return value, explained below.
 
 - Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) and [register_concmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation that does not have this problem, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
 	- The callback function for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) should take a single parameter holding the calling player id: `public <name>(id)`
@@ -97,13 +98,14 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 	
 - [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) have wrong documentation; it says they returns the number of elements read, but they actually returns the number of bytes read.
 	- This error probably came from lazy copy pasting of the documentation from [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), which correctly returns the number of elements read.
+	- The inconsistency in behaviour implies a bug in the library rather than the documentation.
 	
 - [fread](https://www.amxmodx.org/api/file/fread), [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks), and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) neglect to mention what happens when reading out of bounds.
 	- The result is garbage memory, sometimes null but effectively random. The garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
 	- They also don't mention what they return when the element read is partially out of bounds, like reading a 4 byte int from a 2 byte file. The result for [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) is that they return 2, the amount of bytes that were available to read, and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) returns 0, it does not count elements that were only partially read.
 
 ### Broken standard library
-Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.
+Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
 
 - Not only is the documentation for [fwrite_raw](https://www.amxmodx.org/api/file/fwrite_raw) wrong, the function just doesn't work. The descriptions for the `block` and `mode` parameters are swapped, and the function's code has a wrong pointer that causes it to write garbage data from the stack instead of the cell array to the file.  
 This bugged code is in [amxmodx/file.cpp, amx_fwrite_raw](https://github.com/alliedmodders/amxmodx/blob/master/amxmodx/file.cpp#L454), where  

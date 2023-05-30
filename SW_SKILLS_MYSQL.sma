@@ -41,10 +41,9 @@ enum eSpeedTop_t
 	m_sTopPlayerAuthid[MAX_AUTHID_LEN],         // The player's authid
 	m_sTopPlayerName[MAX_NAME_LEN],             // The player's name
 	Float:m_fTime,                              // The player's time
-    m_iCourseID,                                // The course id (Mysql ID not local id)
-    m_CreatedAt[64],                            // The date the run was created
-    m_iPlayerClass,                             // The player's class
-
+	m_iCourseID,                                // The course id (Mysql ID not local id)
+	m_CreatedAt[64],                            // The date the run was created
+	m_iPlayerClass,                             // The player's class
 }
 new Array:g_TopList = Invalid_Array;            // Array for the top 100 players
 new Array:g_GroupedTopList = Invalid_Array;		// Array for the grouped top 100 players
@@ -622,7 +621,7 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 	
 	/// Ensure that iStart is in range [0, g_iTopCount), iEnd is in [iStart+1, g_iTopCount]
 	/// iEnd is exclusive, so iEnd-iStart is the amount of items and is in range [1, g_iTopCount]
-	/// This mirrors the way Python slicing works.
+	/// This mirrors the way Python slicing works, except that some elements may be filtered out.
 	iStart = clamp(iStart, 0, top_count - 1)
 	iEnd   = clamp(iEnd, iStart+1, top_count)
 	///
@@ -633,15 +632,19 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
 	new iClass = pev(id, pev_playerclass);
 	send_motd(id, "\nCurrently only showing the runs for your player class: %s\n\n", g_szClassNames[iClass]);
-	new iPlayerCourse = api_get_player_course(id);
+	
+	new iPlayerCourse = api_get_player_course(id)
 	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
 	send_motd(id, "[ %s course ]", szCourseName);
 
+	// Bug: Viewing the leaderboard as spectator doesn't work because of the class filter
+	console_print id, "Your course ID:%d", iPlayerCourse
 	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
-	for(new i = iStart, iAcquired; i < iEnd && iAcquired < MAX_MOTD_RANKS; iAcquired++) {
+	for(new i = iStart, iAcquired; i < iEnd && iAcquired < MAX_MOTD_RANKS && i < top_count; ) {
 		ArrayGetArray(top_list, i, TopInfo)
-		i++ // Increment i here because some runs may be skipped
-		if (api_get_mysqlid_by_course(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
+		i++
+		console_print id, "Course's SQLid:%d, run course id:%d, dude's class:%d, run class:%d", api_get_mysqlid_by_course(iPlayerCourse), TopInfo[m_iCourseID], iClass, TopInfo[m_iPlayerClass]
+		if (api_get_course_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
 		if (iClass != TopInfo[m_iPlayerClass]) continue;
 		new Float:fTime = TopInfo[m_fTime];
 		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d",
@@ -650,6 +653,7 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 			floatround(fTime*100.0, floatround_floor) % 100
 		);
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
+		iAcquired++
 	}
 
 	if (iEnd != top_count) send_motd(id, "\n\nClose this window and type \"/top %d-%d\" to view the next %d", iStart+1, iStart+MAX_MOTD_RANKS, MAX_MOTD_RANKS)
