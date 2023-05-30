@@ -5,9 +5,6 @@
 #include <hamsandwich>
 #include <orpheu>
 #include <orpheu_stocks>
-#include "include/api_thirdperson"
-#include "include/api_skills_actions"
-#include "include/api_menu"
 
 // Dependency for compile: Orpheu, Orpheu GameRules Object
 //   Orpheu: https://forums.alliedmods.net/showthread.php?t=116393
@@ -23,34 +20,9 @@ public install_game_rules() {
 }
 ////
 
-
 public plugin_init() {
 	RegisterPlugin
 	OrpheuRegisterHookFromObject g_pGameRules, "GetPlayerSpawnSpot", "CGameRules", "player_spawn_spot"
-	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_medikit", "action_medikit"
-	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_axe", "action_melee"
-	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_knife", "action_melee"
-	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_spanner", "action_melee"
-}
-
-const Float:ACTION_AIM_THRESHOLD = 88.0
-public action_medikit(wid) { // Test code
-	new id = entity_get_edict(wid, EV_ENT_owner);
-	new Float:angles[3]; pev id, pev_v_angle, angles
-	if (angles[0] > ACTION_AIM_THRESHOLD) {
-		reset_run id
-	} else if (angles[0] < -ACTION_AIM_THRESHOLD) {
-		open_menu id
-	}
-}
-public action_melee(wid) {
-	new id = entity_get_edict(wid, EV_ENT_owner);
-	new Float:angles[3]; pev id, pev_v_angle, angles
-	if (angles[0] > ACTION_AIM_THRESHOLD) {
-		load_checkpoint id
-	} else if (angles[0] < -ACTION_AIM_THRESHOLD) {
-		set_custom_checkpoint id
-	}
 }
 
 public player_spawn_spot(gameRules, id) {
