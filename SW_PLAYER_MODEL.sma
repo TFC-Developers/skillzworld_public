@@ -142,6 +142,9 @@ stock sort_bump_entries_by_timestamp(Array:arr, a[eBumpEntry], b[eBumpEntry]) {
 }
 
 public plugin_precache() {
+	disconnected_authids = TrieCreate()
+	loaded_authids = TrieCreate()
+	
 	new timestamp = get_systime()
 	
 	loaded_model_infos = ArrayCreate(eModelInfo)
