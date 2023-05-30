@@ -78,6 +78,33 @@ public plugin_init() {
     set_task(5.0, "spawn_thinker"); 
     g_iThinker = 0;
 }
+public plugin_precache() {
+    precache_sound(CHECKPOINT_SOUND);
+    g_iIndexSprite = precache_model("sprites/lgtning.spr")
+    g_iIndex_Flaremodel = precache_model("sprites/flare6.spr");
+    precache_sound("misc/party1.wav");
+    g_iIndexClocksprite = precache_model(CLOCK_SPRITE);
+    g_iIndex_CPmarker_red = precache_model(CP_MARKER_RED);
+    g_iIndex_CPmarker_yellow = precache_model(CP_MARKER_YELLOW);
+
+}
+public plugin_natives() {
+	register_library "api_skills_actions"
+	register_native "reset_run", "Native_ResetRun"
+	register_native "load_checkpoint", "Native_LoadCheckpoint"
+	register_native "set_custom_checkpoint", "Native_SetCustomCheckpoint"
+}
+public Native_ResetRun(iPlugin, iParams) {
+	menu_resetconsent get_param(1)
+}
+public Native_LoadCheckpoint(iPlugin, iParams) {
+	pub_loadlastcp get_param(1)
+}
+public Native_SetCustomCheckpoint(iPlugin, iParams) {
+	pub_savecustomcp get_param(1)
+}
+
+
 public pub_setmedone(id) {
     if (!is_connected_admin(id)) {
         client_print(id, print_chat, "* You are not an admin");
@@ -88,16 +115,6 @@ public pub_setmedone(id) {
     client_cmd(id, "spk \"ok run is over\"\n");
     client_print(id, print_chat, "* Done");
     return PLUGIN_HANDLED
-}
-public plugin_precache() {
-    precache_sound(CHECKPOINT_SOUND);
-    g_iIndexSprite = precache_model("sprites/lgtning.spr")
-    g_iIndex_Flaremodel = precache_model("sprites/flare6.spr");
-    precache_sound("misc/party1.wav");
-    g_iIndexClocksprite = precache_model(CLOCK_SPRITE);
-    g_iIndex_CPmarker_red = precache_model(CP_MARKER_RED);
-    g_iIndex_CPmarker_yellow = precache_model(CP_MARKER_YELLOW);
-
 }
 public pub_stoprun(id) {
     if (!g_sPlayerData[id][m_bInRun]) {
