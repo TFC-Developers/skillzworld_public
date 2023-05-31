@@ -290,34 +290,39 @@ public cmd_create(id, level, cid) {
 }
 
 static stock get_player(const search_name[]) {
-	new player_name[0x20]
+	static player_name[0x20]
 	for (new id = 1; id <= get_maxplayers(); id++) {
+		if (!is_user_connected(id)) continue
 		get_user_name id, player_name, charsmax(player_name)
-		if (containi(search_name, player_name)) return id
+		if (containi(player_name, search_name) != -1) return id
 	}
 	return 0
 }
 
 public cmd_give(id, level, cid) {
-	new _name0[0x20], _name1[0x20], _name2[0x20]
-	get_user_name 0, _name0, charsmax(_name0)
-	get_user_name 1, _name1, charsmax(_name1)
-	get_user_name 2, _name2, charsmax(_name2)
 	new args_n = read_argc()
 	if (args_n < 3) return
 	new search_name[0x20]; read_argv 1, search_name, charsmax(search_name)
 	new recipient = get_player(search_name)
-	
-	get_user_name recipient, search_name, charsmax(search_name)
 	if (!recipient) return
+	
 	new classname[0x20]; read_argv 2, classname, charsmax(classname)
+	
 	for (new type_i; type_i < sizeof AMMO_TYPES; type_i++) {
 		if (equali(AMMO_TYPES[type_i], classname)) {
-			new amount = read_argv_int(4)
+			new amount = read_argv_int(3)
 			if (!amount) amount = 9999
 			tfc_setbammo recipient, type_i, amount
+			console_print id, "Gave %s some %s, bro", search_name, AMMO_TYPES[type_i]
 			return
 		}
 	}
+	
 	give_item recipient, classname
+	
+	get_user_name recipient, search_name, charsmax(search_name)
+	console_print id, "Gave %s a %s, bro", search_name, classname
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/
