@@ -118,9 +118,20 @@ public SQLNative_ReloadCourses() {
    // native set_task(Float:time, const function[], id = 0, const any:parameter[] = "", len = 0, const flags[] = "", repeat = 0);
    if (g_bReloaded == true) { return; }
    g_bReloaded = true;
-   set_task(15.0, "sql_loadcourses", 1407, "");
+   client_print(0, print_chat, "* Reloading the map in 30 seconds due to the import of the legacy courses");
+   set_task(15.0, "reload_map", 1407, "");
 }
 
+public reload_map() {
+	client_print(0, print_chat, "* Reloading the map in 15 seconds due to the import of the legacy courses");
+	set_task(15.0, "reload_map2", 1408, "");
+}
+
+public reload_map2()
+{
+	new szMap[64]; get_mapname(szMap, charsmax(szMap));
+	server_cmd("changelevel %s\n", szMap)
+}
 // logic; sql_loadcourses -> api_registercourse 
 //              |-done-> load all cps for map (done in Handle_QueryLoadCourses) and check there if a legacy course was if not call the api function to load the cps from file                   
 public plugin_precache() {
