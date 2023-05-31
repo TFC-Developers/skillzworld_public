@@ -1,16 +1,10 @@
-#include <amxmodx>
-#include <amxmisc>
+#include "include/global"
 #include <engine>
 #include <fun>
 #include <tfcx>
-#include <fakemeta>
 #include <hamsandwich>
 #include <orpheu>
 #include <orpheu_stocks>
-
-#define PLUGIN "SkillzWorld Weapons"
-#define VERSION "1.0"
-#define AUTHOR "SkillzWorld"
 
 // Dependency for compile: Orpheu, Orpheu GameRules Object
 //   Orpheu: https://forums.alliedmods.net/showthread.php?t=116393
@@ -26,22 +20,9 @@ public install_game_rules() {
 }
 ////
 
-
 public plugin_init() {
-	register_plugin PLUGIN, VERSION, AUTHOR
+	RegisterPlugin
 	OrpheuRegisterHookFromObject g_pGameRules, "GetPlayerSpawnSpot", "CGameRules", "player_spawn_spot"
-	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_medikit", "medikit_action"
-}
-
-public medikit_action(wid) { // Test code
-	new id = entity_get_edict(wid, EV_ENT_owner);
-	new Float:angles[3]; pev id, pev_v_angle, angles
-	
-	if (angles[0] > 88.0) {
-		console_print id, "Medikit down"
-	} else if (angles[0] < -88.0) {
-		console_print id, "Medikit up"
-	}
 }
 
 public player_spawn_spot(gameRules, id) {

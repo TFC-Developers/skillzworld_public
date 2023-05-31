@@ -1,4 +1,4 @@
-new const g_szClassNames[][] = {
+stock const g_szClassNames[][] = {
     "None",
     "Scout",
     "Sniper",
