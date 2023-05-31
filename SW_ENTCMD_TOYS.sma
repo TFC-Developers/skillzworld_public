@@ -34,10 +34,10 @@ stock const AMMO_TYPES[][] = { // The indices are the values of the ammo enum in
 }
 public plugin_init() {
 	register_plugin PLUGIN, VERSION, AUTHOR
-	register_concmd "new_e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
-	register_concmd "new_e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
+	register_concmd "e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
+	register_concmd "e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
 	register_concmd "new_e_kill", "cmd_kill", ADMIN_ADMIN, "Deletes an entity."
-	register_concmd "new_e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
+	register_concmd "e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
 }
 public plugin_precache() {
 	res_lightning = precache_model(SPR_LIGHTNING)
@@ -234,26 +234,37 @@ public cmd_create(id, level, cid) {
 	//   e_create cycler !
 	// Example to spawn a cycler where you aim that looks at you:
 	//   e_create cycler .ZS 35 180
-	// Create a civilian prison:
-	//   e_create cycler !X 40 angles "0 180";e_create cycler !X -40;e_create cycler !Y -40 angles "0 90";e_create cycler !Y 40 angles "0 -90"
+	// Create a civilian prison around Dizlin:
+	//   e_create cycler @diz !X 40 angles "0 180";e_create cycler @diz !X -40;e_create cycler @diz !Y -40 angles "0 90";e_create cycler @diz !Y 40 angles "0 -90"
 	
 	new args_n = read_argc()
-	if (args_n < 2) return PLUGIN_HANDLED
+	if (args_n < 2) return
 	new arg1[0x40], arg2[0x40]
 	
-	read_argv 1, arg1, charsmax(arg1)
+	new arg_i = 1
+	
+	read_argv arg_i++, arg1, charsmax(arg1)
 	new ent = create_entity(arg1)
 	
 	new Float:origin[3], Float:angles[3], bool:use_angles[3], iaimed[3]
-	read_argv 2, arg2, charsmax(arg2)
+	read_argv arg_i++, arg2, charsmax(arg2)
 	
-	new arg_i = 2, c = arg2[0]
+	new c = arg2[0]
+	console_print id, "Pusuk c:%d, c:%c", c, c
+	if (c == '@') {
+		new id_new = get_player(arg2[1])
+		console_print id, "Gusuk id:%d, id_new:%d", id, id_new
+		if (id_new) id = id_new
+		read_argv arg_i++, arg2, charsmax(arg2)
+		c = arg2[0]
+	}
+	
 	if (c == '!') {entity_get_vector id, EV_VEC_origin, origin;}
 	else {get_user_origin id, iaimed, 3; VEC_TO_FVEC(iaimed, origin);}
 	
 	if (c == '.' || c == '!') {
 		entity_get_vector id, EV_VEC_angles, angles
-		arg_i = 3
+		arg_i++
 		for (new i = 1; (c = arg2[i]); i++) {
 			switch (c | 0x20) { // Match against lowercase c
 			case 'x': {if (!(c & 0x20)) origin[0] += read_argv_float(arg_i++);}
@@ -279,8 +290,6 @@ public cmd_create(id, level, cid) {
 		DispatchKeyValue ent, arg1, arg2
 	}
 	DispatchSpawn ent
-	
-	return PLUGIN_HANDLED
 }
 
 static stock get_player(const search_name[]) {
