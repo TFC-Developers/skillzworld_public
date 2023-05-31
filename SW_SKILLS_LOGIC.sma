@@ -469,7 +469,7 @@ public pub_sub_endtouch(touched, toucher) {
             new iTotalSeconds = floatround(fTime, floatround_floor), iCentis = floatround(fTime*100.0, floatround_floor) % 100;
             new iHours = iTotalSeconds / (60*60), iTotalMinutes = iTotalSeconds / 60
             new iMinutes = iTotalMinutes % 60, iSeconds = iTotalSeconds % 60
-            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, iHours, iMinutes, iCentis, g_sPlayerData[toucher][m_iTotalCPsUsed]);
+            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d:%02d.%02d (%d cps used)", szName, szCourseName, iHours, iMinutes, iSeconds, iCentis, g_sPlayerData[toucher][m_iTotalCPsUsed]);
             if (iHours > 0) {
                 formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iCentis);
             } else {
