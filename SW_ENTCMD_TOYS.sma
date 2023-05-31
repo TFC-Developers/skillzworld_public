@@ -250,10 +250,8 @@ public cmd_create(id, level, cid) {
 	read_argv arg_i++, arg2, charsmax(arg2)
 	
 	new c = arg2[0]
-	console_print id, "Pusuk c:%d, c:%c", c, c
 	if (c == '@') {
 		new id_new = get_player(arg2[1])
-		console_print id, "Gusuk id:%d, id_new:%d", id, id_new
 		if (id_new) id = id_new
 		read_argv arg_i++, arg2, charsmax(arg2)
 		c = arg2[0]
@@ -264,7 +262,6 @@ public cmd_create(id, level, cid) {
 	
 	if (c == '.' || c == '!') {
 		entity_get_vector id, EV_VEC_angles, angles
-		arg_i++
 		for (new i = 1; (c = arg2[i]); i++) {
 			switch (c | 0x20) { // Match against lowercase c
 			case 'x': {if (!(c & 0x20)) origin[0] += read_argv_float(arg_i++);}
@@ -284,9 +281,9 @@ public cmd_create(id, level, cid) {
 	entity_set_vector ent, EV_VEC_angles, angles
 	entity_set_origin ent, origin
 	entity_set_model ent, MDL_CIVILIAN
-	for (; arg_i < args_n; arg_i += 2) {
-		read_argv arg_i    , arg1, charsmax(arg1)
-		read_argv arg_i + 1, arg2, charsmax(arg2)
+	for (; arg_i < args_n; ) {
+		read_argv arg_i++, arg1, charsmax(arg1)
+		read_argv arg_i++, arg2, charsmax(arg2)
 		DispatchKeyValue ent, arg1, arg2
 	}
 	DispatchSpawn ent
