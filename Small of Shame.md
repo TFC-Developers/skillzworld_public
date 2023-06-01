@@ -107,6 +107,9 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 - [contain](https://www.amxmodx.org/api/string/contain) and [containi](https://www.amxmodx.org/api/string/containi) do not state what happens when an empty substring `""` is checked.
 	- The result is no match, even if the source string is also `""`. This is contrary behaviour to some other languages, like Python.
 
+- [TrieIterGetKey](https://www.amxmodx.org/api/celltrie/TrieIterGetKey) has doubly wrong documentation: "Nnumber [sic] of bytes written to the buffer" says A: that it counts the amount of bytes written instead of cells, and implies B: that it includes the zero terminator.
+	- The function actually returns the amount of characters inside the string, which is 5 if it wrote the key "model".
+
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
 
