@@ -87,10 +87,10 @@ public cmd_kv(id, level, cid) {
 		read_argv 1, classname, charsmax(classname)
 		radius = read_argv_float(2)
 		if (!radius) { // Set all
-			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\"", arg1, arg2, classname
 			arg_i = 2
 			read_argv arg_i, arg1, charsmax(arg1)
 			read_argv arg_i + 1, arg2, charsmax(arg2)
+			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\"", arg1, arg2, classname
 			while ((ent = find_ent_by_class(ent, classname))) {
 				DispatchKeyValue ent, arg1, arg2
 				count++
@@ -402,7 +402,7 @@ public cmd_create(id, level, cid) {
 			console_print id, "No player found matching substring \"%s\"", arg2[1]
 			return
 		}
-		read_argv arg_i++, arg2, charsmax(arg2)
+		read_argv ++arg_i, arg2, charsmax(arg2)
 		c = arg2[0]
 	}
 	
@@ -479,3 +479,6 @@ public cmd_give(id, level, cid) {
 	get_user_name recipient, search_name, charsmax(search_name)
 	console_print id, "Gave %s a %s, bro", search_name, classname
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/
