@@ -2,8 +2,18 @@
 #include "include/sql_playerdata"
 #include "include/sql_tquery"
 #include "include/sql_dbqueries"
+#include <messages>
+
+
+#define STATUSICON 81
+#define STATUS_ARG 1
+#define RED_ARG 5
+#define GREEN_ARG 6
+#define BLUE_ARG 7
+
 
 new Array: g_PlayerData = Invalid_Array;
+new bool:g_bHasColoredConcsHud[33];
 
 
 public plugin_natives()
@@ -21,6 +31,7 @@ public plugin_init()
 	register_clcmd("say", "Handle_Say");							//register command /stats
 	register_clcmd("say_team", "Handle_Say");								//register command /top
 	register_forward(FM_ClientUserInfoChanged, "Forward_ClientUserInfoChanged") //register forward ClientUserInfoChanged
+	register_message( STATUSICON, "nade_color" );
 }
 
 public plugin_end() 
@@ -128,6 +139,8 @@ public client_putinserver(id)
 	new szQuery[512]; formatex(szQuery, charsmax(szQuery), sql_insertplayer, sAuthid, szName);				// Create the query string INSERT 	
 	api_SQLAddThreadedQuery(szQuery,"Handle_ConnectQuery", QUERY_NOT_DISPOSABLE, PRIORITY_HIGH, Data, 1);	// Add the query to the queue
 	sql_updatenickname(id);																					// Update the player's nickname
+
+	g_bHasColoredConcsHud[id] = false;																		// Set the player's colored concs hud to false
 	return PLUGIN_HANDLED;
 }
 public Handle_ConnectQuery(iFailState, Handle:hQuery, sError[], iError, Data[], iLen, Float:fQueueTime, iQueryIdent) 
@@ -276,13 +289,9 @@ public Handle_Say(id) {
 	//get the second argument
 	new sArgs[MAX_CHAT_LEN];  read_args(sArgs, charsmax(sArgs));	//get the second argument
 	if (strlen(sArgs) <= 2) { return PLUGIN_CONTINUE; }				//empty message
-	new szMSG[MAX_CHAT_LEN];										//create buffer for message
-	//copy sArgs to szMSG but skip the first and last character
-	for(new i = 1; i < strlen(sArgs) - 1; i++) { szMSG[i-1] = sArgs[i]; }
-	szMSG[strlen(sArgs) - 2] = '\0';								//add null terminator
-	//dont log commands beginning with /
-	if (szMSG[0] == '/') { return PLUGIN_CONTINUE; }
-	sql_insertserverlog_data(id, "say", szMSG);
+	remove_quotes(sArgs);											//remove quotes
+	if (sArgs[0] == '/') { return PLUGIN_CONTINUE; }
+	sql_insertserverlog_data(id, "say", sArgs);
 	return PLUGIN_CONTINUE
 }
 
@@ -304,4 +313,92 @@ public Handle_UpdateName(iFailState, Handle:hQuery, sError[], iError, Data[], iL
 		return PLUGIN_HANDLED;
 	}
 	return PLUGIN_HANDLED;	
+}
+
+/*
+public nade_color(msg_id, msg_dest, msg_entity) {
+	if (g_bHasColoredConcsHud[msg_entity] & ~FLAG_COLCONCHUND) { return; }	//if player doesnt have colored concs hud, return
+    if( get_msg_arg_int(STATUS_ARG) ) {
+
+        new red, green, blue;
+        red     = random_num( 100, 255 );
+        green   = random_num( 100, 255 );
+        blue    = random_num( 100, 255 );
+        set_msg_arg_int( RED_ARG, ARG_BYTE, red );
+        set_msg_arg_int( GREEN_ARG, ARG_BYTE, green );
+        set_msg_arg_int( BLUE_ARG, ARG_BYTE, blue );
+
+    }
+
+}
+*/
+
+/*
+#define FLAG_GLOWCONCS	(1<<8)   // concs will glow
+#define FLAG_COLCONCHUND (1<<9)     // concs in his hud will be colored
+*/
+
+//create a menu for player preferences
+public cmd_prefmenu(id) {
+	new szHeader[128];
+	formatex(szHeader, charsmax(szHeader), "\\yPreferences menu\n\\wSelect an option");
+	new menu = menu_create(szHeader, "menu_playerprefs");
+	//new Buffer to retrieve the player's preferences
+
+	new Buffer[ePlayerStruct_t];
+	for(new i = 0; i < ArraySize(g_PlayerData); i++)
+	{
+		ArrayGetArray(g_PlayerData, i, Buffer);
+		if (Buffer[mPD_iPlayerID] == id) { 
+			break;
+		}
+	}
+	DebugPrintLevel(0, "cmd_prefmenu: %d", Buffer[mPD_iPlayerID]);
+
+	if (Buffer[mPD_iPlayerFlags] & FLAG_COLCONCHUND) {
+		menu_additem(menu,"Colored concs (hud): on","1")
+	} else {
+		menu_additem(menu,"Colored concs (hud): \\roff","1");
+	} 
+	menu_display(id, menu);
+}
+
+
+public menu_playerprefs(id, menu, item) {
+    if( item == MENU_EXIT )
+    {
+        menu_destroy( menu );
+        return PLUGIN_HANDLED;
+    }
+
+	new Buffer[ePlayerStruct_t];
+	for(new i = 0; i < ArraySize(g_PlayerData); i++)
+	{
+		ArrayGetArray(g_PlayerData, i, Buffer);
+		if (Buffer[mPD_iPlayerID] == id) { 
+			break;
+		}
+	}
+
+    new data[ 6 ], iName[ 64 ];
+    new access, callback;
+    menu_item_getinfo( menu, item, access, data,5, iName, 63, callback );
+    new tempid = str_to_num( data );
+    menu_destroy( menu );
+    switch( tempid )
+    {
+        case 1: //noclip
+        {
+            if  (Buffer[mPD_iPlayerFlags] & FLAG_COLCONCHUND) {
+				client_print(id, print_chat, "* Colored concs (hud) off");
+				g_bHasColoredConcsHud[id] = false;
+				Buffer[mPD_iPlayerFlags] &= ~FLAG_COLCONCHUND;
+            } else {
+				client_print(id, print_chat, "* Colored concs (hud) on");
+				g_bHasColoredConcsHud[id] = true;
+				Buffer[mPD_iPlayerFlags] |= FLAG_COLCONCHUND;
+            }
+	   		cmd_prefmenu(id);
+        }
+	}
 }
