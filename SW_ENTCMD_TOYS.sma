@@ -378,7 +378,7 @@ public cmd_create(id, level, cid) {
 	// Create a penguin prison around Sylanha:
 	//   e_defaults model "models/player/penguin/penguin.mdl"; e_create cycler @syl !X 40 angles "0 180";e_create cycler @syl !X -40;e_create cycler @syl !Y -40 angles "0 90";e_create cycler @syl !Y 40 angles "0 -90"
 	// Spawn a respawning quad+invuln backpack:
-	//   e_create info_tfgoal .Z 20 wait 1 noise items/armoron_1.wav g_e 1 g_a 1 super_damage_finished 1e400 invincible_finished 1e400
+	//   e_default model models/backpack.mdl; e_create info_tfgoal .Z 20 wait 1 noise items/armoron_1.wav g_e 1 g_a 1 super_damage_finished 1e400 invincible_finished 1e400
 	
 	console_print id, "Entered e_create"
 	new args_n = read_argc()
@@ -391,7 +391,7 @@ public cmd_create(id, level, cid) {
 	new ent = create_entity(arg1)
 	
 	new Float:origin[3], Float:angles[3], bool:use_angles[3], iaimed[3]
-	read_argv arg_i++, arg2, charsmax(arg2)
+	read_argv arg_i, arg2, charsmax(arg2)
 	
 	new c = arg2[0]
 	new target = id
@@ -410,6 +410,7 @@ public cmd_create(id, level, cid) {
 	else {get_user_origin target, iaimed, 3; VEC_TO_FVEC(iaimed, origin);}
 	
 	if (c == '.' || c == '!') {
+		arg_i++
 		entity_get_vector target, EV_VEC_angles, angles
 		for (new i = 1; (c = arg2[i]); i++) {
 			switch (c | 0x20) { // Match against lowercase c
@@ -478,6 +479,3 @@ public cmd_give(id, level, cid) {
 	get_user_name recipient, search_name, charsmax(search_name)
 	console_print id, "Gave %s a %s, bro", search_name, classname
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
-*/
