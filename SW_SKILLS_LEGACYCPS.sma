@@ -30,7 +30,8 @@ new g_iModelID;                                            // model id of the go
 new g_bWorldSpawned;                                       // true if the worldspawn entity has been spawned
 new g_iPlayerInCourse[32];                                 //array to store the player's course id
 new g_iLegacyCourse = -1;                                  //course id of the legacy course
-new g_iCvarBhopmode;                                   // Cvar for the bhopmode
+new g_iCvarBhopmode;                                       // Cvar for the bhopmode
+new g_iMapFlags = 0;                                       // mapflags
 
 /* 
  * 	Functions
@@ -51,6 +52,7 @@ public plugin_natives() {
     register_native("api_get_player_course", "Native_GetPlayerCourse");
     register_native("api_process_mapflags", "Native_ProcessMapFlags");
     register_native("api_get_mysqlid_by_course", "Native_GetMySQLIDByCourse");
+    register_native("api_mapflag", "Native_CheckMapFlag");
     register_library("api_skills_mapentities");
     register_forward(FM_Spawn,"fm_spawn");
     g_bWorldSpawned = false;
@@ -95,8 +97,14 @@ public set_player_course(id, course) {
         client_print(id, print_chat, "* You are now in course %d (%s)", course, get_course_name(course));
     }
 }
+    
+public Native_CheckMapFlag(iPlugin,iParam) {
+    new iFlag = get_param(1);
+    return (g_iMapFlags & iFlag); //return true if the flag is set otherwise false
+}
 public Native_ProcessMapFlags(iPlugin, iParams) {
     new iFlags = get_param(1); //get the mapflags
+    g_iMapFlags = iFlags;
     if (iFlags & MAPFLAG_SURFMODE) {
         DebugPrintLevel(0, "Surfmode enabled");
         set_cvar_float("sv_airaccelerate", 100.0);

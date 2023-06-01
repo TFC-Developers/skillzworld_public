@@ -215,6 +215,35 @@ stock format_seconds(target[], Float:s, target_sz = sizeof target) {
 		else                formatex target[write_i], target_sz, "%d seconds", iSeconds % 60
 	} else if (write_i) /* Something else was written, so remove comma */ target[write_i - 2] = EOS
 }
+
+
+
+stock set_keyvalue(iEnt, szKey[], szValue[])
+{
+	static szClassName[32];
+	
+	pev(iEnt, pev_classname, szClassName, sizeof(szClassName)-1);
+	set_kvd(0, KV_ClassName, szClassName);
+	set_kvd(0, KV_KeyName, szKey);
+	set_kvd(0, KV_Value, szValue);
+	set_kvd(0, KV_fHandled, 0);
+	
+	dllfunc(DLLFunc_KeyValue, iEnt, 0);
+}
+
+stock fm_strip_user_weapons(iClient)
+{
+	new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "player_weaponstrip"));
+	if(!pev_valid(iEnt))
+		return 0;
+	
+	dllfunc(DLLFunc_Spawn, iEnt);
+	dllfunc(DLLFunc_Use, iEnt, iClient);
+	engfunc(EngFunc_RemoveEntity, iEnt);
+	
+	return 1;
+}
+
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */

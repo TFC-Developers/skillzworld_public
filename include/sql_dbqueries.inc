@@ -35,8 +35,8 @@ new const sql_serverlog[] = "INSERT INTO server_logs (steamid, time, ip, nicknam
 //require %s/steamid %s/ip %s/nickname %server %/map %s/action_type %s/steamid
 new const sql_serverlogdata[] = "INSERT INTO server_logs (steamid, time, ip, nickname, server, map, userid, action_type, data) SELECT '%s', CURRENT_TIMESTAMP, '%s', '%s', '%s', '%s', id, '%s', '%s' FROM players WHERE steamid = '%s';"
 
-//requires %d/courseid %f/runtime %d/class %d/cps used %s/steamid
-new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class, cps_used) SELECT %d, players.id, %f, %d, %d FROM players WHERE players.steamid = '%s';"
+//requires %d/courseid %f/runtime %d/class %d/cps_used %d/altmodx_used %s/steamid
+new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class, cps_used, altmodx_used) SELECT %d, players.id, %f, %d, %d, %d FROM players WHERE players.steamid = '%s';"
 
 //requires %s/steamid %s/nickname
 new const sql_updatenamequery[] = "INSERT INTO nicknames (steamid, nickname, usage_count) VALUES ('%s', '%s', 1) ON DUPLICATE KEY UPDATE usage_count = usage_count + 1;"

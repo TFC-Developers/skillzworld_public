@@ -479,13 +479,13 @@ public Handle_QueryInsertLegacyCPs(iFailState, Handle:hQuery, sError[], iError, 
     return PLUGIN_HANDLED;
 }
 public SQLNative_InsertRun(iPluign, iParams) {
-	new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3); new iCpsUsed = get_param(4);
+	new id = get_param(1); new Float:fTime = get_param_f(2); new course = get_param(3); new iCpsUsed = get_param(4); new bAltmodxUsed = get_param(5);
 	if (course <= 0) { DebugPrintLevel(0,"SQLNative_InsertRun <= 0 exception (course was %d)", course); return; }
 	new szSteamID[32]; get_user_authid(id, szSteamID, charsmax(szSteamID));
 	new iClass = pev(id,pev_playerclass);
-	//requires %d/courseid %f/runtime %d/class %s/steamid
+	//requires %d/courseid %f/runtime %d/class %d/cps used %d/altmodx used %s/steamid
 	//new const sql_insertrunquery[] = "INSERT INTO runs (course_id, player_id, time, player_class) SELECT %d, players.id, %f, %d FROM players WHERE players.steamid = %s;"
-	new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, szSteamID);
+	new szQuery[1024]; formatex(szQuery, charsmax(szQuery), sql_insertrunquery, course, fTime, iClass, iCpsUsed, bAltmodxUsed, szSteamID);
 	api_SQLAddThreadedQuery(szQuery, "Handle_QueryInsertRun", QUERY_NOT_DISPOSABLE, PRIORITY_NORMAL);
 
 	// check if run is the best run for this map

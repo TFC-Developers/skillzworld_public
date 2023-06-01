@@ -23,6 +23,8 @@
 
 #define MAPFLAG_SURFMODE (1<<0)
 #define MAPFLAG_BHOPMODE (1<<1)
+#define MAPFLAG_NOGIVE   (1<<2)
+#define MAPFLAG_NOCLASS  (1<<3)
 
 
 /* 
@@ -78,7 +80,8 @@ native api_get_course_mysqlid(id);                    //params: id - course id
 native api_get_number_courses();                      //params: none  
 native api_get_player_course(id);                     //params: id - player id
 native api_process_mapflags(flags);                   //params: flags - map flags
-native api_get_mysqlid_by_course(mysqlid);         //params: mysqlid - course mysql id
+native api_get_mysqlid_by_course(mysqlid);            //params: mysqlid - course mysql id
+native api_mapflag(flag);                             //params: flag - map flag
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */

@@ -6,6 +6,7 @@
 #include "include/api_skills_mapentities"
 #include "include/api_skills_mysql"
 #include <xs>
+#include <tfcx>
 
 
 //enum to store the player's session data
@@ -29,6 +30,8 @@ enum ePlayerSessionData {
     bool:m_bUsedExtras,         //if the player has used extras
     bool:m_bXtraSJ,              //if the player is in super jump mode
     m_iXtraCurCP,               //the current cp the player is in
+    bool:m_bAltmodx,            //if the player is using altmodx
+    Float:m_fAltmodxCooldown   //the cooldown for altmodx
 }
 
 enum eCustomCP {
@@ -44,6 +47,8 @@ new g_iIndex_CPmarker_red;
 new g_iIndex_CPmarker_yellow;
 
 new Float:g_fLastClockSpriteUpdate;
+
+new Float:g_flClassDelay[33];                           //amxmodx delay for classmenu 
 
 new const CHECKPOINT_SOUND[] = "misc/cpoint.wav"
 new const CLOCK_SPRITE[] = "sprites/clocktag.spr"
@@ -74,6 +79,7 @@ public plugin_init() {
     register_clcmd("say /mapcps", "pub_mapcps");
     register_clcmd("say /extras", "menu_extras_deploy");
     register_clcmd("say /setmedone", "pub_setmedone");
+    register_clcmd("say", "hook_say");                                      //hook for altmodx functionalitieis
     register_forward(FM_PlayerPreThink, "Hook_PlayerPreThink",0);
     set_task(5.0, "spawn_thinker"); 
     g_iThinker = 0;
@@ -86,6 +92,20 @@ public plugin_precache() {
     g_iIndexClocksprite = precache_model(CLOCK_SPRITE);
     g_iIndex_CPmarker_red = precache_model(CP_MARKER_RED);
     g_iIndex_CPmarker_yellow = precache_model(CP_MARKER_YELLOW);
+
+    //altmodx precaches
+	precache_sound("items/protect.wav");
+	precache_sound("items/protect2.wav");
+	precache_sound("items/protect3.wav");
+	precache_sound("FVox/HEV_logon.wav");
+	precache_sound("FVox/hev_shutdown.wav");
+	precache_sound("items/inv1.wav");
+	precache_sound("items/inv2.wav");
+	precache_sound("items/inv3.wav");
+	precache_sound("items/damage.wav");
+	precache_sound("items/damage2.wav");
+	precache_sound("items/damage3.wav");
+    //end of altmodx precaches
 
 }
 public plugin_natives() {
@@ -151,6 +171,8 @@ public reset_struct(id) {
     g_sPlayerData[id][m_bUsedExtras] = false;
     g_sPlayerData[id][m_bXtraSJ] = false;
     g_sPlayerData[id][m_iXtraCurCP] = 0;
+    g_sPlayerData[id][m_bAltmodx] = false;
+    g_sPlayerData[id][m_fAltmodxCooldown] = 0.0;
 }
 
 public client_connect(id) {
@@ -175,6 +197,7 @@ public menu_resetconsent(id) {
     menu_display( id, menu ); //time out after 60 seconds
     return PLUGIN_HANDLED;
 }
+
 public consentmenu_clicked( const id, const menu, const item )
 {
     if( item == MENU_EXIT )
@@ -454,7 +477,14 @@ public pub_cptouch(touched, toucher) {
 }
 
 public pub_sub_endtouch(touched, toucher) {
-    if (g_sPlayerData[toucher][m_bCourseFinished]) { return; }                                  //return if the player has already finished the course
+    if (g_sPlayerData[toucher][m_bCourseFinished]) { return FMRES_HANDLED; }                                  //return if the player has already finished the course  
+    /*if (g_sPlayerData[toucher][m_bAltmodx]) {
+        if (g_sPlayerData[toucher][m_fAltmodxCooldown] < get_gametime()) {
+            client_print(toucher, print_chat, "* You can't finish this run since you used the /give command. Say /reset to start over or touch the start.");
+            g_sPlayerData[toucher][m_fAltmodxCooldown] = get_gametime() + 10.0; 
+        }
+            return FMRES_HANDLED;           
+    }*/
     if (api_is_team_allowed(toucher,touched)) {                                                 //check if the player is in the correct team to touch this cp
         new Float:fTime = floatsub(get_gametime(), g_sPlayerData[toucher][m_fRunStarttime]);    //get the player's time
         if (g_sPlayerData[toucher][m_bInRun] == false) { fTime = 0.0; }                         // he completed the map without being in a run
@@ -474,7 +504,8 @@ public pub_sub_endtouch(touched, toucher) {
                 formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iMillis);
             }
         } else {
-            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s (%d cps used)", szName, szCourseName, iCPCount);
+            new bUsedAmx = g_sPlayerData[toucher][m_bAltmodx];
+            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s (%d cps used).%s", szName, szCourseName, iCPCount, bUsedAmx ? " They used /give." : "");
             formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s \n\nSay /reset to start over.", szName, szCourseName);
         }
         // play sound
@@ -482,7 +513,7 @@ public pub_sub_endtouch(touched, toucher) {
         client_cmd(0, "speak \"sound/misc/party1.wav\"\n");
         new iMysqlCourseID = api_get_course_mysqlid(iCourseID);
         client_print(0, print_chat, szChatTXT);
-        api_sql_insertrun(toucher, fTime, iMysqlCourseID, iCPCount);
+        api_sql_insertrun(toucher, fTime, iMysqlCourseID, iCPCount, g_sPlayerData[toucher][m_bAltmodx]);
         set_hudmessage(200,100,0,-1.0, 0.35, 0, 0.0, 19.0, 1.0, 0.0, 2);
         show_hudmessage(0, szBigHudTXT);
 
@@ -512,7 +543,7 @@ public pub_sub_endtouch(touched, toucher) {
         g_sPlayerData[toucher][m_fGenericCooldown] = get_gametime() + 10.0;
         client_print(toucher, print_chat, "* Your team is not allowed to participate in this course");  
         client_cmd(toucher, "spk \"no access\"\n");
-        return;
+        return FMRES_HANDLED;
     }
 
 }
@@ -534,6 +565,14 @@ public pub_sub_starttouch(touched, toucher) {
         return FMRES_HANDLED;
     }
     if (api_is_team_allowed(toucher,touched)) {
+/*
+    if (g_sPlayerData[toucher][m_bAltmodx]) {
+        if (g_sPlayerData[toucher][m_fAltmodxCooldown] < get_gametime()) {
+            client_print(toucher, print_chat, "* You can't finish this run since you used the /give command. Say /reset to start over or touch the start.");
+            g_sPlayerData[toucher][m_fAltmodxCooldown] = get_gametime() + 10.0; 
+        }
+            return FMRES_HANDLED;           
+    }*/
         ArrayDestroy(g_sPlayerData[toucher][m_touchedCPs]);                                                                 //destroy the player's touched cp array
         ArrayDestroy(g_sPlayerData[toucher][m_CustomCPs]); g_sPlayerData[toucher][m_CustomCPs] = Invalid_Array;             //destroy the player's custom cp array
         g_sPlayerData[toucher][m_touchedCPs] = ArrayCreate(1);                                                              //create a new touched cp array
@@ -682,6 +721,12 @@ public pub_reset(id) {
 		client_print(id, print_chat, "* You have not started a run yet");
 		return;
 	}*/
+
+    if (g_sPlayerData[id][m_bAltmodx]) {
+        PowerUp(id, 0, "1");
+        g_sPlayerData[id][m_bAltmodx] = false;
+    }
+
 	new ent;
 	ent = -1;
 	new eSearch = -1;
@@ -977,10 +1022,7 @@ public menu_extras_clicked(id, menu, item) {
         }
         case 3: //reset & slay
         {
-            set_pev(id, pev_takedamage, DAMAGE_AIM);
-            stock_slay(id);
-            reset_struct(id);
-            dllfunc(DLLFunc_Spawn, id);
+            skillsrun_reset(id);
         }
         case 4: //tp to start
         {
@@ -1006,7 +1048,7 @@ public menu_extras_clicked(id, menu, item) {
             CreateTeleportEffect(id,g_iIndexSprite);                        //create teleport effect
             entity_set_vector(id, EV_VEC_velocity, Float:{0.0, 0.0, 0.0});  //reset velocity / momentum
             stock_teleport(id, fOrigin);
-	   menu_extras_deploy(id);
+	        menu_extras_deploy(id);
         }  
         case 5: //tp to end
         {
@@ -1072,6 +1114,13 @@ public menu_extras_clicked(id, menu, item) {
 
 }
 
+stock skillsrun_reset(id) {
+    set_pev(id, pev_takedamage, DAMAGE_AIM);
+    stock_slay(id);
+    reset_struct(id);
+    dllfunc(DLLFunc_Spawn, id);
+    client_print(id, print_chat, "* You have been respawned and your skillsrun has been reset");
+}
 
 public Hook_PlayerPreThink(id) {
     if (g_sPlayerData[id][m_bCourseFinished] && g_sPlayerData[id][m_bXtraSJ] && (pev(id, pev_flags) & FL_ONGROUND) && (pev(id, pev_button) & IN_ATTACK2)) {
@@ -1088,3 +1137,157 @@ public Hook_PlayerPreThink(id) {
         set_pev(id, pev_velocity, fAngles)
     }
 }
+
+
+//start of the codeblock for amxmodx
+public hook_say(iClient)
+{
+	if(!is_user_alive(iClient))
+		return PLUGIN_CONTINUE;
+	
+	static szCommand[20];
+	read_args(szCommand, sizeof(szCommand)-1);
+	remove_quotes(szCommand);
+	
+	if(szCommand[0] != '/')
+		return PLUGIN_CONTINUE;
+	
+	static szArg2[12], Float:flHalfLifeTime;
+	strtok(szCommand, szCommand, sizeof(szCommand)-1, szArg2, sizeof(szArg2)-1, ' ');
+	trim(szArg2);
+	
+	global_get(glb_time, flHalfLifeTime);
+	
+	if(equali(szCommand[1], "class"))
+	{
+        if (api_mapflag(MAPFLAG_NOCLASS)) {
+            client_print(iClient, print_chat, "* Class changing is disabled on this map.");
+            return FMRES_HANDLED;
+        }
+		if(g_flClassDelay[iClient] > flHalfLifeTime)
+		{
+			client_print(iClient, print_chat, "* You must wait %.2f more seconds to switch your class again.", g_flClassDelay[iClient]-flHalfLifeTime);
+			return FMRES_HANDLED;
+		}
+		
+		if(equali(szArg2, "scout")) set_pev(iClient, pev_playerclass, CLASS_SCOUT);
+		else if(equali(szArg2, "sniper")) set_pev(iClient, pev_playerclass, CLASS_SNIPER);
+		else if(equali(szArg2, "soldier")) set_pev(iClient, pev_playerclass, CLASS_SOLDIER);
+		else if(equali(szArg2, "demoman")) set_pev(iClient, pev_playerclass, CLASS_DEMOMAN);
+		else if(equali(szArg2, "medic")) set_pev(iClient, pev_playerclass, CLASS_MEDIC);
+		else if(equali(szArg2, "hwguy")) set_pev(iClient, pev_playerclass, CLASS_HWGUY);
+		else if(equali(szArg2, "pyro")) set_pev(iClient, pev_playerclass, CLASS_PYRO);
+		else if(equali(szArg2, "spy")) set_pev(iClient, pev_playerclass, CLASS_SPY);
+		else if(equali(szArg2, "engineer")) set_pev(iClient, pev_playerclass, CLASS_ENGINEER);
+		else if(equali(szArg2, "random")) set_pev(iClient, pev_playerclass, CLASS_RANDOM);
+		else if(equali(szArg2, "civilian")) set_pev(iClient, pev_playerclass, CLASS_CIVILIAN);
+		else if(str_to_num(szArg2) >= CLASS_SCOUT && str_to_num(szArg2) <= CLASS_CIVILIAN) set_pev(iClient, pev_playerclass, str_to_num(szArg2));
+		else
+		{
+			client_print(iClient, print_chat, "* To change your class type, /class <classname> -OR- /class <class number>");
+			return PLUGIN_CONTINUE;
+		}
+		
+		fm_strip_user_weapons(iClient);
+		skillsrun_reset(iClient);
+		g_flClassDelay[iClient] = flHalfLifeTime + 2.0;
+		
+		return FMRES_HANDLED;
+	}
+	else if(equali(szCommand[1], "give"))
+	{
+        if (api_mapflag(MAPFLAG_NOGIVE))
+        {
+            client_print(iClient, print_chat, "* You cannot use this command on this map.");
+            return PLUGIN_HANDLED;
+        }
+		if(equali(szArg2, "all"))
+		{
+			PowerUp(iClient, 0, "99999");
+            g_sPlayerData[iClient][m_bAltmodx] = true;
+            pub_stoprun(iClient);
+            g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime(); 
+			tfc_setbammo(iClient, TFC_AMMO_NADE1, 4);
+			tfc_setbammo(iClient, TFC_AMMO_NADE2, 4);
+			tfc_setbammo(iClient, TFC_AMMO_SHELLS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_BULLETS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_CELLS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_ROCKETS, 225);
+		}
+		else if (equali(szArg2, "god")) {
+			PowerUp(iClient, 1, "99999");
+            g_sPlayerData[iClient][m_bAltmodx] = true;
+            pub_stoprun(iClient);
+            g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime();  
+        }
+		else if(equali(szArg2, "quad")) {
+			PowerUp(iClient, 2, "99999");
+            g_sPlayerData[iClient][m_bAltmodx] = true;
+            pub_stoprun(iClient);
+            g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime();  
+        }
+		else if(equali(szArg2, "nades"))
+		{
+			tfc_setbammo(iClient, TFC_AMMO_NADE1, 4);
+			tfc_setbammo(iClient, TFC_AMMO_NADE2, 4);
+		}
+		else if(equali(szArg2, "ammo"))
+		{
+			tfc_setbammo(iClient, TFC_AMMO_SHELLS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_BULLETS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_CELLS, 225);
+			tfc_setbammo(iClient, TFC_AMMO_ROCKETS, 225);
+		}
+		else
+		{
+			client_print(iClient, print_chat, "* To give yourself powerup(s) type, /give <quad, god, nades, ammo, or all>");
+			return PLUGIN_CONTINUE;
+		}
+		
+		return FMRES_HANDLED;
+	}
+	else if(equali(szCommand[1], "remove"))
+	{
+		if(equali(szArg2, "all"))
+			PowerUp(iClient, 0, "1");
+		else if(equali(szArg2, "god"))
+			PowerUp(iClient, 1, "1");
+		else if(equali(szArg2, "quad"))
+			PowerUp(iClient, 2, "1");
+		else
+		{
+			client_print(iClient, print_chat, "* To remove a powerup(s) type, /remove <quad, god, or all>");
+			return PLUGIN_CONTINUE;
+		}
+		
+		return FMRES_HANDLED;
+	}
+	
+	return PLUGIN_CONTINUE;
+}
+
+PowerUp(iClient, iType, szTime[]="1")
+{
+	new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_tfgoal"));
+	dllfunc(DLLFunc_Spawn, iEnt);
+	
+	set_keyvalue(iEnt, "g_a", "1"); // Player touch activates
+	set_keyvalue(iEnt, "g_e", "1"); // Affects AP only
+	set_keyvalue(iEnt, "goal_state", "2"); // Active goal
+	
+	switch(iType)
+	{
+		case 0:
+		{
+			// Give all
+			set_keyvalue(iEnt, "invincible_finished", szTime);
+			set_keyvalue(iEnt, "super_damage_finished", szTime);
+		}
+		case 1: set_keyvalue(iEnt, "invincible_finished", szTime); // Give god
+		case 2: set_keyvalue(iEnt, "super_damage_finished", szTime); // Give quad
+	}
+	
+	dllfunc(DLLFunc_Use, iEnt, iClient);
+	engfunc(EngFunc_RemoveEntity, iEnt);
+}
+//end of the codeblock for amxmodx
