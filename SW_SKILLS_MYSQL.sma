@@ -44,6 +44,7 @@ enum eSpeedTop_t
 	m_iCourseID,                                // The course id (Mysql ID not local id)
 	m_CreatedAt[64],                            // The date the run was created
 	m_iPlayerClass,                             // The player's class
+	m_bAmxmodx_used								// If the player has used amxmodx
 }
 new Array:g_TopList = Invalid_Array;            // Array for the top 100 players
 new Array:g_GroupedTopList = Invalid_Array;		// Array for the grouped top 100 players
@@ -548,6 +549,7 @@ public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[],
 		new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
 		new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
 		new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
+		new iFieldNumAmxmUsed = SQL_FieldNameToNum(hQuery,"altmodx_used"); //m_bAmxmodx_used
 		if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
 			DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
 			return PLUGIN_HANDLED;
@@ -560,6 +562,7 @@ public Handle_QueryLoadRuns(iFailState, Handle:hQuery, sError[], iError, Data[],
 		Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
 		SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
 		Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
+		Buffer[m_bAmxmodx_used] = SQL_ReadResult(hQuery, iFieldNumAmxmUsed);
 		//now add the run to the list
 		ArrayPushArray(g_TopList, Buffer);
 		g_iTopCount++;
@@ -591,6 +594,7 @@ public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, 
 		new iFieldNumID = SQL_FieldNameToNum(hQuery,"id");
 		new iFieldNumCreatedAt = SQL_FieldNameToNum(hQuery,"created_at");
 		new iFieldNumPlayerID = SQL_FieldNameToNum(hQuery,"player_id");
+		new iFieldNumAmxmUsed = SQL_FieldNameToNum(hQuery,"altmodx_used"); //m_bAmxmodx_used
 		if (iFieldNumSteamID == -1 || iFieldNumTime == -1 || iFieldNumClass == -1 || iFieldNumNickname == -1 || iFieldNumCourseID == -1 || iFieldNumID == -1 || iFieldNumCreatedAt == -1 || iFieldNumPlayerID == -1) {
 			DebugPrintLevel(0, "Failed to load runs: %s", "Missing field in query");
 			return PLUGIN_HANDLED;
@@ -603,6 +607,7 @@ public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, 
 		Buffer[m_iCourseID] = SQL_ReadResult(hQuery, iFieldNumCourseID);
 		SQL_ReadResult(hQuery, iFieldNumCreatedAt, Buffer[m_CreatedAt], charsmax(Buffer[m_CreatedAt]));
 		Buffer[m_iPlayerClass] = SQL_ReadResult(hQuery, iFieldNumClass);
+		Buffer[m_bAmxmodx_used] = SQL_ReadResult(hQuery, iFieldNumAmxmUsed);
 		//now add the run to the list
 		ArrayPushArray(g_GroupedTopList, Buffer);
 		g_iGroupedTopCount++;

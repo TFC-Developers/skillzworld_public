@@ -242,7 +242,9 @@ public RunThreadedQuery(iIndex)
 {
 	DebugPrintLevel(1, "RunThreadedQuery(%d)", iIndex)
 
-	static sQuery[MAX_QUERY_LEN]; ArrayGetString(g_QueryList, iIndex, sQuery, charsmax(sQuery))
+	static sQueryPRE[MAX_QUERY_LEN]; ArrayGetString(g_QueryList, iIndex, sQueryPRE, charsmax(sQueryPRE))
+	static sQuery[MAX_QUERY_LEN];
+	SQL_EscapeString(sQueryPRE, sQuery, charsmax(sQuery))
 	static Data[eQueryData_t]; ArrayGetArray(g_QueryData, iIndex, Data)
 	
 	g_iCurrentQueryIdent = iIndex
@@ -358,3 +360,31 @@ public fwd_ScreenMessage(sBuffer[], iSize)
 	formatex(sBuffer, iSize, "Since mapchange we've executed %d queries on the SQL database!", g_iTotalQueryCount)
 }
 
+stock SQL_EscapeString(const input[], output[], size = sizeof output)
+{
+    new outidx = 0;
+    for(new i = 0; input[i] && outidx < size - 1; i++)
+    {/*
+        // Escape single quotes
+        if (input[i] == '\'')
+        {
+            if(outidx < size - 2) // check if there is enough space for two characters
+            {
+                output[outidx++] = '\\';
+                output[outidx++] = '\'';
+            }
+            continue;
+        }
+*/
+        // Replace unwanted character â€Ž
+		//  if (input[i] == 'â' || input[i] == '€' || input[i] == 'Ž')
+        if (input[i] == 0xE2 || input[i] == 0x80 || input[i] == 0x8E)
+        {
+            //input[i] = 'x';
+            continue;
+        }
+
+        output[outidx++] = input[i];
+    }
+    output[outidx] = 0;
+}
