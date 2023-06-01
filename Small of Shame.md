@@ -110,6 +110,10 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 - [TrieIterGetKey](https://www.amxmodx.org/api/celltrie/TrieIterGetKey) has doubly wrong documentation: "Nnumber [sic] of bytes written to the buffer" says A: that it counts the amount of bytes written instead of cells, and implies B: that it includes the zero terminator.
 	- The function actually returns the amount of characters inside the string, which is 5 if it wrote the key "model".
 
+- [get_keyvalue](https://www.amxmodx.org/api/engine/get_keyvalue) has wrong documentation: "Retrieves a value from an entities [sic] keyvalues." - it has nothing to do with entities. It actually gets client/server values.  
+[Issue that has been open since 2019](https://github.com/alliedmodders/amxmodx/issues/745)
+	- The engine (presumably) does not facilitate reading arbitrary keyvalues back via strings, it only allows you to set them.
+
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
 
