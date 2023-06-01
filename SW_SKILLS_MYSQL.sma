@@ -619,8 +619,7 @@ public Handle_QueryLoadGroupedRuns(iFailState, Handle:hQuery, sError[], iError, 
 
 
 //modified from fm / benwatch
-public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
-{
+public ShowTop(id, iStart, iEnd, bool:bOnlyPBs) {
 	new top_count, Array:top_list
 	if (bOnlyPBs) {
 		top_list  = g_GroupedTopList
@@ -635,45 +634,75 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs)
 		return
 	}
 	
-	/// Ensure that iStart is in range [0, g_iTopCount), iEnd is in [iStart+1, g_iTopCount]
-	/// iEnd is exclusive, so iEnd-iStart is the amount of items and is in range [1, g_iTopCount]
-	/// This mirrors the way Python slicing works, except that some elements may be filtered out.
+	/// Ensure that iStart is in range [0, g_iTopCount), iEnd is in [iStart+1, top_count]
+	/// iEnd is exclusive, so iEnd-iStart is the amount of (potential) items and is in range [1, top_count]
+	/// This mirrors the way Python slicing works, except that some runs could be filtered out.
 	iStart = clamp(iStart, 0, top_count - 1)
-	iEnd   = clamp(iEnd, iStart+1, top_count)
+	iEnd = clamp(iEnd, iStart+1, top_count)
+	new iRequestedRuns = iEnd - iStart
 	///
-	console_print 0, "ShowTop bounds: %d - %d", iStart, iEnd
+	console_print id, "ShowTop bounds: %d - %d", iStart, iEnd
 
 	static sBuffer[1024]
 	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
-	send_motd(id,"Speedruns ranks %d to %d for map %s\n", iStart + 1, iEnd, sCurrentMap)
+	if (bOnlyPBs) {
+		send_motd(id,"Showing the fastest players on %s\n", sCurrentMap)
+	} else {
+		send_motd(id,"Showing the fastest runs on %s\n", sCurrentMap)
+	}
 	new iClass = pev(id, pev_playerclass);
 	send_motd(id, "\nCurrently only showing the runs for your player class: %s\n\n", g_szClassNames[iClass]);
 	
-	new iPlayerCourse = api_get_player_course(id)
-	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iPlayerCourse, szCourseName, charsmax(szCourseName));
-	send_motd(id, "[ %s course ]", szCourseName);
-
+	new iCourseInternal = api_get_player_course(id)
+	new iCourseSQL = api_get_course_mysqlid(iCourseInternal)
+	new szCourseName[MAX_COURSE_NAME]; api_get_coursename(iCourseInternal, szCourseName, charsmax(szCourseName));
+	send_motd(id, "[ %s ]", szCourseName);
+	
+	// only show runs for the current course by comparing the course ids (the mysql ids!)
+	#define RUN_IS_SHOWABLE (iCourseSQL == TopInfo[m_iCourseID] && iClass == TopInfo[m_iPlayerClass])
+	
 	// Bug: Viewing the leaderboard as spectator doesn't work because of the class filter
-	console_print id, "Your course ID:%d", iPlayerCourse
-	new TopInfo[eSpeedTop_t], iPos = iStart + 1;
-	for(new i = iStart, iAcquired; i < iEnd && iAcquired < MAX_MOTD_RANKS && i < top_count; ) {
-		ArrayGetArray(top_list, i, TopInfo)
-		i++
-		console_print id, "Course's SQLid:%d, run course id:%d, dude's class:%d, run class:%d", api_get_mysqlid_by_course(iPlayerCourse), TopInfo[m_iCourseID], iClass, TopInfo[m_iPlayerClass]
-		if (api_get_course_mysqlid(iPlayerCourse) != TopInfo[m_iCourseID]) continue; //only show runs for the current course by comparing the course ids (the mysql ids!)
-		if (iClass != TopInfo[m_iPlayerClass]) continue;
-		new Float:fTime = TopInfo[m_fTime];
-		new sTime[32]; formatex(sTime, charsmax(sTime), "%02d:%02d.%02d",
-			floatround(fTime /60.0, floatround_floor),
-			floatround(fTime, floatround_floor) % 60,
-			floatround(fTime*100.0, floatround_floor) % 100
-		);
-		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", iPos++, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
-		iAcquired++
+	console_print id, "Course's internal ID: %d, player class: %d", iCourseInternal, iClass
+	new TopInfo[eSpeedTop_t], run_i
+	new iSkipped
+	while (iSkipped < iStart && run_i < top_count) { // Skip leading runs for pagination
+		console_print id, "Skipping potential run"
+		ArrayGetArray(top_list, run_i, TopInfo)
+		if (RUN_IS_SHOWABLE) {console_print id, "Skipped a run"; iSkipped++;}
+		run_i++
 	}
-
-	if (iEnd != top_count) send_motd(id, "\n\nClose this window and type \"/top %d-%d\" to view the next %d", iStart+1, iStart+MAX_MOTD_RANKS, MAX_MOTD_RANKS)
-	if (!bOnlyPBs) send_motd(id,"\nTo remove duplicate steamids say \"/gtop\"\n");
+	new sTime[0x20], iAcquired
+	while (iRequestedRuns > iAcquired < MAX_MOTD_RANKS && run_i < top_count) {
+		console_print id, "Before: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
+		ArrayGetArray(top_list, run_i, TopInfo)
+		run_i++
+		console_print id, "Course's SQLid: %d, checked run's course id: %d, checked run's class: %d", iCourseSQL, TopInfo[m_iCourseID], TopInfo[m_iPlayerClass]
+		console_print id, "Checking potential run"
+		if (!RUN_IS_SHOWABLE) continue
+		console_print id, "Passed!"
+		new Float:fTime = TopInfo[m_fTime];
+		new iTotalSeconds = floatround(fTime, floatround_floor), iCentis = floatround(fTime*100.0, floatround_floor) % 100
+		new iHours = iTotalSeconds / (60*60), iMinutes = iTotalSeconds / 60 % 60, iSeconds = iTotalSeconds % 60
+		if (iHours) formatex(sTime, charsmax(sTime), "%02d:%02d:%02d.%02d", iHours, iMinutes, iSeconds, iCentis)
+		else         formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", iMinutes, iSeconds, iCentis)
+		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", 1 + iStart + iAcquired, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
+		iAcquired++
+		console_print id, "After: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
+	}
+	new iTrailingRuns
+	while (run_i < top_count && iTrailingRuns < MAX_MOTD_RANKS) { // Scan for trailing runs for pagination help
+		ArrayGetArray(top_list, run_i++, TopInfo)
+		if (RUN_IS_SHOWABLE) iTrailingRuns++
+	}
+	
+	if (iTrailingRuns) {
+		new iNextStart = iStart + iAcquired
+		new iNextEnd   = iNextStart + iTrailingRuns
+		if (bOnlyPBs) send_motd id, "\n\nSay \"/top %d-%d\" to view the next %d.", iNextStart + 1, iNextEnd, iNextEnd - iNextStart
+		else               send_motd id, "\n\nSay \"/runs %d-%d\" to view the next %d.", iNextStart + 1, iNextEnd, iNextEnd - iNextStart
+	}
+	
+	if (bOnlyPBs) send_motd(id,"\n\nTo get a list of all runs, say \"/runs\"\n");
 	display_motd(id, "Speedrun Ranks")
 	return
 }
@@ -725,44 +754,49 @@ public ShowMapstats(id) {
     display_motd(id, "Mapstats");
 
 }
-public Handle_Say(id)
-{
+public Handle_Say(id) {
 	new sArgs[192]; read_args(sArgs, charsmax(sArgs))
 	remove_quotes(sArgs)
 	
 	if (!sArgs[0]) return PLUGIN_HANDLED
 	
-	/// Support these commands: /top 10, /top10, /top10-20
+	new args_i, cmd_length
 	new bool:bWantsTop  = false
 	new bool:bWantsGTop = false
-	if       (equali(sArgs, "/top", 4)) bWantsTop = true
-	else if (equali(sArgs, "/gtop", 5)) bWantsTop = bWantsGTop = true
-	console_print 0, "Wants top"
+	switch (sArgs[0]) {case '!', '/', '\\': args_i++;}
+	
+	/// Support these commands: /top 10, /top10, /top10-20
+	if      (equali(sArgs[args_i], "top" , (cmd_length = 3))) bWantsTop = bWantsGTop = true
+	else if (equali(sArgs[args_i], "sr"  , (cmd_length = 2))) bWantsTop = bWantsGTop = true
+	else if (equali(sArgs[args_i], "runs", (cmd_length = 4))) bWantsTop = true
+	
 	if (bWantsTop) {
+		args_i += cmd_length
 		new iOffset
-		new iStart = strtol(sArgs[bWantsGTop ? 5 : 4], .endPos = iOffset, .base = 10)
-		if (!iStart) iStart = 10
-		for (; sArgs[iOffset]; iOffset++) { // Skip whitespace and the hyphen
-			if (sArgs[iOffset] == '-') {
-				iOffset++
-				break
+		new iStart = strtol(sArgs[args_i], .endPos = iOffset, .base = 10), iEnd
+		if (!iStart) {iStart = 1; iEnd = MAX_MOTD_RANKS;} // top<nothing or nonsense>
+		else { // top10-20
+			for (; sArgs[iOffset]; iOffset++) { // Skip whitespace and the hyphen
+				if (sArgs[iOffset] == '-') {
+					iOffset++
+					break
+				}
 			}
+			iEnd = str_to_num(sArgs[iOffset])
 		}
-		new iEnd = str_to_num(sArgs[iOffset])
-		console_print 0, "Parsed numbers: %d - %d", iStart, iEnd
 		// iStart is an index, iEnd is an exclusive endpoint
-		if (iEnd) ShowTop id, iStart - 1, iEnd, bWantsGTop // Of the format /top 10-20
-		else       ShowTop id, 0, iStart, bWantsGTop        // Of the format /top 10 (which means 1-10)
+		if (iEnd) ShowTop id, clamp(iStart - 1, 0) , clamp(iEnd, 1), bWantsGTop // Of the format /top 10-20
+		else       ShowTop id, 0, clamp(iStart, 1), bWantsGTop        // Of the format /top 10 (which means 1-10)
 		return PLUGIN_HANDLED
 	}
 	///
 	
-	if (equali(sArgs, "/mapstats", 9) || equali(sArgs, "/mapinfo", 8)) {			
+	if (equali(sArgs[args_i], "mapstats", 8) || equali(sArgs[args_i], "mapinfo", 7)) {			
 		ShowMapstats(id);
 		return PLUGIN_HANDLED
 	} 
 	
-	if (equali(sArgs, "/diff", 5) || equali(sArgs, "/difficulty", 11)) {	
+	if (equali(sArgs[args_i], "diff", 4) || equali(sArgs[args_i], "difficulty", 10)) {	
 		new iInCourse = api_get_player_course(id);		
 		new iDiff = api_get_mapdifficulty(iInCourse);
 		new szCourseName[64]; api_get_coursename(iInCourse, szCourseName, charsmax(szCourseName));
