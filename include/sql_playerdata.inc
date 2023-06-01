@@ -17,7 +17,7 @@
 #define FLAG_NOVOICE	(1<<6)     // can't use voice
 //#define FLAG_UNUSED (1<<7)     // unused
 #define FLAG_GLOWCONCS	(1<<8)   // concs will glow
-//#define FLAG_UNUSED (1<<9)     // unused
+#define FLAG_COLCONCHUND (1<<9)     // concs in his hud will be colored
 //#define FLAG_UNUSED (1<<10)    // unused
 //#define FLAG_UNUSED (1<<11)    // unused  
 //#define FLAG_UNUSED (1<<12)    // unused
