@@ -34,10 +34,10 @@ stock const AMMO_TYPES[][] = { // The indices are the values of the ammo enum in
 }
 public plugin_init() {
 	register_plugin PLUGIN, VERSION, AUTHOR
-	register_concmd "new_e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
-	register_concmd "new_e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
+	register_concmd "e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
+	register_concmd "e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
 	register_concmd "new_e_kill", "cmd_kill", ADMIN_ADMIN, "Deletes an entity."
-	register_concmd "new_e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
+	register_concmd "e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
 }
 public plugin_precache() {
 	res_lightning = precache_model(SPR_LIGHTNING)
@@ -234,26 +234,34 @@ public cmd_create(id, level, cid) {
 	//   e_create cycler !
 	// Example to spawn a cycler where you aim that looks at you:
 	//   e_create cycler .ZS 35 180
-	// Create a civilian prison:
-	//   e_create cycler !X 40 angles "0 180";e_create cycler !X -40;e_create cycler !Y -40 angles "0 90";e_create cycler !Y 40 angles "0 -90"
+	// Create a civilian prison around Dizlin:
+	//   e_create cycler @diz !X 40 angles "0 180";e_create cycler @diz !X -40;e_create cycler @diz !Y -40 angles "0 90";e_create cycler @diz !Y 40 angles "0 -90"
 	
 	new args_n = read_argc()
-	if (args_n < 2) return PLUGIN_HANDLED
+	if (args_n < 2) return
 	new arg1[0x40], arg2[0x40]
 	
-	read_argv 1, arg1, charsmax(arg1)
+	new arg_i = 1
+	
+	read_argv arg_i++, arg1, charsmax(arg1)
 	new ent = create_entity(arg1)
 	
 	new Float:origin[3], Float:angles[3], bool:use_angles[3], iaimed[3]
-	read_argv 2, arg2, charsmax(arg2)
+	read_argv arg_i++, arg2, charsmax(arg2)
 	
-	new arg_i = 2, c = arg2[0]
+	new c = arg2[0]
+	if (c == '@') {
+		new id_new = get_player(arg2[1])
+		if (id_new) id = id_new
+		read_argv arg_i++, arg2, charsmax(arg2)
+		c = arg2[0]
+	}
+	
 	if (c == '!') {entity_get_vector id, EV_VEC_origin, origin;}
 	else {get_user_origin id, iaimed, 3; VEC_TO_FVEC(iaimed, origin);}
 	
 	if (c == '.' || c == '!') {
 		entity_get_vector id, EV_VEC_angles, angles
-		arg_i = 3
 		for (new i = 1; (c = arg2[i]); i++) {
 			switch (c | 0x20) { // Match against lowercase c
 			case 'x': {if (!(c & 0x20)) origin[0] += read_argv_float(arg_i++);}
@@ -273,45 +281,48 @@ public cmd_create(id, level, cid) {
 	entity_set_vector ent, EV_VEC_angles, angles
 	entity_set_origin ent, origin
 	entity_set_model ent, MDL_CIVILIAN
-	for (; arg_i < args_n; arg_i += 2) {
-		read_argv arg_i    , arg1, charsmax(arg1)
-		read_argv arg_i + 1, arg2, charsmax(arg2)
+	for (; arg_i < args_n; ) {
+		read_argv arg_i++, arg1, charsmax(arg1)
+		read_argv arg_i++, arg2, charsmax(arg2)
 		DispatchKeyValue ent, arg1, arg2
 	}
 	DispatchSpawn ent
-	
-	return PLUGIN_HANDLED
 }
 
 static stock get_player(const search_name[]) {
-	new player_name[0x20]
+	static player_name[0x20]
 	for (new id = 1; id <= get_maxplayers(); id++) {
+		if (!is_user_connected(id)) continue
 		get_user_name id, player_name, charsmax(player_name)
-		if (containi(search_name, player_name)) return id
+		if (containi(player_name, search_name) != -1) return id
 	}
 	return 0
 }
 
 public cmd_give(id, level, cid) {
-	new _name0[0x20], _name1[0x20], _name2[0x20]
-	get_user_name 0, _name0, charsmax(_name0)
-	get_user_name 1, _name1, charsmax(_name1)
-	get_user_name 2, _name2, charsmax(_name2)
 	new args_n = read_argc()
 	if (args_n < 3) return
 	new search_name[0x20]; read_argv 1, search_name, charsmax(search_name)
 	new recipient = get_player(search_name)
-	
-	get_user_name recipient, search_name, charsmax(search_name)
 	if (!recipient) return
+	
 	new classname[0x20]; read_argv 2, classname, charsmax(classname)
+	
 	for (new type_i; type_i < sizeof AMMO_TYPES; type_i++) {
 		if (equali(AMMO_TYPES[type_i], classname)) {
-			new amount = read_argv_int(4)
+			new amount = read_argv_int(3)
 			if (!amount) amount = 9999
 			tfc_setbammo recipient, type_i, amount
+			console_print id, "Gave %s some %s, bro", search_name, AMMO_TYPES[type_i]
 			return
 		}
 	}
+	
 	give_item recipient, classname
+	
+	get_user_name recipient, search_name, charsmax(search_name)
+	console_print id, "Gave %s a %s, bro", search_name, classname
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/

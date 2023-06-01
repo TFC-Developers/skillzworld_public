@@ -496,12 +496,14 @@ public pub_sub_endtouch(touched, toucher) {
         api_get_coursename(iCourseID, szCourseName, charsmax(szCourseName));
         g_sPlayerData[toucher][m_bInRun] = false; //set the player's inrun to false
         if (fTime > 0.0) {
-            new iTotalSeconds = floatround(fTime, floatround_floor); new iHours = iTotalSeconds / 3600; new iSeconds = iTotalSeconds % 60; new iMinutes = iTotalSeconds / 60; new iMillis = floatround(fTime*100.0, floatround_floor) % 100;
-            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d.%02d (%d cps used)", szName, szCourseName, floatround(fTime/60.0, floatround_floor), floatround(fTime, floatround_floor) % 60, floatround(fTime*100.0, floatround_floor) % 100, g_sPlayerData[toucher][m_iTotalCPsUsed]);
+            new iTotalSeconds = floatround(fTime, floatround_floor), iCentis = floatround(fTime*100.0, floatround_floor) % 100;
+            new iHours = iTotalSeconds / (60*60), iTotalMinutes = iTotalSeconds / 60
+            new iMinutes = iTotalMinutes % 60, iSeconds = iTotalSeconds % 60
+            formatex(szChatTXT, charsmax(szChatTXT), "* %s finished the course %s in %02d:%02d:%02d.%02d (%d cps used)", szName, szCourseName, iHours, iMinutes, iSeconds, iCentis, g_sPlayerData[toucher][m_iTotalCPsUsed]);
             if (iHours > 0) {
-                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iMillis);
+                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d:%02d\n\nSay /reset to start over.", szName, szCourseName, iHours, iMinutes, iSeconds, iCentis);
             } else {
-                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iMillis);
+                formatex(szBigHudTXT, charsmax(szBigHudTXT), "Congratulations %s!\n\nYou finished the course %s in %02d:%02d.%02d\n\nSay /reset to start over.", szName, szCourseName, iMinutes, iSeconds, iCentis);
             }
         } else {
             new bUsedAmx = g_sPlayerData[toucher][m_bAltmodx];

@@ -104,6 +104,16 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 	- The result is garbage memory, sometimes null but effectively random. The garbage memory elements read do not count in the return value. For example, `fread(empty_file, var_gets_garbage_memory, BLOCK_INT)` returns 0 rather than 4.
 	- They also don't mention what they return when the element read is partially out of bounds, like reading a 4 byte int from a 2 byte file. The result for [fread](https://www.amxmodx.org/api/file/fread) and [fread_raw](https://www.amxmodx.org/api/file/fread_raw) is that they return 2, the amount of bytes that were available to read, and [fread_blocks](https://www.amxmodx.org/api/file/fread_blocks) returns 0, it does not count elements that were only partially read.
 
+- [contain](https://www.amxmodx.org/api/string/contain) and [containi](https://www.amxmodx.org/api/string/containi) do not state what happens when an empty substring `""` is checked.
+	- The result is no match, even if the source string is also `""`. This is contrary behaviour to some other languages, like Python.
+
+- [TrieIterGetKey](https://www.amxmodx.org/api/celltrie/TrieIterGetKey) has doubly wrong documentation: "Nnumber [sic] of bytes written to the buffer" says A: that it counts the amount of bytes written instead of cells, and implies B: that it includes the zero terminator.
+	- The function actually returns the amount of characters inside the string, which is 5 if it wrote the key "model".
+
+- [get_keyvalue](https://www.amxmodx.org/api/engine/get_keyvalue) has wrong documentation: "Retrieves a value from an entities [sic] keyvalues." - it has nothing to do with entities. It actually gets client/server values.  
+[Issue that has been open since 2019](https://github.com/alliedmodders/amxmodx/issues/745)
+	- The engine (presumably) does not facilitate reading arbitrary keyvalues back via strings, it only allows you to set them.
+
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
 
@@ -113,12 +123,6 @@ This bugged code is in [amxmodx/file.cpp, amx_fwrite_raw](https://github.com/all
 should have been  
 `fp->Write(data, ...)`  
 Use [fwrite_blocks](https://www.amxmodx.org/api/file/fwrite_blocks) instead.
-
-- The functions [contain](https://www.amxmodx.org/api/string/contain) and [containi](https://www.amxmodx.org/api/string/containi) use the wrong parameters. The documentation states that the first parameter is the source string to search in, and the latter string is the substring to find, but in reality it's reversed.  
-The documentation says to use:  
-`contain(original, substring)`  
-But you should use:  
-`contain(substring, original)`
 
 - [equal](https://www.amxmodx.org/api/string/equal) and [equali](https://www.amxmodx.org/api/string/equali) return true or false, but are tagged to return integers, not booleans.
 
