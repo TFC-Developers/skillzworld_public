@@ -1,14 +1,9 @@
-#include <amxmodx>
-#include <amxmisc>
+#include "include/global"
 #include <engine>
 #include <fun>
 #include <tfcx>
 #include <fakemeta>
 #include <message_const>
-
-#define PLUGIN "Entity Toys"
-#define VERSION "1.0"
-#define AUTHOR "SkillzWorld"
 
 #define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2])
 #define FVEC_TO_VEC(%1,%2,%3) %2[0] = floatround(%1[0],%3); %2[1] = floatround(%1[1],%3); %2[2] = floatround(%1[2],%3)
@@ -20,6 +15,7 @@ stock const SPR_LIGHTNING[] = "sprites/lgtning.spr"
 stock const SPR_LASERBEAM[] = "sprites/laserbeam.spr"
 stock const SEARCH_ALL[] = "all"
 stock const PLAYER[] = "player"
+new Trie:defaults = Invalid_Trie
 new res_lightning
 new res_laserbeam
 new res_civilian
@@ -33,22 +29,167 @@ stock const AMMO_TYPES[][] = { // The indices are the values of the ammo enum in
 	"nade2",
 }
 public plugin_init() {
-	register_plugin PLUGIN, VERSION, AUTHOR
+	RegisterPlugin
 	register_concmd "e_create", "cmd_create", ADMIN_ADMIN, "Spawns an entity. First argument is the class name, second argument can be positioning information, further argument pairs make keyvalues."
 	register_concmd "e_give", "cmd_give", ADMIN_ADMIN, "Gives an item to a player."
 	register_concmd "new_e_kill", "cmd_kill", ADMIN_ADMIN, "Deletes an entity."
-	register_concmd "e_getmodel", "cmd_getmodel", ADMIN_ADMIN, "Shows the entity's model in the console."
+	register_concmd "e_kv", "cmd_kv", ADMIN_ADMIN, ""
+	register_concmd "e_default", "cmd_defaults", ADMIN_ADMIN, "Set default keyvalues for spawning entities. Prefix a key with ! to remove it."
+	register_concmd "e_defaults", "cmd_defaults", ADMIN_ADMIN, "Set default keyvalues for spawning entities. Prefix a key with ! to remove it."
 }
 public plugin_precache() {
 	res_lightning = precache_model(SPR_LIGHTNING)
 	res_laserbeam = precache_model(SPR_LASERBEAM)
 	res_civilian = precache_model(MDL_CIVILIAN)
 	res_hgibs = precache_model(MDL_HGIBS)
+	
+	defaults = TrieCreate()
+	TrieSetString defaults, "model", MDL_CIVILIAN
 }
-public cmd_getmodel(id, level, cid) {
-	new ent; get_user_aiming id, ent
-	new model[0x40]; entity_get_string ent, EV_SZ_model, model, charsmax(model)
-	console_print 0, "Has model: %s", model
+public plugin_end() {
+	TrieDestroy defaults
+}
+public cmd_defaults(id, level, cid) {
+	new args_n = read_argc()
+	static arg1[0x40], arg2[0x40]
+	for (new arg_i = 1; arg_i < args_n; ) {
+		read_argv arg_i++, arg1, charsmax(arg1)
+		if (arg1[0] == '!') {
+			TrieDeleteKey defaults, arg1[1]
+			console_print id, "Removed default kv: \"%s\"", arg1[1]
+		} else {
+			read_argv arg_i++, arg2, charsmax(arg2)
+			TrieSetString defaults, arg1, arg2
+			console_print id, "Added default kv: \"%s\", \"%s\"", arg1, arg2
+		}
+		
+	}
+}
+public cmd_kv(id, level, cid) {
+	// Usage
+	// e_kv skin - View a keyvalue from the aimed entity
+	// e_kv skin 11 - Set specific keyvalue from the aimed entity
+	// e_kv cycler skin 11 - Do it to all cyclers
+	// e_kv cycler 1000 skin 11 - Find a cycler in a 1000u radius around you and set its keyvalue
+	// e_kv cycler 1000 skin - Get it instead
+	// e_kv cycler 1000 all skin 11 - Set keyvalue for all cyclers in that radius
+	new args_n = read_argc(), arg_i
+	static arg1[0x40], arg2[0x40]
+	static classname[0x40], found_classname[0x40]
+	static Float:radius, Float:origin[3]
+	new count
+	new ent
+	if (args_n < 2) return
+	if (args_n <= 3) {
+		get_user_aiming id, ent
+		arg_i = 1
+	} else {
+		read_argv 1, classname, charsmax(classname)
+		radius = read_argv_float(2)
+		if (!radius) { // Set all
+			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\"", arg1, arg2, classname
+			arg_i = 2
+			read_argv arg_i, arg1, charsmax(arg1)
+			read_argv arg_i + 1, arg2, charsmax(arg2)
+			while ((ent = find_ent_by_class(ent, classname))) {
+				DispatchKeyValue ent, arg1, arg2
+				count++
+			}
+			console_print id, "Amount set: %d", count
+			return
+		}
+		
+		if (args_n == 6) { // Set all in radius
+			arg_i = 4
+			read_argv arg_i, arg1, charsmax(arg1)
+			read_argv arg_i + 1, arg2, charsmax(arg2)
+			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\" in radius %f", arg1, arg2, classname, radius
+			while ((ent = find_ent_in_sphere(ent, origin, radius))) {
+				entity_get_string ent, EV_SZ_classname, found_classname, charsmax(found_classname)
+				if (!equal(classname, found_classname)) continue
+				DispatchKeyValue ent, arg1, arg2
+				DispatchKeyValue ent, arg1, arg2
+				count++
+			}
+			console_print id, "Amount set: %d", count
+			return
+		}
+		
+		// Find single entity in radius:
+		console_print id, "Finding entity of class \"%s\" in radius %f", classname, radius
+		entity_get_vector id, EV_VEC_origin, origin
+		new bool:found = false
+		while ((ent = find_ent_in_sphere(ent, origin, radius))) {
+			entity_get_string ent, EV_SZ_classname, found_classname, charsmax(found_classname)
+			if (equal(classname, found_classname)) {found = true; break;}
+		}
+		if (!found) ent = 0
+		arg_i = 3
+	}
+	
+	/// Set/get single
+	if (!ent) {
+		console_print id, "Did not find a target entity."
+		return
+	}
+	read_argv arg_i, arg1, charsmax(arg1)
+	if (args_n - arg_i == 1) { // The argument list ends with a key name, so read
+		console_print id, "Read keyvalue:"
+		print_kv(id, ent, arg1)
+	} else { // The argument list ends with a key name and a value, so set
+		read_argv arg_i + 1, arg2, charsmax(arg2)
+		DispatchKeyValue ent, arg1, arg2
+		console_print id, "Set keyvalue:\n\"%s\": \"%s\"", arg1, arg2
+	}
+	return
+}
+stock print_kv(id, ent, const key[]) {
+	enum /*PRESET_MEMORY_TYPE*/ {
+		PM_INT,
+		PM_FLOAT,
+		PM_VECTOR,
+		PM_STRING,
+	}
+	static const PRESET_KEYS[][] = {
+		"classname",
+		"model",
+		"body",
+		"skin",
+		"origin",
+		"angles",
+		"spawnflags",
+		"renderamt",
+		"renderfx",
+		"rendermode",
+		"rendercolor",
+	}
+	static const PRESET_KEY_PAIRS[sizeof PRESET_KEYS][2] = {
+		{EV_SZ_classname	, PM_STRING	},
+		{EV_SZ_model		, PM_STRING	},
+		{EV_INT_body		, PM_INT	},
+		{EV_INT_skin		, PM_INT	},
+		{EV_VEC_origin		, PM_VECTOR	},
+		{EV_VEC_angles		, PM_VECTOR	},
+		{EV_INT_spawnflags	, PM_INT	},
+		{EV_FL_renderamt	, PM_FLOAT	},
+		{EV_INT_renderfx	, PM_INT	},
+		{EV_INT_rendermode	, PM_INT	},
+		{EV_VEC_rendercolor	, PM_VECTOR	},
+	}
+	static any:vec[3], str[0x40]
+	new bool:found = false
+	for (new i; i < sizeof PRESET_KEYS; i++) {
+		if (!equali(key, PRESET_KEYS[i])) continue
+		new k_field = PRESET_KEY_PAIRS[i][0], k_type = PRESET_KEY_PAIRS[i][1]
+		switch (k_type) {
+		case PM_INT: {console_print id, "\"%s\": \"%d\"", PRESET_KEYS[i], entity_get_int(ent, k_field);}
+		case PM_FLOAT: {console_print id, "\"%s\": \"%f\"", PRESET_KEYS[i], entity_get_float(ent, k_field);}
+		case PM_VECTOR: {entity_get_vector(ent, k_field, vec) ; console_print id, "\"%s\": \"%f %f %f\"", PRESET_KEYS[i], vec;}
+		case PM_STRING: {entity_get_string(ent, k_field, str, charsmax(str)) ; console_print id, "\"%s\": \"%s\"", PRESET_KEYS[i], str;}
+		}
+		found = true
+	}
+	if (!found) console_print id, "No match for key \"%s\" hardcoded in the plugin.", key
 }
 public cmd_kill(id, level, cid) {
 	// Usage:
@@ -169,10 +310,10 @@ public cmd_kill(id, level, cid) {
 		const Float:RADIUS_ALL = 9999.0
 		if ((radius = read_argv_float(2))) { // e_kill cycler <num> [all]
 			read_argv 3, allbuffer, charsmax(allbuffer)
-			console_print id, "Radius found. ^"%s^" %d", allbuffer, radius
+			console_print id, "Radius found. \"%s\" %d", allbuffer, radius
 		} else {  // e_kill cycler [all]
 			read_argv 2, allbuffer, charsmax(allbuffer)
-			console_print id, "No radius found. ^"%s^" %d", allbuffer, radius
+			console_print id, "No radius found. \"%s\" %d", allbuffer, radius
 		}
 		new bool:all = bool:equali(allbuffer, SEARCH_ALL)
 		
@@ -234,9 +375,12 @@ public cmd_create(id, level, cid) {
 	//   e_create cycler !
 	// Example to spawn a cycler where you aim that looks at you:
 	//   e_create cycler .ZS 35 180
-	// Create a civilian prison around Dizlin:
-	//   e_create cycler @diz !X 40 angles "0 180";e_create cycler @diz !X -40;e_create cycler @diz !Y -40 angles "0 90";e_create cycler @diz !Y 40 angles "0 -90"
+	// Create a penguin prison around Sylanha:
+	//   e_defaults model "models/player/penguin/penguin.mdl"; e_create cycler @syl !X 40 angles "0 180";e_create cycler @syl !X -40;e_create cycler @syl !Y -40 angles "0 90";e_create cycler @syl !Y 40 angles "0 -90"
+	// Spawn a respawning quad+invuln backpack:
+	//   e_default model models/backpack.mdl; e_create info_tfgoal .Z 20 wait 1 noise items/armoron_1.wav g_e 1 g_a 1 super_damage_finished 1e400 invincible_finished 1e400
 	
+	console_print id, "Entered e_create"
 	new args_n = read_argc()
 	if (args_n < 2) return
 	new arg1[0x40], arg2[0x40]
@@ -247,21 +391,27 @@ public cmd_create(id, level, cid) {
 	new ent = create_entity(arg1)
 	
 	new Float:origin[3], Float:angles[3], bool:use_angles[3], iaimed[3]
-	read_argv arg_i++, arg2, charsmax(arg2)
+	read_argv arg_i, arg2, charsmax(arg2)
 	
 	new c = arg2[0]
+	new target = id
 	if (c == '@') {
-		new id_new = get_player(arg2[1])
-		if (id_new) id = id_new
+		new target_new = get_player(arg2[1])
+		if (target_new) target = target_new
+		else {
+			console_print id, "No player found matching substring \"%s\"", arg2[1]
+			return
+		}
 		read_argv arg_i++, arg2, charsmax(arg2)
 		c = arg2[0]
 	}
 	
-	if (c == '!') {entity_get_vector id, EV_VEC_origin, origin;}
-	else {get_user_origin id, iaimed, 3; VEC_TO_FVEC(iaimed, origin);}
+	if (c == '!') {entity_get_vector target, EV_VEC_origin, origin;}
+	else {get_user_origin target, iaimed, 3; VEC_TO_FVEC(iaimed, origin);}
 	
 	if (c == '.' || c == '!') {
-		entity_get_vector id, EV_VEC_angles, angles
+		arg_i++
+		entity_get_vector target, EV_VEC_angles, angles
 		for (new i = 1; (c = arg2[i]); i++) {
 			switch (c | 0x20) { // Match against lowercase c
 			case 'x': {if (!(c & 0x20)) origin[0] += read_argv_float(arg_i++);}
@@ -280,7 +430,15 @@ public cmd_create(id, level, cid) {
 	
 	entity_set_vector ent, EV_VEC_angles, angles
 	entity_set_origin ent, origin
-	entity_set_model ent, MDL_CIVILIAN
+	new TrieIter:defaults_iter = TrieIterCreate(defaults)
+	while (TrieIterGetString(defaults_iter, arg2, charsmax(arg2))) {
+		TrieIterGetKey defaults_iter, arg1, charsmax(arg1)
+		console_print id, "Used default kv: \"%s\", \"%s\"", arg1, arg2
+		DispatchKeyValue ent, arg1, arg2
+		TrieIterNext defaults_iter
+	}
+	TrieIterDestroy defaults_iter
+	
 	for (; arg_i < args_n; ) {
 		read_argv arg_i++, arg1, charsmax(arg1)
 		read_argv arg_i++, arg2, charsmax(arg2)
@@ -317,12 +475,7 @@ public cmd_give(id, level, cid) {
 			return
 		}
 	}
-	
 	give_item recipient, classname
-	
 	get_user_name recipient, search_name, charsmax(search_name)
 	console_print id, "Gave %s a %s, bro", search_name, classname
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
-*/
