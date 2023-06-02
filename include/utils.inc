@@ -244,6 +244,18 @@ stock fm_strip_user_weapons(iClient)
 	return 1;
 }
 
+
+stock bool:PointInVecBox(Float:point[3], Float:a[3], Float:b[3])
+{
+    if ((b[0] > a[0] ? (point[0] <= b[0] && point[0] >= a[0]) : (point[0] >= b[0] && point[0] <= a[0])) &&
+        (b[1] > a[1] ? (point[1] <= b[1] && point[1] >= a[1]) : (point[1] >= b[1] && point[1] <= a[1])) &&
+        (b[2] > a[2] ? (point[2] <= b[2] && point[2] >= a[2]) : (point[2] >= b[2] && point[2] <= a[2]))) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
 */
