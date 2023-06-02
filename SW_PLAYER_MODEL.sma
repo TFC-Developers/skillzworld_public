@@ -5,12 +5,13 @@
 #include <amxmisc>
 
 new DEBUG_MODELS[][] = {
-	"civilian",
-	"AquaFresh",
-	"daffy",
-	"flanders",
-	"penguin_r",
-	"polarbear",
+	"Werewolf", "bender", "biker",
+	"blackcat", "blossom", "boris", "bugs_recon", "ccsakura", "crash",
+	"darth_vader", "domokun_r", "doomguy", "dukenukem", "eva", "farseer",
+	"flanders", "gaben", "jason", "kate", "kermit_r", "mario",
+	"mountie", "necromancer", "panther_r", "partybear", "penguin",
+	"polarbear", "ribbon", "s3xeyc0ncer", "santa", "selene", "skatergoofy",
+	"skatermax", "smoke", "striker", "sw_alien", "truth", "yoda",
 }
 const PRECACHE_MAX = 10
 const NAME_SIZE = 0x20
@@ -271,3 +272,6 @@ public plugin_end() {
 	TrieDestroy loaded_model_indices
 	ArrayDestroy loaded_model_infos
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/
