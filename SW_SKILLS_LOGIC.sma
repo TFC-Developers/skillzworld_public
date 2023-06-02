@@ -1207,7 +1207,7 @@ public hook_say(iClient)
 		{
 			PowerUp(iClient, 0, "99999");
             g_sPlayerData[iClient][m_bAltmodx] = true;
-            pub_stoprun(iClient);
+            //pub_stoprun(iClient);
             g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime(); 
 			tfc_setbammo(iClient, TFC_AMMO_NADE1, 4);
 			tfc_setbammo(iClient, TFC_AMMO_NADE2, 4);
@@ -1219,13 +1219,13 @@ public hook_say(iClient)
 		else if (equali(szArg2, "god")) {
 			PowerUp(iClient, 1, "99999");
             g_sPlayerData[iClient][m_bAltmodx] = true;
-            pub_stoprun(iClient);
+            //pub_stoprun(iClient);
             g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime();  
         }
 		else if(equali(szArg2, "quad")) {
 			PowerUp(iClient, 2, "99999");
             g_sPlayerData[iClient][m_bAltmodx] = true;
-            pub_stoprun(iClient);
+            //pub_stoprun(iClient);
             g_sPlayerData[iClient][m_fAltmodxCooldown] = get_gametime();  
         }
 		else if(equali(szArg2, "nades"))
