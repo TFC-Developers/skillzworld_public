@@ -6,4 +6,4 @@ steps:
 - name: compile
   image: 192.168.1.27:5000/my-amxx-compiler
   commands:
-    - for file in *.sma; do amxxpc "$file"; done
+    - for file in *.sma; do /app/amxxpc "$file"; done
