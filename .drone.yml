@@ -10,7 +10,7 @@ steps:
       - cd /drone/src
       - bash -c 'for file in *.sma; do echo "Compiling $file";
         script_name=basename "${$file%.*}";
-        echo "Script name: $script_name";
+        echo "Script name $script_name";
         rm -f include/script_version.inc include/script_name.inc;
         echo "stock const _SCRIPT_DATE[] = \"$(git rev-parse --short HEAD)\";" > include/script_version.inc;
         echo "stock const _SCRIPT_NAME[] = \"$($script_name)\";" > include/script_name.inc;
