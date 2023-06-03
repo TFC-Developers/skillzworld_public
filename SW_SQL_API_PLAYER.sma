@@ -31,7 +31,7 @@ public plugin_init()
 	register_clcmd("say", "Handle_Say");							//register command /stats
 	register_clcmd("say_team", "Handle_Say");								//register command /top
 	register_forward(FM_ClientUserInfoChanged, "Forward_ClientUserInfoChanged") //register forward ClientUserInfoChanged
-	register_message( STATUSICON, "nade_color" );
+	//register_message( STATUSICON, "nade_color" );
 }
 
 public plugin_end() 

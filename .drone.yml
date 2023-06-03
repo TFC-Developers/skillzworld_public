@@ -1,0 +1,9 @@
+kind: pipeline
+type: docker
+name: compile
+
+steps:
+- name: compile
+  image: devtools:5000/my-amxx-compiler
+  commands:
+    - for file in *.sma; do amxxpc "$file"; done
