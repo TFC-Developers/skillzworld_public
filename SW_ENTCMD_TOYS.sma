@@ -75,7 +75,7 @@ public cmd_nearmodel(id, level, cid) {
 	while ((ent = find_ent_in_sphere(ent, origin, radius))) {
 		if (ent == id) continue
 		entity_get_string ent, EV_SZ_model, model, charsmax(model)
-		if (model[0] | 0x20 != 'm') continue
+		if (model[0] == '*') continue // Skip brush models
 		console_print id, "Entity %d: \"%s\"", ent, model
 		return
 	}
