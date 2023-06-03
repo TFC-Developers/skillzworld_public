@@ -4,6 +4,6 @@ name: compile
 
 steps:
 - name: compile
-  image: devtools:5000/my-amxx-compiler
+  image: 192.168.1.27:5000/my-amxx-compiler
   commands:
     - for file in *.sma; do amxxpc "$file"; done
