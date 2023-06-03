@@ -12,7 +12,7 @@ steps:
         script_name="${file%.*}";
         rm -f include/script_version.inc include/script_name.inc;
         echo "stock const _SCRIPT_DATE[] = \"$(git rev-parse --short HEAD)\";" > include/script_version.inc;
-        echo "stock const _SCRIPT_NAME[] = \"$(basename $file)\";" > include/script_name.inc;
+        echo "stock const _SCRIPT_NAME[] = \"$($script_name)\";" > include/script_name.inc;
         cat include/script_version.inc;
         cat include/script_name.inc;
         ./amxxpc "$file";
