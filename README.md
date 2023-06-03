@@ -1,4 +1,5 @@
 # SkillzWorld - Team Fortress Classic
+[![Build Status](https://drone.gruk.io/api/badges/TeamFortressClassic/skillzworld_public/status.svg)](https://drone.gruk.io/TeamFortressClassic/skillzworld_public)
 
 Welcome to the plugin repository of skillzworld. In 2022 we decided that it was time to redo the plugins and turn the servers into a community project. Until then we used a custom made metamod plugin. 
 Our goal is to build the new plugins on top of the plugins provided by ben-watch / FeckinMad.
