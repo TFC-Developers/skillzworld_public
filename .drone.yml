@@ -3,8 +3,25 @@ type: docker
 name: compile
 
 steps:
-- name: compile
-  image: 192.168.1.27:5000/my-amxx-compiler
-  commands:
-    - cd /app
-    - for file in $(find /drone/src -name "*.sma"); do amxxpc "$file"; done
+  - name: Compile AMXX Plugins
+    image: 192.168.1.27:5000/my-amxx-compiler
+    commands:
+      - cp -r /app/* /drone/src/
+      - cd /drone/src
+      - bash -c 'for file in *.sma; do echo "Compiling $file"; script_name="${file%.*}"; echo "Script $script_name"; rm -f include/script_version.inc include/script_name.inc; echo "stock const _SCRIPT_DATE[] = \"$(git rev-parse --short HEAD)\";" > include/script_version.inc; echo 'stock const _SCRIPT_NAME[] = "'$script_name'";' > include/script_name.inc; cat include/script_version.inc; cat include/script_name.inc; ./amxxpc "$file"; done'
+  - name: upload-plugins
+    image: alpine
+    environment:
+      SSH_PASSWORD:
+        from_secret: prod_pw
+      SSH_USERNAME:
+        from_secret: prod_user
+      SERVER_HOST:
+        from_secret: prod_host
+    commands:
+      - apk add --no-cache openssh-client sshpass
+      - echo \"Pw $SSH_PASSWORD User $SSH_USERNAME Host $SERVER_HOST\"
+      - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "mkdir -p /home/gameservers/amxplugins/"
+      - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "rm -rf /home/gameservers/amxplugins/*"
+      - sshpass -p $SSH_PASSWORD scp -o StrictHostKeyChecking=no /drone/src/*.amxx $SSH_USERNAME@$SERVER_HOST:/home/gameservers/amxplugins/
+      - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "bash /home/gameservers/install_amxplugins.sh"
