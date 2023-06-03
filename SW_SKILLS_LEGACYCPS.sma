@@ -170,7 +170,7 @@ public get_course_name(id) {
 public parse_skillsconfig() {
     DebugPrintLevel(0, "Parsing skills config..");
     new mapname[32];  get_mapname(mapname, charsmax(mapname));                          // get the map name
-    new filename[32]; formatex(filename, charsmax(filename), "skills/%s.cfg", mapname); // get the filename
+    new filename[128]; formatex(filename, charsmax(filename), "skills/%s.cfg", mapname); // get the filename
     new path[128]; BuildAMXFilePath(filename, path, charsmax(path), "amxx_configsdir"); // get the full path to the file
 
     new tempCourseData[eCourseData_t];  // temp array to store the course data
