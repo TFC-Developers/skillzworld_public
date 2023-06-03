@@ -36,6 +36,7 @@ public plugin_init() {
 	register_concmd "e_kv", "cmd_kv", ADMIN_ADMIN, ""
 	register_concmd "e_default", "cmd_defaults", ADMIN_ADMIN, "Set default keyvalues for spawning entities. Prefix a key with ! to remove it."
 	register_concmd "e_defaults", "cmd_defaults", ADMIN_ADMIN, "Set default keyvalues for spawning entities. Prefix a key with ! to remove it."
+	register_concmd "e_nearmodel", "cmd_nearmodel", ADMIN_ADMIN, "Find a nearby entity and get its model."
 }
 public plugin_precache() {
 	res_lightning = precache_model(SPR_LIGHTNING)
@@ -65,45 +66,76 @@ public cmd_defaults(id, level, cid) {
 		
 	}
 }
+public cmd_nearmodel(id, level, cid) {
+	static Float:origin[3], Float:radius
+	radius = read_argv_float(1)
+	entity_get_vector id, EV_VEC_origin, origin
+	static model[0x40]
+	new ent
+	while ((ent = find_ent_in_sphere(ent, origin, radius))) {
+		if (ent == id) continue
+		entity_get_string ent, EV_SZ_model, model, charsmax(model)
+		if (model[0] | 0x20 != 'm') continue
+		console_print id, "Entity %d: \"%s\"", ent, model
+		return
+	}
+	console_print id, "Nothing found"
+}
 public cmd_kv(id, level, cid) {
 	// Usage
 	// e_kv skin - View a keyvalue from the aimed entity
 	// e_kv skin 11 - Set specific keyvalue from the aimed entity
+	// e_kv 1000 model - Find a nearby ent and get its keyvalue (useless because of invisible volume entities everywhere)
 	// e_kv cycler skin 11 - Do it to all cyclers
 	// e_kv cycler 1000 skin 11 - Find a cycler in a 1000u radius around you and set its keyvalue
 	// e_kv cycler 1000 skin - Get it instead
 	// e_kv cycler 1000 all skin 11 - Set keyvalue for all cyclers in that radius
-	new args_n = read_argc(), arg_i
+	new args_n = read_argc(), arg_i = 1
 	static arg1[0x40], arg2[0x40]
 	static classname[0x40], found_classname[0x40]
 	static Float:radius, Float:origin[3]
 	new count
 	new ent
-	if (args_n < 2) return
-	if (args_n <= 3) {
+	radius = read_argv_float(arg_i)
+	if (radius) {
+		arg_i++ // Go past radius
+		entity_get_vector id, EV_VEC_origin, origin
+		read_argv arg_i, arg1, charsmax(arg1)
+		if (args_n - arg_i == 1) { // There is only 1 argument, so find only
+			while ((ent = find_ent_in_sphere(ent, origin, radius))) {
+				if (ent == id) continue
+				print_kv id, ent, arg1
+				return
+			}
+			console_print id, "Found nothing"
+		} else {
+			console_print id, "Radius set for any entity not implemented."
+		}
+		return
+	}
+	
+	if (args_n <= 3) { // Aim find
 		get_user_aiming id, ent
-		arg_i = 1
-	} else {
-		read_argv 1, classname, charsmax(classname)
-		radius = read_argv_float(2)
-		if (!radius) { // Set all
-			arg_i = 2
+	} else { // Classname find
+		read_argv arg_i++, classname, charsmax(classname)
+		radius = read_argv_float(arg_i)
+		if (!radius) { // Arg 2 is actually classname, so set all
 			read_argv arg_i, arg1, charsmax(arg1)
 			read_argv arg_i + 1, arg2, charsmax(arg2)
-			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\"", arg1, arg2, classname
 			while ((ent = find_ent_by_class(ent, classname))) {
 				DispatchKeyValue ent, arg1, arg2
 				count++
 			}
-			console_print id, "Amount set: %d", count
+			console_print id, "Set %d keyvalues \"%s\": \"%s\" for all entities of class \"%s\"", count, arg1, arg2, classname
 			return
 		}
-		
-		if (args_n == 6) { // Set all in radius
-			arg_i = 4
+		// Radius find
+		arg_i++ // Go past radius
+		entity_get_vector id, EV_VEC_origin, origin
+		if (args_n - arg_i == 3) { // "all key value" - Set all in radius
+			arg_i++ // Go past "all"
 			read_argv arg_i, arg1, charsmax(arg1)
 			read_argv arg_i + 1, arg2, charsmax(arg2)
-			console_print id, "Setting keyvalue \"%s\": \"%s\" for all entities of class \"%s\" in radius %f", arg1, arg2, classname, radius
 			while ((ent = find_ent_in_sphere(ent, origin, radius))) {
 				entity_get_string ent, EV_SZ_classname, found_classname, charsmax(found_classname)
 				if (!equal(classname, found_classname)) continue
@@ -111,12 +143,11 @@ public cmd_kv(id, level, cid) {
 				DispatchKeyValue ent, arg1, arg2
 				count++
 			}
-			console_print id, "Amount set: %d", count
+			console_print id, "Set %d keyvalue \"%s\": \"%s\" for all entities of class \"%s\" in radius %f", count, arg1, arg2, classname, radius
 			return
 		}
 		
 		// Find single entity in radius:
-		console_print id, "Finding entity of class \"%s\" in radius %f", classname, radius
 		entity_get_vector id, EV_VEC_origin, origin
 		new bool:found = false
 		while ((ent = find_ent_in_sphere(ent, origin, radius))) {
@@ -124,7 +155,6 @@ public cmd_kv(id, level, cid) {
 			if (equal(classname, found_classname)) {found = true; break;}
 		}
 		if (!found) ent = 0
-		arg_i = 3
 	}
 	
 	/// Set/get single
@@ -134,7 +164,6 @@ public cmd_kv(id, level, cid) {
 	}
 	read_argv arg_i, arg1, charsmax(arg1)
 	if (args_n - arg_i == 1) { // The argument list ends with a key name, so read
-		console_print id, "Read keyvalue:"
 		print_kv(id, ent, arg1)
 	} else { // The argument list ends with a key name and a value, so set
 		read_argv arg_i + 1, arg2, charsmax(arg2)
@@ -184,8 +213,8 @@ stock print_kv(id, ent, const key[]) {
 		switch (k_type) {
 		case PM_INT: {console_print id, "\"%s\": \"%d\"", PRESET_KEYS[i], entity_get_int(ent, k_field);}
 		case PM_FLOAT: {console_print id, "\"%s\": \"%f\"", PRESET_KEYS[i], entity_get_float(ent, k_field);}
-		case PM_VECTOR: {entity_get_vector(ent, k_field, vec) ; console_print id, "\"%s\": \"%f %f %f\"", PRESET_KEYS[i], vec;}
-		case PM_STRING: {entity_get_string(ent, k_field, str, charsmax(str)) ; console_print id, "\"%s\": \"%s\"", PRESET_KEYS[i], str;}
+		case PM_VECTOR: {entity_get_vector ent, k_field, vec; console_print id, "\"%s\": \"%f %f %f\"", PRESET_KEYS[i], vec[0], vec[1], vec[2];}
+		case PM_STRING: {entity_get_string ent, k_field, str, charsmax(str); console_print id, "\"%s\": \"%s\"", PRESET_KEYS[i], str;}
 		}
 		found = true
 	}
@@ -203,7 +232,6 @@ public cmd_kill(id, level, cid) {
 	new targetname[0x20]; read_argv 1, targetname, charsmax(targetname)
 	new ent
 	if (args_n <= 2) { // Aim and kill
-		console_print id, "Aiming to kill"
 		get_user_aiming id, ent
 		new hitpos[3]; get_user_origin id, hitpos, 3
 		
@@ -303,32 +331,36 @@ public cmd_kill(id, level, cid) {
 			set_entity_flags ent, FL_KILLME, true
 		}
 	} else if (!equal(targetname, PLAYER)) { // 3+ arguments, kill radius
-		console_print id, "Radius to kill"
+		new killed_n
 		new i_origin[3]; get_user_origin id, i_origin
 		new allbuffer[sizeof SEARCH_ALL]; 
 		new Float:radius
 		const Float:RADIUS_ALL = 9999.0
 		if ((radius = read_argv_float(2))) { // e_kill cycler <num> [all]
 			read_argv 3, allbuffer, charsmax(allbuffer)
-			console_print id, "Radius found. \"%s\" %d", allbuffer, radius
 		} else {  // e_kill cycler [all]
 			read_argv 2, allbuffer, charsmax(allbuffer)
-			console_print id, "No radius found. \"%s\" %d", allbuffer, radius
 		}
 		new bool:all = bool:equali(allbuffer, SEARCH_ALL)
 		
 		console_print id, "All: %d, radius: %f", all?1:0, radius
-		if (all) {
-			while ((ent = find_ent_by_class(ent, targetname))) {
-				set_entity_flags ent, FL_KILLME, true
-			}
-		} else { // Use radius instead
+		if (radius) {
 			new Float:f_origin[3]; entity_get_vector id, EV_VEC_origin, f_origin
 			while ((ent = find_ent_in_sphere(ent, f_origin, radius))) {
 				entity_get_string ent, EV_SZ_classname, classname, charsmax(classname)
-				if (equal(classname, targetname)) set_entity_flags ent, FL_KILLME, true
+				if (!equal(classname, targetname)) continue
+				set_entity_flags ent, FL_KILLME, true
+				killed_n++
+				if (!all) break
+			}
+		} else {
+			while ((ent = find_ent_by_class(ent, targetname))) {
+				set_entity_flags ent, FL_KILLME, true
+				killed_n++
+				if (!all) break
 			}
 		}
+		console_print 0, "Killed entities: %d", killed_n
 		message_begin MSG_BROADCAST, SVC_TEMPENTITY;
 		{
 			write_byte TE_BEAMDISK
@@ -479,6 +511,3 @@ public cmd_give(id, level, cid) {
 	get_user_name recipient, search_name, charsmax(search_name)
 	console_print id, "Gave %s a %s, bro", search_name, classname
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
-*/
