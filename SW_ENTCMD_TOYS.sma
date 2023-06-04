@@ -70,13 +70,14 @@ public cmd_nearmodel(id, level, cid) {
 	static Float:origin[3], Float:radius
 	radius = read_argv_float(1)
 	entity_get_vector id, EV_VEC_origin, origin
-	static model[0x40]
+	static model[0x40], classname[0x40]
 	new ent
 	while ((ent = find_ent_in_sphere(ent, origin, radius))) {
 		if (ent == id) continue
 		entity_get_string ent, EV_SZ_model, model, charsmax(model)
-		if (model[0] == '*') continue // Skip brush models
-		console_print id, "Entity %d: \"%s\"", ent, model
+		if (!model[0] || model[0] == '*') continue // Skip brush models
+		entity_get_string ent, EV_SZ_classname, classname, charsmax(classname)
+		console_print id, "Entity %d \"%s\" has model \"%s\"", ent, classname, model
 		return
 	}
 	console_print id, "Nothing found"
