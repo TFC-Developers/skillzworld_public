@@ -12,7 +12,7 @@
 // As an alternative to this, others have reimplemented PM_Jump entirely:
 //   https://forums.alliedmods.net/showthread.php?p=610329?p=610329
 
-#define USE_2003 false
+#define USE_2003 true
 
 public plugin_init() {
 	register_plugin PLUGIN, VERSION, AUTHOR
@@ -23,35 +23,44 @@ new g_Speedcap_OriginalLong
 new bool:g_SpeedcapOn = true
 
 
-#if USE_2003
-stock const SPEEDCAP_PATTERN[] = "Speedcap-1FD7C79A5D253224CBFA4B6A92AFC533"
-#else
-stock const SPEEDCAP_PATTERN[] = "Speedcap-B442FF5F79DBE23FB246E679E62E7994"
-#endif
+stock const SPEEDCAP_PATTERN_2003[] = "Speedcap-1FD7C79A5D253224CBFA4B6A92AFC533"
+stock const SPEEDCAP_PATTERN_2020[] = "Speedcap-B442FF5F79DBE23FB246E679E62E7994"
 
 stock enable_speedcap() {
 	if (g_SpeedcapOn) return
-	OrpheuMemorySet SPEEDCAP_PATTERN, 1, g_Speedcap_OriginalLong
+	
+	if (is_linux_server()) {
+#if USE_2003
+		OrpheuMemorySet SPEEDCAP_PATTERN_2003, 1, g_Speedcap_OriginalLong
+#else
+		OrpheuMemorySet SPEEDCAP_PATTERN_2020, 1, g_Speedcap_OriginalLong
+#endif
+	} else {
+		OrpheuMemorySet SPEEDCAP_PATTERN_2020, 1, g_Speedcap_OriginalLong
+	}
+
 	g_SpeedcapOn = true
 }
 stock disable_speedcap() {
 	if (!g_SpeedcapOn) return
-	g_Speedcap_OriginalLong = OrpheuMemoryGet(SPEEDCAP_PATTERN)
-	//console_print 0, "Speedcap: Saved original long: %d", g_Speedcap_OriginalLong
+#if USE_2003
+	g_Speedcap_OriginalLong = OrpheuMemoryGet(SPEEDCAP_PATTERN_2003)
+#else
+	g_Speedcap_OriginalLong = OrpheuMemoryGet(SPEEDCAP_PATTERN_2020)
+#endif
 	
 	// Opcodes: https://faydoc.tripod.com/cpu/jnc.htm
 	// Linux: Parity of preceding instruction https://www.felixcloutier.com/x86/fcomi:fcomip:fucomi:fucomip
 
+	if (is_linux_server()) {
 #if USE_2003
-	// Linux only
-	OrpheuMemorySet SPEEDCAP_PATTERN, 1, (g_Speedcap_OriginalLong & ~0xFF) | 0xEB
+		OrpheuMemorySet SPEEDCAP_PATTERN_2003, 1, (g_Speedcap_OriginalLong & ~0xFF) | 0xEB
 #else
-	if (g_Speedcap_OriginalLong & 0xFF == 0x7B) { // Windows
-		OrpheuMemorySet SPEEDCAP_PATTERN, 1, (g_Speedcap_OriginalLong & ~0xFF) | 0xEB
-	} else { // Linux
-		OrpheuMemorySet SPEEDCAP_PATTERN, 1, (g_Speedcap_OriginalLong & ~0xFFFF) | 0x8B0F
-	}
+		OrpheuMemorySet SPEEDCAP_PATTERN_2020, 1, (g_Speedcap_OriginalLong & ~0xFFFF) | 0x8B0F
 #endif
+	} else {
+		OrpheuMemorySet SPEEDCAP_PATTERN_2020, 1, (g_Speedcap_OriginalLong & ~0xFF) | 0xEB
+	}
 	
 	g_SpeedcapOn = false
 }
@@ -65,6 +74,8 @@ public cmd_speedcap(id, level, cid) {
 }
 
 public plugin_end() {
-	//console_print 0, "Speedcap: Restoring original long: %d", g_Speedcap_OriginalLong
 	enable_speedcap
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
+*/
