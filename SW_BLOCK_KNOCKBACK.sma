@@ -1,7 +1,6 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
-#include <engine>
 
 
 new g_blocked[ 16 ][ 128 ];
@@ -52,7 +51,6 @@ public block_knockback( victim, inflictorId, attackerId, Float: damage, bitsDama
         SetHamParamFloat( 4, 0.0 );
     }
 
-    return HAM_HANDLED;
 }
 
 
