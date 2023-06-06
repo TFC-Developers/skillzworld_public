@@ -52,7 +52,8 @@ steps:
       - echo "$(git rev-parse --abbrev-ref HEAD)" > /drone/src/branch.txt  # Adds current branch to branch.txt
       - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "mkdir -p /home/tfcserver/amxplugins/"
       - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "rm -rf /home/tfcserver/amxplugins/*"
-      - sshpass -p $SSH_PASSWORD scp -o StrictHostKeyChecking=no /drone/src/*.amxx $SSH_USERNAME@$SERVER_HOST:/home/tfcserver/amxplugins/
+      - sshpass -p $SSH_PASSWORD scp -o StrictHostKeyChecking=no /drone/src/*.txt $SSH_USERNAME@$SERVER_HOST:/home/tfcserver/amxplugins/
+      - sshpass -p $SSH_PASSWORD scp -o StrictHostKeyChecking=no /drone/src/*.amxx $SSH_USERNAME@$SERVER_HOST:/home/tfcserver/amxplugins/      
       - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "bash /home/tfcserver/install_amxplugins.sh"
     when:
       branch:
