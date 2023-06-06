@@ -16,7 +16,6 @@ public plugin_init() {
 
     block_weapon();
     RegisterHam( Ham_TakeDamage, "player", "block_knockback" );
-    register_forward( FM_Spawn, "unset_solid", 0);
 }
 
 
@@ -71,15 +70,4 @@ public should_be_blocked( ent ) {
     }
 
     return false;
-}
-
-
-public unset_solid( toucher, touched ) {
-
-    if( touched != 0 && touched < MAX_PLAYERS + 1 ) {
-
-        if( should_be_blocked( toucher ) ) {
-            set_pev( toucher, pev_solid, SOLID_NOT );
-        }
-    }
 }
