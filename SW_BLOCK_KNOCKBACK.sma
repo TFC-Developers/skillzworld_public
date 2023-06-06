@@ -89,6 +89,7 @@ public unset_solid( toucher, touched ) {
     }
 }
 
+
 public set_solid( toucher, touched ) {
 
     new is_non_solid = pev(toucher, pev_solid);
@@ -97,4 +98,3 @@ public set_solid( toucher, touched ) {
         set_pev( toucher, pev_solid, SOLID_BBOX );
     }
 }
-
