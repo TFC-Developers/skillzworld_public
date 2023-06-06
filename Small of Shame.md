@@ -79,7 +79,12 @@ The parameters have the wrong names, which belong to floatdiv.
 
 ### Bad documentation
 The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.  
-It's often hard to judge whether the problem sits with the documentation or the library. In those cases it's probably both. An example is [fread](https://www.amxmodx.org/api/file/fread)'s return value, explained below.
+It's often hard to judge whether the problem sits with the documentation or the library. When that happens, it's probably both.
+
+- Formatting rules are undocumented. This is baffling, because it's an extremely important part of the standard library.  
+[format](https://www.amxmodx.org/api/string/format), [formatex](https://www.amxmodx.org/api/string/formatex) and [\[MAX_FMT_LENGTH\]fmt](https://www.amxmodx.org/api/string/%5BMAX_FMT_LENGTH%5Dfmt) tell the reader to go find actual information by going to the documentation - in the documentation.  
+Similarly, [console_print](https://www.amxmodx.org/api/amxmodx/console_print) and [console_cmd](https://www.amxmodx.org/api/amxmodx/console_cmd) do not have the due diligence to offer any information about what "formatting rules" are, or where information can be found about this special text format.
+	- The [SourceMod formatting rules](https://wiki.alliedmods.net/Format_Class_Functions_(SourceMod_Scripting)) can be referenced, however it's for a different standard library so differences are to be expected.
 
 - Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) and [register_concmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation that does not have this problem, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
 	- The callback function for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) should take a single parameter holding the calling player id: `public <name>(id)`
@@ -127,6 +132,9 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 
 - [TrieIterGetKey](https://www.amxmodx.org/api/celltrie/TrieIterGetKey) has doubly wrong documentation: "Nnumber [sic] of bytes written to the buffer" says A: that it counts the amount of bytes written instead of cells, and implies B: that it includes the zero terminator.
 	- The function actually returns the amount of characters inside the string, which is 5 if it wrote the key "model".
+	
+- [TrieIterGetString](https://www.amxmodx.org/api/celltrie/TrieIterGetString) likewise has wrong documentation: it says the size parameter receives the amount of bytes written.
+	- In reality it receives the length of the string written, which is the amount of cells written minus one.
 
 - [get_keyvalue](https://www.amxmodx.org/api/engine/get_keyvalue) has wrong documentation: "Retrieves a value from an entities [sic] keyvalues." - it has nothing to do with entities. It actually gets client/server values.  
 [Issue that has been open since 2019](https://github.com/alliedmodders/amxmodx/issues/745)
