@@ -21,7 +21,7 @@ The Sven Co-op team made a wise decision when integrating the more sensible Ange
 
 - The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin](https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
-Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
+	- Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin)(id, EV_VEC_origin, origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector)(id, EV_VEC_origin, origin) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector)(id, EV_VEC_origin, origin) instead to get the player's origin as a float vector.  
 
 - The standard library is missing a file truncate function. If you want to shorten a file, you have to delete the file and rewrite it.
 
@@ -68,8 +68,7 @@ It has its own fair share of problems, too.
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
-- https://www.amxmodx.org/api/float/floatadd  
-The parameters have the wrong names, which belong to floatdiv.
+- [floatadd](https://www.amxmodx.org/api/float/floatadd) has parameters with wrong names. They were lazily copy & pasted from [floatdiv](https://www.amxmodx.org/api/float/floatdiv).
 
 - [include/tfcconst.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/tfcconst.inc#L75) provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
 
@@ -139,6 +138,9 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 - [get_keyvalue](https://www.amxmodx.org/api/engine/get_keyvalue) has wrong documentation: "Retrieves a value from an entities [sic] keyvalues." - it has nothing to do with entities. It actually gets client/server values.  
 [Issue that has been open since 2019](https://github.com/alliedmodders/amxmodx/issues/745)
 	- The engine (presumably) does not facilitate reading arbitrary keyvalues back via strings, it only allows you to set them.
+
+- [write_coord](https://www.amxmodx.org/api/messages/write_coord) and [write_coord_f](https://www.amxmodx.org/api/messages/write_coord_f) do not state that [they both write a float](https://github.com/alliedmodders/amxmodx/blob/master/amxmodx/messages.cpp#L491) to the message, and the former converts an integer to float before doing so.
+	- This is because message coordinates are always float, and it means that [write_coord_f](https://www.amxmodx.org/api/messages/write_coord_f) is the best and most accurate function to use, while the other is a convenience function for when you already have bad precision.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
