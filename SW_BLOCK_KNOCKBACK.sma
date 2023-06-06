@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <fakemeta>
 #include <hamsandwich>
+#include <engine>
 
 
 new g_blocked[ 16 ][ 128 ];
@@ -15,7 +16,8 @@ public plugin_init() {
 
     block_weapon();
     RegisterHam( Ham_TakeDamage, "player", "block_knockback" );
-    register_forward( FM_Spawn, "solid_type" );
+    register_forward( FM_Touch, "unset_solid", 0);
+    register_forward( FM_Touch, "set_solid", 1);
 
 }
 
@@ -48,15 +50,19 @@ public block_this( classname[] ) {
 
 
 public block_knockback( victim, inflictorId, attackerId, Float: damage, bitsDamageType ) {
-    
-    if( inflictorId != attackerId && shouldBeBlocked( inflictorId ) ) {
+
+    if( is_valid_ent( victim ) )
+        return HAM_HANDLED;
+
+    if( victim != attackerId && should_be_blocked( inflictorId ) ) {
         SetHamParamFloat( 4, 0.0 );
     }
 
     return HAM_HANDLED;
 }
 
-public shouldBeBlocked( ent ) {
+
+public should_be_blocked( ent ) {
 
     new classname[ 128 ];
     pev( ent, pev_classname, classname, charsmax( classname ) );
@@ -73,10 +79,22 @@ public shouldBeBlocked( ent ) {
 }
 
 
-public solid_type( ent ) {
+public unset_solid( toucher, touched ) {
 
-    if( shouldBeBlocked( ent ) ) {
-        set_pev( ent, pev_solid, 5 );
+    if( touched != 0 && touched < MAX_PLAYERS + 1 ) {
+
+        if( should_be_blocked( toucher ) ) {
+            set_pev( toucher, pev_solid, 5 );
+        }
+    }
+}
+
+public set_solid( toucher, touched ) {
+
+    new is_non_solid = pev(toucher, pev_solid);
+
+    if( is_non_solid == 5 ) {
+        set_pev( toucher, pev_solid, SOLID_BBOX );
     }
 }
 
