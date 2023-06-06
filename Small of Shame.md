@@ -47,6 +47,24 @@ It has its own fair share of problems, too.
 
 - The customisable toolbar at the top does not save any layout changes and will break itself into a disconnected mess when starting the program, presumably because of the small default window size, which also does not save changes.
 
+- Find & replace all performs each replacement as a separate action, so if you want to undo it, you have to undo each and every single replacement individually.
+
+- By default, notes or per-file configurations are stored inside the opened code file as an appended comment. This setting can be changed, but for some reason the *recommended* setting, storing the information in program configs, is not the default one.
+
+- The code inspector is ignorant of or wrong about many features of the Small language, its problems include but are not limited to:
+	- Not understanding static non-assignment declarations
+	- Not being aware of tags or special declaration keywords for declarations
+	- Sectioning assignment statements wrong such that a final comma or comment is considered part of the assigned expression
+	- Not understanding assert statements
+	- Incorrectly identifying public functions declared with `@` syntax as being internal and having a "`@`" type
+	- Misidentifying procedure call syntax as an invalid function call
+	- Misaligning doc comment extraction such that the final character is missing
+	- Failing to parse tag lists like `{_, Float}:` in function signatures, representing them as "1"
+	- Misidentifying a for loop as being invalid if the increment field is empty
+	- Adding its own space to the increment field when editing a for loop and parsing it back again, causing a new space to be added each time an edit is made
+	- Causing a runtime error when attempting to edit an inlined for loop
+	- Being easily led into nonsense parsing by adding inline doc comments
+
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
