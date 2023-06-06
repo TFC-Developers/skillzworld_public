@@ -1,0 +1,9 @@
+Welcome to Skillzworld!
+
+Experience a different kind of gameplay on our skills server. Here, it's not about deathmatch - you can test your abilities in climbing, conc jumping, rocket jumping, pipe jumping, and more!
+
+Join our discord https://discord.gg/cF7WY3CGQF to report any bugs you encounter or share your innovative ideas.
+
+We are currently working on the features this server has. You can participate at https://git.gruk.io
+
+:-)
