@@ -49,9 +49,6 @@ public block_this( classname[] ) {
 
 public block_knockback( victim, inflictorId, attackerId, Float: damage, bitsDamageType ) {
 
-    if( victim == 0 )
-        return HAM_HANDLED;
-
     if( victim != attackerId && should_be_blocked( inflictorId ) ) {
         SetHamParamFloat( 4, 0.0 );
     }
