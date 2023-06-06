@@ -47,7 +47,7 @@ steps:
       SERVER_HOST:
         from_secret: dev_host
     commands:
-      - apk add --no-cache openssh-client sshpass
+      - apk add --no-cache openssh-client sshpass git
       - echo "$(git rev-parse --short HEAD)" > /home/tfcserver/amxplugins/commit.txt  # Adds short commit version to commit.txt
       - echo "$(git rev-parse --abbrev-ref HEAD)" > /home/tfcserver/amxplugins/branch.txt  # Adds current branch to branch.txt
       - sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SERVER_HOST "mkdir -p /home/tfcserver/amxplugins/"
