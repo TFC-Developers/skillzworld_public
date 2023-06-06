@@ -26,15 +26,7 @@ new const g_szNoData[] = "* No data found in the database.";
 new const g_szError[] = "* Failed to load the statistics from the database. Please try again later.";
 new const g_szWait[] = "* Please wait for the previous request to finish.";
 //end strings
-/*
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 0 (id) = 5
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 1 (course_id) = 1
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 2 (player_id) = 18787
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 3 (time) = 0
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 4 (created_at) = 2023-05-24 12:22:04
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 5 (player_class) = 11
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 6 (steamid) = STEAM_0:1:14778066
-DEBUG: [SW_SKILLS_MYSQL.amxx] Column 7 (most_used_nickname) = Ilupuusikuniluusi*/
+
 enum eSpeedTop_t
 {
 	m_iTopPlayerIdent,                          // The player's ident (sql player id)
