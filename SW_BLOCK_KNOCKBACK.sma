@@ -51,7 +51,7 @@ public block_this( classname[] ) {
 
 public block_knockback( victim, inflictorId, attackerId, Float: damage, bitsDamageType ) {
 
-    if( is_valid_ent( victim ) )
+    if( victim == 0 )
         return HAM_HANDLED;
 
     if( victim != attackerId && should_be_blocked( inflictorId ) ) {
@@ -94,7 +94,7 @@ public set_solid( toucher, touched ) {
 
     new is_non_solid = pev(toucher, pev_solid);
 
-    if( is_non_solid == 5 ) {
+    if( is_non_solid == 5 && touched == 0) {
         set_pev( toucher, pev_solid, SOLID_BBOX );
     }
 }
