@@ -1,6 +1,12 @@
 # Small of Shame
-This document records our disdain for AMX Mod X and its chosen scripting language.
+This document records our disdain for AMX Mod X and its chosen scripting language.  
 
+Table of contents:  
+* [Nearly two decades out of date](#small-outdated)
+*
+*
+
+<a name="small-outdated"/>
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
 [Repository with "Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
