@@ -2,11 +2,17 @@
 This document records our disdain for AMX Mod X and its chosen scripting language.  
 
 Table of contents:  
-* [Nearly two decades out of date](#small-outdated)
-*
-*
+* [Nearly two decades out of date](#nearly-two-decades-out-of-date)
+* [AMX Mod X](#amx-mod-x)
+	* [AMXX-Studio](#amxx-studio)
+	* [Anything for backwards compatibility](#anything-for-backwards-compatibility)
+	* [Bad documentation](#bad-documentation)
+	* [Broken standard library](#broken-standard-library)
+* [The language](#the-language)
+	* [Rules](#rules)
+	* [Semicolons - optional until they aren't](#semicolons-optional-until-they-aren-t)
+	* [Compiling](#compiling)
 
-<a name="small-outdated"></a>
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
 [Repository with "Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
@@ -16,8 +22,7 @@ The "Pawn Language Guide", updated in 2016 at the time of writing, is of limited
 The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.  
 
 ## AMX Mod X
-https://www.amxmodx.org/about.php  
-AMX Mod X is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.  
+[AMX Mod X](https://www.amxmodx.org/about.php) is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.  
 It's not very good.  
   
 The Sven Co-op team made a wise decision when integrating the more sensible AngelScript language into their mod with their own API, eliminating any possible use case for AMX Mod X.
