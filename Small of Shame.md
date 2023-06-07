@@ -170,6 +170,20 @@ This means that it's impossible to create constant arrays that can be indexed at
 You can create a `#define` for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:  
 `#define A "Constant string"`
 
+- Packed strings are considered constant, but packed arrays are not. This means this is valid:  
+`new A[3 char] = !"Hi"`, and this is not:  
+`new A[3 char] = !{255, 127, 0}`, this forces the programmer to use string escape sequences to write numbers while being careful around the zero terminator:  
+`new A[3 char] = !"\255\127" // !"\255\127\0" works too, because the 3 char size is really 4 char, so as to occupy 1 cell.`  
+Packed non-string arrays in general are broken. Assigning an already-declared variable to a packed string is valid:  
+`A = !"Hi"`, but invalid for packed arrays, as this raises a size mismatch error, despite the array sizes being compatible:  
+`A = !{255, 0, 0}`  
+Packed string parameters work without a hitch, while packed array parameters result in corrupted memory, with the compiler not even issuing a warning:
+```
+test_packed() takes_packed !"Ya", !{255, 127, 0}
+takes_packed(A[3 char], B[3 char]) console_print 0, "%d %d %d, %d %d %d %d %d", A{0},A{1},A{2}, B{0},B{1},B{2},B{3},B[0]
+// Output: 89 97 0, 0 0 0 24 24
+```
+
 - Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.  
 Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:  
 `function(format_string[], any: ...) {}`
@@ -215,7 +229,7 @@ This means that a preprocessor macro to, for example, convert an integer vector 
 	1. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2])`  
 	2. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);`  
 	3. `#define VEC_TO_FVEC(%1,%2) {%2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);}`  
-These examples show that here is no catch-all solution, aside from redefining the macro as a function:
+These examples show that here is no catch-all solution, aside from redefining the macro as a function ([which fortunately exists already](https://www.amxmodx.org/api/vector/IVecFVec)):
 	* `VEC_TO_FVEC(vec_i, vec_f);`
 	* `if (id == target) VEC_TO_FVEC(vec_i, vec_f)`
 	* `if (id == target) {found = true; VEC_TO_FVEC(vec_i, vec_f);}`
