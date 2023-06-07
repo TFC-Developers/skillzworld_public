@@ -6,7 +6,7 @@ Table of contents:
 *
 *
 
-<a name="small-outdated"/>
+<a name="small-outdated"></a>
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
 [Repository with "Pawn_Language_Guide.pdf"](https://github.com/compuphase/pawn/tree/master/doc)  
