@@ -136,9 +136,9 @@ public FakeWallThink(pEntity)
         new Float:fVecOrigin[3], Float:fVecAngle[3], Float:fVecForward[3], Float:trEndPos[3];
         entity_get_vector(pAdmin, EV_VEC_origin, fVecOrigin)
         get_global_vector(GL_v_forward, fVecForward);
-        static Float:fAngles[3]; pev(pEntity, pev_v_angle, fAngles)
+        static Float:fAngles[3]; pev(pAdmin, pev_v_angle, fAngles)
         engfunc(EngFunc_MakeVectors, fAngles) // Convert view angle to normalised vector
-        new Float:fViewOfs[3]; pev(pEntity, pev_view_ofs, fViewOfs);
+        new Float:fViewOfs[3]; pev(pAdmin, pev_view_ofs, fViewOfs);
         new Float:origin1[3], Float:origin2[3];
         for(new i = 0; i < 3; i++) origin1[i] = fVecOrigin[i] + fViewOfs[i];
         for(new i = 0; i < 3; i++) origin2[i] = fVecOrigin[i] + fViewOfs[i] + fVecForward[i] * 8192.0;
