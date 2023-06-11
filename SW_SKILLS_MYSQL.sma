@@ -632,7 +632,7 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs) {
 	iStart = clamp(iStart, 0, top_count - 1)
 	iEnd = clamp(iEnd, iStart+1, top_count)
 	new iRequestedRuns = iEnd - iStart
-	//console_print id, "ShowTop bounds: %d - %d", iStart, iEnd
+	//console_print id, "DEBUG: ShowTop bounds: %d - %d", iStart, iEnd
 
 	static sBuffer[1024]
 	new sCurrentMap[MAX_MAP_LEN]; get_mapname(sCurrentMap, charsmax(sCurrentMap))
@@ -653,24 +653,23 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs) {
 	#define RUN_IS_SHOWABLE (iCourseSQL == TopInfo[m_iCourseID] && iClass == TopInfo[m_iPlayerClass])
 	
 	// Bug: Viewing the leaderboard as spectator doesn't work because of the class filter
-	// console_print id, "Course's internal ID: %d, player class: %d", iCourseInternal, iClass
+	// console_print id, "DEBUG: Course's internal ID: %d, player class: %d", iCourseInternal, iClass
 	new TopInfo[eSpeedTop_t], run_i
 	new iSkipped
 	while (iSkipped < iStart && run_i < top_count) { // Skip leading runs for pagination
-		// console_print id, "Skipping potential run"
+		// console_print id, "DEBUG: Skipping potential run"
 		ArrayGetArray(top_list, run_i, TopInfo)
 		if (RUN_IS_SHOWABLE) {console_print id, "Skipped a run"; iSkipped++;}
 		run_i++
 	}
 	new sTime[0x20], iAcquired
 	while (iRequestedRuns > iAcquired < MAX_MOTD_RANKS && run_i < top_count) {
-		// console_print id, "Before: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
+		// console_print id, "DEBUG: Before: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
 		ArrayGetArray(top_list, run_i, TopInfo)
 		run_i++
-		console_print id, "Course's SQLid: %d, checked run's course id: %d, checked run's class: %d", iCourseSQL, TopInfo[m_iCourseID], TopInfo[m_iPlayerClass]
-		console_print id, "Checking potential run"
+		// console_print id, "DEBUG: Course's SQLid: %d, checked run's course id: %d, checked run's class: %d", iCourseSQL, TopInfo[m_iCourseID], TopInfo[m_iPlayerClass]
 		if (!RUN_IS_SHOWABLE) continue
-		// console_print id, "Passed!"
+		// console_print id, "DEBUG: Passed!"
 		new Float:fTime = TopInfo[m_fTime];
 		new iTotalSeconds = floatround(fTime, floatround_floor), iCentis = floatround(fTime*100.0, floatround_floor) % 100
 		new iHours = iTotalSeconds / (60*60), iMinutes = iTotalSeconds / 60 % 60, iSeconds = iTotalSeconds % 60
@@ -678,7 +677,7 @@ public ShowTop(id, iStart, iEnd, bool:bOnlyPBs) {
 		else         formatex(sTime, charsmax(sTime), "%02d:%02d.%02d", iMinutes, iSeconds, iCentis)
 		send_motd(id, "\n%3d. [%s] %s <%s> \ton %s", 1 + iStart + iAcquired, sTime, TopInfo[m_sTopPlayerName], TopInfo[m_sTopPlayerAuthid], TopInfo[m_CreatedAt]);
 		iAcquired++
-		// console_print id, "After: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
+		// console_print id, "DEBUG: After: %d > %d < %d && %d < %d", iRequestedRuns, iAcquired, MAX_MOTD_RANKS, run_i, top_count
 	}
 	new iTrailingRuns
 	while (run_i < top_count && iTrailingRuns < MAX_MOTD_RANKS) { // Scan for trailing runs for pagination help
