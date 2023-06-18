@@ -12,9 +12,11 @@
 public plugin_init() {
 	RegisterPlugin
 	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_medikit", "action_medikit"
+	/*
 	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_axe", "action_melee"
 	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_knife", "action_melee"
 	RegisterHam Ham_Weapon_PrimaryAttack, "tf_weapon_spanner", "action_melee"
+	*/
 }
 
 const Float:ACTION_AIM_THRESHOLD = 88.0
@@ -36,6 +38,3 @@ public action_melee(wid) {
 		set_custom_checkpoint id
 	}
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang2057\\ f0\\ fs16 \n\\ par }
-*/

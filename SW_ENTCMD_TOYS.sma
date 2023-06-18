@@ -45,19 +45,56 @@ public plugin_precache() {
 	res_hgibs = precache_model(MDL_HGIBS)
 	
 	defaults = TrieCreate()
-	TrieSetString defaults, "model", MDL_CIVILIAN
+	defaults_reset
 }
 public plugin_end() {
 	TrieDestroy defaults
 }
+static stock defaults_reset() {
+	if (defaults == Invalid_Trie) return
+	TrieClear defaults
+	TrieSetString defaults, "model", MDL_CIVILIAN
+}
 public cmd_defaults(id, level, cid) {
 	new args_n = read_argc()
 	static arg1[0x40], arg2[0x40]
-	for (new arg_i = 1; arg_i < args_n; ) {
+	if (args_n == 1) {
+		static consolebuf[0x400]; consolebuf[0] = EOS
+		new TrieIter:defaults_iter = TrieIterCreate(defaults)
+		
+		/* // Building a huge single console output doesn't seem to work well
+		new offset
+		while (TrieIterGetString(defaults_iter, arg2, charsmax(arg2)) && offset < charsmax(consolebuf)) {
+			TrieIterGetKey defaults_iter, arg1, charsmax(arg1)
+			offset += formatex(consolebuf[offset], charsmax(consolebuf) - offset, "\"%s\": \"%s\"\n", arg1, arg2)
+			TrieIterNext defaults_iter
+		}
+		if (consolebuf[offset - 1] == '\n') consolebuf[offset - 1] = EOS
+		console_print id, consolebuf
+		*/
+		
+		while (TrieIterGetString(defaults_iter, arg2, charsmax(arg2))) {
+			TrieIterGetKey defaults_iter, arg1, charsmax(arg1)
+			formatex consolebuf, charsmax(consolebuf), "\"%s\": \"%s\"", arg1, arg2
+			console_print id, consolebuf
+			TrieIterNext defaults_iter
+		}
+		
+		TrieIterDestroy defaults_iter
+	}
+	new arg_i = 1
+	read_argv arg_i, arg1, charsmax(arg1)
+	for (; arg_i < args_n; ) {
 		read_argv arg_i++, arg1, charsmax(arg1)
 		if (arg1[0] == '!') {
-			TrieDeleteKey defaults, arg1[1]
-			console_print id, "Removed default kv: \"%s\"", arg1[1]
+			if (arg1[1] == EOS) {
+				new size = TrieGetSize(defaults)
+				defaults_reset
+				console_print id, "Reset %d kv", size, size== 1?' ':'s'
+			} else {
+				TrieDeleteKey defaults, arg1[1]
+				console_print id, "Removed default kv: \"%s\"", arg1[1]
+			}
 		} else {
 			read_argv arg_i++, arg2, charsmax(arg2)
 			TrieSetString defaults, arg1, arg2

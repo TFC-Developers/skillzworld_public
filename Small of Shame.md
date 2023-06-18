@@ -1,5 +1,17 @@
 # Small of Shame
-This document records our disdain for AMX Mod X and its chosen scripting language.
+This document records our disdain for AMX Mod X and its chosen scripting language.  
+
+Table of contents:  
+* [Nearly two decades out of date](#nearly-two-decades-out-of-date)
+* [AMX Mod X](#amx-mod-x)
+	* [AMXX-Studio](#amxx-studio)
+	* [Anything for backwards compatibility](#anything-for-backwards-compatibility)
+	* [Bad documentation](#bad-documentation)
+	* [Broken standard library](#broken-standard-library)
+* [The language](#the-language)
+	* [Rules](#rules)
+	* [Semicolons - optional until they aren't](#semicolons-optional-until-they-aren-t)
+	* [Compiling](#compiling)
 
 ## Nearly two decades out of date
 AMX Mod X uses an old version of the Small language, a version from around 2005, from before it was renamed to Pawn. This is made clear by the .sma source code extension. People call it Pawn, which is misleading.  
@@ -10,8 +22,7 @@ The "Pawn Language Guide", updated in 2016 at the time of writing, is of limited
 The outdated documentation is more representative (The Small Booklet - The Language), however it's unclear precisely what Small version AMX Mod X is derived from, and which changes were made to the syntax by the AMX Mod X team, if any.  
 
 ## AMX Mod X
-https://www.amxmodx.org/about.php  
-AMX Mod X is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.  
+[AMX Mod X](https://www.amxmodx.org/about.php) is a plugin for [Metamod](http://metamod.org/) that makes it possible to write other plugins in Small, which run through the AMX Mod X environment. It includes a programming environment (AMXX-Studio), [API](https://www.amxmodx.org/api/), and compiler.  
 It's not very good.  
   
 The Sven Co-op team made a wise decision when integrating the more sensible AngelScript language into their mod with their own API, eliminating any possible use case for AMX Mod X.
@@ -21,7 +32,7 @@ The Sven Co-op team made a wise decision when integrating the more sensible Ange
 
 - The natives [get_user_origin](https://www.amxmodx.org/api/amxmodx/get_user_origin) and [set_user_origin](https://www.amxmodx.org/api/amxmodx/set_user_origin) operate on ints, not floats, for reasons unknown. The programmer should always keep this in mind and usually avoid them.  
 Getting an int vector is however handy for sending [messages](https://www.amxmodx.org/api/message_const).  
-Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector) instead to get the player's origin as a float vector.  
+	- Use [entity_set_origin](https://www.amxmodx.org/api/engine/entity_set_origin)(id, EV_VEC_origin, origin) / [entity_set_vector](https://www.amxmodx.org/api/engine/entity_set_vector)(id, EV_VEC_origin, origin) and [entity_get_vector](https://www.amxmodx.org/api/engine/entity_set_vector)(id, EV_VEC_origin, origin) instead to get the player's origin as a float vector.  
 
 - The standard library is missing a file truncate function. If you want to shorten a file, you have to delete the file and rewrite it.
 
@@ -68,8 +79,7 @@ It has its own fair share of problems, too.
 ### Anything for backwards compatibility
 The AMX Mod X library has accumulated many mistakes over the years that have not been corrected for the sake of backwards compatibility. They either get left in or an alternative is provided.
 
-- https://www.amxmodx.org/api/float/floatadd  
-The parameters have the wrong names, which belong to floatdiv.
+- [floatadd](https://www.amxmodx.org/api/float/floatadd) has parameters with wrong names. They were lazily copy & pasted from [floatdiv](https://www.amxmodx.org/api/float/floatdiv).
 
 - [include/tfcconst.inc](https://github.com/alliedmodders/amxmodx/blob/master/plugins/include/tfcconst.inc#L75) provides both the constants TFC_PC_ENGENEER and TFC_PC_ENGINEER.
 
@@ -79,7 +89,12 @@ The parameters have the wrong names, which belong to floatdiv.
 
 ### Bad documentation
 The AMX Mod X documentation is very sloppy and is full of grammar and spelling errors and wrong information. Many pages are missing or aren't complete.  
-It's often hard to judge whether the problem sits with the documentation or the library. In those cases it's probably both. An example is [fread](https://www.amxmodx.org/api/file/fread)'s return value, explained below.
+It's often hard to judge whether the problem sits with the documentation or the library. When that happens, it's probably both.
+
+- Formatting rules are undocumented. This is baffling, because it's an extremely important part of the standard library.  
+[format](https://www.amxmodx.org/api/string/format), [formatex](https://www.amxmodx.org/api/string/formatex) and [\[MAX_FMT_LENGTH\]fmt](https://www.amxmodx.org/api/string/%5BMAX_FMT_LENGTH%5Dfmt) tell the reader to go find actual information by going to the documentation - in the documentation.  
+Similarly, [console_print](https://www.amxmodx.org/api/amxmodx/console_print) and [console_cmd](https://www.amxmodx.org/api/amxmodx/console_cmd) do not have the due diligence to offer any information about what "formatting rules" are, or where information can be found about this special text format.
+	- The [SourceMod formatting rules](https://wiki.alliedmods.net/Format_Class_Functions_(SourceMod_Scripting)) can be referenced, however it's for a different standard library so differences are to be expected.
 
 - Documentation for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) and [register_concmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) completely lacks a description of the callback function it should receive. For an example of good documentation that does not have this problem, see [menu_create](https://www.amxmodx.org/api/newmenus/menu_create).
 	- The callback function for [register_clcmd](https://www.amxmodx.org/api/amxmodx/register_clcmd) should take a single parameter holding the calling player id: `public <name>(id)`
@@ -127,10 +142,16 @@ Complaint: https://forums.alliedmods.net/showthread.php?t=138244
 
 - [TrieIterGetKey](https://www.amxmodx.org/api/celltrie/TrieIterGetKey) has doubly wrong documentation: "Nnumber [sic] of bytes written to the buffer" says A: that it counts the amount of bytes written instead of cells, and implies B: that it includes the zero terminator.
 	- The function actually returns the amount of characters inside the string, which is 5 if it wrote the key "model".
+	
+- [TrieIterGetString](https://www.amxmodx.org/api/celltrie/TrieIterGetString) likewise has wrong documentation: it says the size parameter receives the amount of bytes written.
+	- In reality it receives the length of the string written, which is the amount of cells written minus one.
 
 - [get_keyvalue](https://www.amxmodx.org/api/engine/get_keyvalue) has wrong documentation: "Retrieves a value from an entities [sic] keyvalues." - it has nothing to do with entities. It actually gets client/server values.  
 [Issue that has been open since 2019](https://github.com/alliedmodders/amxmodx/issues/745)
 	- The engine (presumably) does not facilitate reading arbitrary keyvalues back via strings, it only allows you to set them.
+
+- [write_coord](https://www.amxmodx.org/api/messages/write_coord) and [write_coord_f](https://www.amxmodx.org/api/messages/write_coord_f) do not state that [they both write a float](https://github.com/alliedmodders/amxmodx/blob/master/amxmodx/messages.cpp#L491) to the message, and the former converts an integer to float before doing so.
+	- This is because message coordinates are always float, and it means that [write_coord_f](https://www.amxmodx.org/api/messages/write_coord_f) is the best and most accurate function to use, while the other is a convenience function for when you already have bad precision.
 
 ### Broken standard library
 Several AMX Mod X features are broken and provided with no disclaimers due to lack of testing and general carelessness.  
@@ -159,6 +180,20 @@ This means that it's impossible to create constant arrays that can be indexed at
 `new const A[] = {0, 1, 2}`  
 You can create a `#define` for an array, but this comes at the cost of having space allocated for an entirely separate array each time it's used:  
 `#define A "Constant string"`
+
+- Packed strings are considered constant, but packed arrays are not. This means this is valid:  
+`new A[3 char] = !"Hi"`, and this is not:  
+`new A[3 char] = !{255, 127, 0}`, this forces the programmer to use string escape sequences to write numbers while being careful around the zero terminator:  
+`new A[3 char] = !"\255\127" // !"\255\127\0" works too, because the 3 char size is really 4 char, so as to occupy 1 cell.`  
+Packed non-string arrays in general are broken. Assigning an already-declared variable to a packed string is valid:  
+`A = !"Hi"`, but invalid for packed arrays, as this raises a size mismatch error, despite the array sizes being compatible:  
+`A = !{255, 0, 0}`  
+Packed string parameters work without a hitch, while packed array parameters result in corrupted memory, with the compiler not even issuing a warning:
+```
+test_packed() takes_packed !"Ya", !{255, 127, 0}
+takes_packed(A[3 char], B[3 char]) console_print 0, "%d %d %d, %d %d %d %d %d", A{0},A{1},A{2}, B{0},B{1},B{2},B{3},B[0]
+// Output: 89 97 0, 0 0 0 24 24
+```
 
 - Typical programmer errors like interpreting integers as floats are silent when these values are included in variable arguments, because the Small language does not permit type information in this case.  
 Variable arguments use the any tag, so all arguments have their types overridden to any, like in this example:  
@@ -205,7 +240,7 @@ This means that a preprocessor macro to, for example, convert an integer vector 
 	1. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2])`  
 	2. `#define VEC_TO_FVEC(%1,%2) %2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);`  
 	3. `#define VEC_TO_FVEC(%1,%2) {%2[0] = float(%1[0]); %2[1] = float(%1[1]); %2[2] = float(%1[2]);}`  
-These examples show that here is no catch-all solution, aside from redefining the macro as a function:
+These examples show that here is no catch-all solution, aside from redefining the macro as a function ([which fortunately exists already](https://www.amxmodx.org/api/vector/IVecFVec)):
 	* `VEC_TO_FVEC(vec_i, vec_f);`
 	* `if (id == target) VEC_TO_FVEC(vec_i, vec_f)`
 	* `if (id == target) {found = true; VEC_TO_FVEC(vec_i, vec_f);}`
