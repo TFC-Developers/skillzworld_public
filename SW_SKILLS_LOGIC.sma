@@ -377,7 +377,9 @@ public update_hud(id) {
         return;
     }
     new Float:fTime = floatsub(get_gametime(), g_sPlayerData[id][m_fRunStarttime]);
-    new iTotalSeconds = floatround(fTime, floatround_floor); new iHours = iTotalSeconds / 3600; new iSeconds = iTotalSeconds % 60; new iMinutes = iTotalSeconds / 60; new iMillis = floatround(fTime*100.0, floatround_floor) % 100;
+    new iTotalSeconds = floatround(fTime, floatround_floor), iMillis = floatround(fTime*100.0, floatround_floor) % 100
+    new iTotalMinutes = iTotalSeconds / 60
+    new iSeconds = iTotalSeconds % 60, iMinutes = iTotalMinutes % 60, iHours = iTotalSeconds / (60*60)
 
     // check when the hud was last updated and fire function
     if (g_sPlayerData[id][m_fLastHudUpdate] < get_gametime()) {
