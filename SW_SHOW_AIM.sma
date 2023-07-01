@@ -28,5 +28,5 @@ public EventStatusValue_PlayerID ( playerId ) {
 
 
 public update_text( msg_id, msg_dest, playerId) {
-    set_msg_arg_string(1,"fag");
+    set_msg_arg_string(2,"fag");
 }
