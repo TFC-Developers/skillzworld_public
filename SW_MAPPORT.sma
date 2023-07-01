@@ -16,8 +16,6 @@
  * Written for AMX Mod X by skillzworld / Vancold.at
  **/
 
-#define CHANGEMAP "sw_mapvote_b2cw"
-
 enum _:hook {
     h_keyname[64],        // the keyname to look for
     h_function[128],      // the custom forward we define
@@ -52,10 +50,9 @@ new g_spawn_point_counter;
 //  [ PLUGIN INIT & CONSOLE COMMANDS ]  //
 public plugin_init() {
 
-    register_plugin( "Mapport Plugin", "1.0", "Skillzworld / Vancold.at"  );
+    register_plugin( "Mapport Plugin", "1.1", "Skillzworld / Vancold.at"  );
     register_cvar( "sw_mapport_debug", "0", FCVAR_EXTDLL );
-    register_concmd( "sw_changed_ents", "print_ents", ADMIN_ADMIN, "Lists all the entities that have been changed by this plugin" );
-
+    register_concmd( "sw_changed_ents", "print_ents", ADMIN_KICK, "Lists all the entities that have been changed by this plugin" );
 
     g_ipd_exists          = has_map_ent_class( "info_player_deathmatch" );
     g_ips_exists          = has_map_ent_class( "info_player_start" );
@@ -66,6 +63,7 @@ public plugin_init() {
     }
                     
     cleanup();
+    unregister_forward( FM_KeyValue, g_update_forward, 1 );
 }
 
 /**
@@ -107,7 +105,7 @@ public cleanup() {
                 DispatchSpawn( tempId );
 
                 output = "";
-                format( output, charsmax(output), "Missing info_player_start; Created a new one", tempId );
+                format( output, charsmax(output), " Missing info_player_start; Created a new one with the id %d", tempId );
                 saveEntity( id, "info_player_teamspawn", output );
 
                 if( g_debug ) {
@@ -128,7 +126,7 @@ public cleanup() {
             DispatchSpawn( id );
 
             output = "";
-            format( output, charsmax(output), "Converted a %s to a info_player_teamspawn", classname, id );
+            format( output, charsmax(output), " Converted a %s to a info_player_teamspawn", classname, id );
             saveEntity( id, "info_player_teamspawn", output );
 
             if( g_debug ) {
@@ -157,15 +155,13 @@ public plugin_precache() {
 
     if(!g_excuted_frame) {
 
-        setup()
+        g_update_forward     = register_forward( FM_KeyValue, "fix");
+
+        setup();
         register();
 
-        g_update_forward     = register_forward( FM_KeyValue, "fix" );
         g_excuted_frame      = true;
-        unregister_forward( FM_KeyValue, g_update_forward, 1 );
-
     }
-
 }
 
 /**
@@ -189,7 +185,8 @@ public setup() {
     DispatchKeyValue( g_itd, "origin", "0 0 0" );
     DispatchKeyValue( g_itd, "number_of_teams", "1" );
     DispatchKeyValue( g_itd, "maxammo_shells", "-1" );
-    DispatchKeyValue( g_itd, "team1_name", "Climbers"  );
+    DispatchKeyValue( g_itd, "maxammo_shells", "-1" );
+    DispatchKeyValue( g_itd, "team1_name","Climbers");
     DispatchSpawn( g_itd );
 
     if( g_debug ) {
@@ -270,7 +267,7 @@ public fix( id, kvd_id ) {
     get_kvd( kvd_id, KV_KeyName,   kvd_keyname,   charsmax( kvd_keyname ) );
 
 
-    if( equali( kvd_classname, "info_tfdetect" ) ) {
+    if( equali( kvd_classname, "info_tfdetect" )) {
 
 
         if( g_itd_remove == -1 ) {
@@ -279,8 +276,8 @@ public fix( id, kvd_id ) {
 
             DispatchKeyValue( g_itd, "number_of_teams", "" );
             DispatchKeyValue( g_itd, "maxammo_shells", "" );
-            DispatchKeyValue( g_itd, "team1_name", "" );
             DispatchKeyValue( g_itd, "origin", "" );
+            DispatchKeyValue( g_itd, "team1_name","Blue");
 
             if( g_debug ) {
                 console_print( 0, "[MAPPORT] Found a info_tfdetect with the id %d on the map. Replacing the values of the temprary info_tfdetect (%d) with the existing ones", id, g_itd );
@@ -357,7 +354,6 @@ public exists_in_array(id) {
     return false;
 }
 
-
 /**
  * Checks if the keyname (toCheck) is stored in g_hooks; True if it stored in g_hooks, otherwise false
  */
@@ -378,7 +374,6 @@ public isRegistered( toCheck[] ) {
     return -1;
 }
 
-
 /**
  * Stores the changed keyname value + entid and the change note inside an array for printing purposes
  */
@@ -395,7 +390,6 @@ public saveEntity( id, name[], change[] ) {
     return;
     
 }
-
 
 //  [ FORWARDS ]  //
 /**
@@ -440,7 +434,7 @@ public fix_message( kvd_id, id, classname[] ) {
         set_kvd( kvd_id, KV_Value, "- = skillzworld.eu = -" );
 
         new output[128]; 
-        format( output, charsmax( output ), "Message length exceeded 74 for %s (Changed to: - = skillzworld.eu = -).", classname, id );
+        format( output, charsmax( output ), "Message length exceeded 74 for %s: %i (Changed to: - = skillzworld.eu = -).", classname, id );
 
         saveEntity( id, classname, output );
 
@@ -472,7 +466,7 @@ public itd_fixangles( kvd_id, id, classname[] ) {
         set_kvd( kvd_id, KV_Value, changed );
 
         new output[128];
-        format( output, charsmax( output ), "Z value in angles can not be bigger than 0 in %s (Changed %f to 0.0).", classname, id, angles[2] );
+        format( output, charsmax( output ), "Z value in angles can not be bigger than 0 in %s: %i (Changed %f to 0.0).", classname, id, angles[2] );
 
         saveEntity( id, classname, output );
 
@@ -497,7 +491,7 @@ public remove_sound( kvd_id, id, classname[] ) {
         set_kvd( kvd_id, KV_Value, "0" );
 
         new output[128];
-        format( output, charsmax( output ), "Changed roomtype value, removing the old value for %s (Changed %d to 0).", classname, id, roomType );
+        format( output, charsmax( output ), "Changed roomtype value, removing the old value for %s: %i (Changed %d to 0).", classname, id, roomType );
 
         saveEntity( id, classname, output );
 
