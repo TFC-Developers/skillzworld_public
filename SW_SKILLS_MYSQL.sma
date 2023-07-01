@@ -63,7 +63,6 @@ public plugin_init()
 	register_clcmd("say /oldtop5", "cmd_oldtop5");                              // Shows the old top5
 	register_clcmd("say /oldstatsme", "cmd_oldstatsme");                        // Shows the old stats of the player
 	register_clcmd("say /oldstats", "menu_deploy");                             // Shows the old stats menu
-	register_clcmd("say /debugeffect", "cmd_effect");                               // Shows the old top menu
 	register_clcmd("say", "Handle_Say");                                        // Handle the say command
 	register_clcmd("say_team", "Handle_Say");                                   // Handle the say_team command
 	g_pCvarOldRanks = register_cvar("sw_sqloldranks", "climb_oldranks")         // Cvar for the old ranks table
@@ -72,9 +71,7 @@ public plugin_init()
 	g_TopList = ArrayCreate(eSpeedTop_t);                                       // Create the array for the top 100 players
 	g_GroupedTopList = ArrayCreate(eSpeedTop_t);                                // Create the array for the grouped top 100 players
 }  
-public cmd_effect(id) {
-    api_firework(id,5);
-}
+
 public plugin_end()
 {
 	ArrayDestroy(g_TopList);                                                    // Destroy the array for the top 100 players
