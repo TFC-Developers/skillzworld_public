@@ -10,14 +10,15 @@
 #include <amxmodx>
 #include <messages>
 
+#define STATUSTEXT 84
 
 new g_lookingAt[MAX_PLAYERS];
 
 public plugin_init() 
 {
-    RegisterPlugin("","","");
+    register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
     register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2>0" );
-    register_message( StatusText, "update_text");
+    register_message( STATUSTEXT, "update_text");
 
 }
 
