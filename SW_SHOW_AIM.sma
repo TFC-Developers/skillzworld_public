@@ -28,6 +28,5 @@ public EventStatusValue_PlayerID ( playerId ) {
 
 
 public update_text( msg_id, msg_dest, playerId) {
-    console_print(0,"lol");
-    console_print(0,"number of args: %d",get_msg_args());
+    set_msg_arg_string(1,"fag");
 }
