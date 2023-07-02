@@ -1,32 +1,38 @@
 /*
- * entity use command plugin for SkillzWorld
- *
- * This plugin adds santa hats to players in Team Fortress Classic
- * during the specified holiday season (December 1st to January 2nd).
- *
- * Written for AMX Mod X by skillzworld / MrKoala
- */
+*
+*/
 
 #include <amxmodx>
-#include <messages>
+#include <engine>
 
-#define STATUSTEXT 84
+new g_statusText;
 
-new g_lookingAt[MAX_PLAYERS];
+public plugin_init( ) {
 
-public plugin_init() 
-{
     register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
     register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2>0" );
-    register_message( STATUSTEXT, "update_text");
-
+    g_statusText = get_user_msgid( "StatusText" );
+    
 }
 
 public EventStatusValue_PlayerID ( playerId ) {
-    g_lookingAt[playerId] = read_data( 2 );
+
+    new lookingAt = read_data( 2 );
+
+    new message[ 256 ], username[128], Float: health, Float: armor, Float: fov, Float: fps;
+    get_user_name( lookingAt, username, charsmax( username ) );
+    health = entity_get_float( lookingAt, EV_FL_health );
+    armor  = entity_get_float( lookingAt, EV_FL_armorvalue );
+    fov    = entity_get_float( lookingAt, EV_FL_fov);
+
+    formatex( message, 256, "%s  H:%f%  A:%f%  FOV:%f  FPS:%d", username, health, armor, fov, fps );
+
+    message_begin( MSG_ONE, g_statusText, _, playerId );
+    {
+        write_byte( 0 );
+        write_string( message );
+    }
+    message_end( );
+
 }
 
-
-public update_text( msg_id, msg_dest, playerId) {
-    set_msg_arg_string(2,"fag");
-}
