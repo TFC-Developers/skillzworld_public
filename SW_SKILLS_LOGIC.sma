@@ -602,7 +602,7 @@ public pub_sub_starttouch(touched, toucher) {
         if (g_sPlayerData[toucher][m_fLastStartTouchHud] < get_gametime()) {
             g_sPlayerData[toucher][m_fLastStartTouchHud] = get_gametime() + 30.0;
             set_hudmessage(0,255,0,-1.0, 0.20, 0, 0.0, 15.0, 1.0, 0.0, 3);
-            show_hudmessage(toucher, "Speedrun timer started!\n\nType /reset if you want to start over.\nYour time can only be saved once per map cycle.");
+            show_hudmessage(toucher, "Speedrun timer started!\n\nSay /reset to start over. Say /s and /l to save and load positions.");
         }
 
         update_hud(toucher);
