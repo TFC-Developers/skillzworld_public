@@ -11,7 +11,7 @@ new lookingAt[MAX_PLAYERS];
 public plugin_init( ) {
 
     register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
-    register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2<32" );
+    register_event( "StatusValue", "get_player_id", "b", "1=2", "2>0" );
     register_message( STATUSTEXT, "OverwriteStatusText");
 
     for( new i = 0; i < sizeof(lookingAt); i++) {
@@ -20,12 +20,12 @@ public plugin_init( ) {
 
 }
 
-public EventStatusValue_PlayerID ( playerId ) {
+public get_player_id ( playerId ) {
 
     lookingAt[playerId] = read_data( 2 );
     new username[ 128 ];
     get_user_name( lookingAt[playerId], username, charsmax( username ) );
-    client_print(playerId, print_chat, "looking at id: %d | name: %s", lookingAt[playerId], username )
+    client_print(playerId, print_chat, "looking at id: %d | name: %s; testing: %d", lookingAt[playerId], username, read_data( 2 ) )
 
 }
 
