@@ -41,11 +41,13 @@ public OverwriteStatusText( msg_id, msg_dest, playerId ) {
     unknown = get_msg_arg_int(1);
     get_msg_arg_string( 2 ,test, charsmax(test));
     client_print(playerId, print_chat, "first value: %d", unknown);
-    client_print(playerId, print_chat, test);
+    client_print(playerId, print_chat, "second value: %s", test);
 
+    /*
     message_begin(MSG_ONE, get_user_msgid("StatusText"), {0, 0, 0}, playerId); 
     write_byte(0); 
     write_string(message); 
-    message_end(); 
+    message_end();
+    */ 
 }
 
