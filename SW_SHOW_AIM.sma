@@ -23,23 +23,24 @@ public plugin_init( ) {
 public EventStatusValue_PlayerID ( playerId ) {
 
     lookingAt[playerId] = read_data( 2 );
+    new username[ 128 ];
+    get_user_name( lookingAt[playerId], username, charsmax( username ) );
+    client_print(playerId, print_chat, "looking at id: %d | name: %s", lookingAt[playerId], username )
 
 }
 
 public OverwriteStatusText( msg_id, msg_dest, playerId ) {
 
-    new message[ 256 ], username[ 128 ], test[ 128 ], unknown;
-    new Float: health, Float: armor, Float: fov, Float: fps;
+    new message[ 256 ], input[ 128 ];
+    new Float: fov, Float: fps;
 
-    get_user_name( lookingAt[playerId], username, charsmax( username ) );
-    health = entity_get_float( lookingAt[playerId], EV_FL_health );
-    armor  = entity_get_float( lookingAt[playerId], EV_FL_armorvalue );
+    get_msg_arg_string(2, input, charsmax(input) );
     fov    = entity_get_float( lookingAt[playerId], EV_FL_fov);
 
 
-    format(test, charsmax(test) , "1 %p1 Health: %f Armor: %f FOV %f", health, armor, fov);
+    format(message, charsmax( message ) , "%s fov: %02f", input, fov);
 
-    set_msg_arg_string(2,test);
+    set_msg_arg_string( 2, message );
 
     /*
     message_begin(MSG_ONE, get_user_msgid("StatusText"), {0, 0, 0}, playerId); 
