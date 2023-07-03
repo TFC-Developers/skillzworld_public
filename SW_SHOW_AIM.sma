@@ -42,6 +42,9 @@ public OverwriteStatusText( msg_id, msg_dest, playerId ) {
     get_msg_arg_string( 2 ,test, charsmax(test));
     client_print(playerId, print_chat, "first value: %d", unknown);
     client_print(playerId, print_chat, "second value: %s", test);
+    format(test, charsmax(test) , "1 %p1 2 Health: %i2%% 3  Armor: %i3%% FOV %d", fov);
+
+    set_msg_arg_string(2,test);
 
     /*
     message_begin(MSG_ONE, get_user_msgid("StatusText"), {0, 0, 0}, playerId); 
