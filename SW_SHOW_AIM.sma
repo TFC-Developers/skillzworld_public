@@ -11,7 +11,7 @@ new lookingAt[MAX_PLAYERS];
 public plugin_init( ) {
 
     register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
-    register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2>0" );
+    register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2<32" );
     register_message( STATUSTEXT, "OverwriteStatusText");
 
     for( new i = 0; i < sizeof(lookingAt); i++) {
@@ -36,9 +36,10 @@ public OverwriteStatusText( msg_id, msg_dest, playerId ) {
 
     get_msg_arg_string(2, input, charsmax(input) );
     fov    = entity_get_float( lookingAt[playerId], EV_FL_fov);
+    fps    = 0.0;
 
 
-    format(message, charsmax( message ) , "%s fov: %02f", input, fov);
+    format(message, charsmax( message ) , "%s  FOV: %.2f  FPS: %.2f", input, fov, fps);
 
     set_msg_arg_string( 2, message );
 
