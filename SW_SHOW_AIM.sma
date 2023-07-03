@@ -12,7 +12,7 @@ public plugin_init( ) {
 
     register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
     register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2>0" );
-    register_message( STATUSTEXT, "OverwriteStatusText" );
+    register_message( STATUSTEXT, "OverwriteStatusText");
 
     for( new i = 0; i < sizeof(lookingAt); i++) {
         lookingAt[i] = 0;
@@ -36,13 +36,8 @@ public OverwriteStatusText( msg_id, msg_dest, playerId ) {
     armor  = entity_get_float( lookingAt[playerId], EV_FL_armorvalue );
     fov    = entity_get_float( lookingAt[playerId], EV_FL_fov);
 
-    formatex( message, 256, "%s  H:%f.2\%  A:%f.2\%  FOV:%f.2  FPS:%f.2", username, health, armor, fov, fps );
 
-    unknown = get_msg_arg_int(1);
-    get_msg_arg_string( 2 ,test, charsmax(test));
-    client_print(playerId, print_chat, "first value: %d", unknown);
-    client_print(playerId, print_chat, "second value: %s", test);
-    format(test, charsmax(test) , "%p1 Health: %f.2 Armor: %f.2 FOV %f.2", health, armor, fov);
+    format(test, charsmax(test) , "1 %p1 Health: %f Armor: %f FOV %f", health, armor, fov);
 
     set_msg_arg_string(2,test);
 
