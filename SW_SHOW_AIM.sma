@@ -33,7 +33,7 @@ public client_PreThink( id ) {
     g_player_fps[ id ] ++;
     g_player_fov[ id ] = fov;
 
-    if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
+    if( is_user_connected(id) && !task_exists( id ) ) {
         set_task( 1.0, "count_fps", id, "", 0, "b");
     }
 
