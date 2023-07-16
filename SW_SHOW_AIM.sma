@@ -62,13 +62,11 @@ public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
     if(lookingAt > 0 && lookingAt < MAX_PLAYERS + 1) {
 
-        new message[ 256 ], input[ 128 ], username[ 128 ], fov;
+        new message[ 256 ], input[ 128 ];
 
         get_msg_arg_string(2, input, charsmax(input) );
-        get_user_name( lookingAt, username, charsmax( username ) );
-        fov = pev( lookingAt, pev_fov);
         console_print(0, message);
-        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov, g_player_fps_count[lookingAt]);
+        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov, g_player_fps_count[ lookingAt ]);
         set_msg_arg_string( 2, message );
  
     }
