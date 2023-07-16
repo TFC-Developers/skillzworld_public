@@ -6,6 +6,7 @@
 #define PLAYER_TASK_OFFSET 100
 
 new g_player_fps[ MAX_PLAYERS ];
+new g_player_fps_count[ MAX_PLAYERS ];
 new g_player_fov[ MAX_PLAYERS ];
 
 
@@ -16,6 +17,7 @@ public plugin_init( ) {
 
     for( new i = 0; i < MAX_PLAYERS; i++) {
         g_player_fps[ i ] = 0;
+        g_player_fps_count[ i ] = 0;
         g_player_fov[ i ] = 0;
     }
 
@@ -23,24 +25,22 @@ public plugin_init( ) {
 
 public client_PreThink( id ) {
 
-    if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
-        set_task( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, "b");
-    }
-
     new fov = 0;
     fov = floatround( entity_get_float( id, EV_FL_fov ) );
 
     g_player_fps[ id ] ++;
     g_player_fov[ id ] = fov;
 
+    if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
+        set_task( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, "b");
+    }
+
 }
 
 public count_fps( task_id ) {
 
     new id = task_id - PLAYER_TASK_OFFSET;
-    client_print(id, print_chat, "fps: %d", g_player_fps[ id ] );    
-    client_print(id, print_chat, "fov: %d", g_player_fov[ id ] );
-
+    g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
 
 }
@@ -67,8 +67,8 @@ public ovewrite_statustext( msg_id, msg_dest, playerId ) {
         get_msg_arg_string(2, input, charsmax(input) );
         get_user_name( lookingAt, username, charsmax( username ) );
         fov = pev( lookingAt, pev_fov);
-
-        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, fov, g_player_fps[lookingAt]);
+        console_print(0, message);
+        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov, g_player_fps_count[lookingAt]);
         set_msg_arg_string( 2, message );
  
     }
