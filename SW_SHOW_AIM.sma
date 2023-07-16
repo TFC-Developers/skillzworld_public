@@ -34,14 +34,14 @@ public client_PreThink( id ) {
     g_player_fov[ id ] = fov;
 
     if( is_user_connected(id) && !task_exists( id ) ) {
-        set_task( 1.0, "count_fps", id, "", 0, "b");
+        set_task( 1.0, "count_fps", id, "", 0, "b" );
     }
 
 }
 
 public count_fps( params[], id ) {
 
-    client_print(id, print_chat, "hello!");
+    client_print( id, print_chat, "hello!" );
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
 
@@ -60,15 +60,14 @@ public client_disconnected( id, bool:drop, message[], maxlen ) {
 
 public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
-    new lookingAt = GetAimEntity(playerId);
+    new lookingAt = GetAimEntity( playerId );
 
-    if(lookingAt > 0 && lookingAt < MAX_PLAYERS + 1) {
+    if( lookingAt > 0 && lookingAt < MAX_PLAYERS + 1 ) {
 
         new message[ 256 ], input[ 128 ];
 
-        get_msg_arg_string(2, input, charsmax(input) );
-        console_print(0, message);
-        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ]);
+        get_msg_arg_string( 2, input, charsmax(input) );
+        format( message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
         set_msg_arg_string( 2, message );
  
     }
