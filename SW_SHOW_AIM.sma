@@ -34,15 +34,14 @@ public client_PreThink( id ) {
     g_player_fov[ id ] = fov;
 
     if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
-        set_task_ex( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, SetTask_Repeat);
+        set_task( 1.0, "count_fps", id, "", 0, "b");
     }
 
 }
 
-public count_fps( task_id ) {
+public count_fps( params[], id ) {
 
-    client_print(task_id, print_chat, "hello!");
-    new id = task_id - PLAYER_TASK_OFFSET;
+    client_print(id, print_chat, "hello!");
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
 
@@ -54,8 +53,8 @@ public client_disconnected( id, bool:drop, message[], maxlen ) {
     g_player_fps[id] = 0;
     g_player_fov[id] = 0;
 
-    if( task_exists( PLAYER_TASK_OFFSET + id ) ) {
-        remove_task( PLAYER_TASK_OFFSET + id );
+    if( task_exists( id ) ) {
+        remove_task( id );
     }
 }
 
