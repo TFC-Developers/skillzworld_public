@@ -40,7 +40,7 @@ public client_PreThink( id ) {
 
 public count_fps( task_id ) {
 
-    client_print(id, print_chat, "hello!");
+    client_print(task_id, print_chat, "hello!");
     new id = task_id - PLAYER_TASK_OFFSET;
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
