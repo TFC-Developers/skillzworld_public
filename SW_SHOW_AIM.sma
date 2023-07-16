@@ -41,7 +41,6 @@ public client_PreThink( id ) {
 
 public count_fps( params[], id ) {
 
-    client_print( id, print_chat, "hello!" );
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
 
@@ -69,6 +68,7 @@ public ovewrite_statustext( msg_id, msg_dest, playerId ) {
         get_msg_arg_string( 2, input, charsmax(input) );
         format( message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
         set_msg_arg_string( 2, message );
+        client_print(playerId, "id: %d , fps: %d , fov: %d",lookingAt, g_player_fps_count[ lookingAt ], g_player_fov[ lookingAt ] )
  
     }
 
