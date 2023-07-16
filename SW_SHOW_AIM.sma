@@ -21,7 +21,9 @@ public plugin_init( ) {
 
 }
 
-public client_prethink(id) {
+public client_PreThink( id ) {
+
+    client_print(id, print_chat, "wow");
 
     if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
         set_task( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, "b");
@@ -38,15 +40,15 @@ public client_prethink(id) {
 public count_fps( task_id ) {
 
     new id = task_id - PLAYER_TASK_OFFSET;
-    client_print(0, print_chat, "fps: %d", g_player_fps[ id ] );    
-    client_print(0, print_chat, "fov: %d", g_player_fov[ id ] );
+    client_print(id, print_chat, "fps: %d", g_player_fps[ id ] );    
+    client_print(id, print_chat, "fov: %d", g_player_fov[ id ] );
 
     g_player_fps[ id ] = 0;
 
 }
 
 
-public client_disconnected(id) {
+public client_disconnected( id, bool:drop, message[], maxlen ) {
 
     g_player_fps[id] = 0;
     g_player_fov[id] = 0;
