@@ -8,6 +8,7 @@
 new g_player_fps[ MAX_PLAYERS ];
 new g_player_fps_count[ MAX_PLAYERS ];
 new g_player_fov[ MAX_PLAYERS ];
+new g_player_teamrelation [ MAX_PLAYERS ];
 
 
 public plugin_init( ) {
@@ -32,13 +33,14 @@ public client_PreThink( id ) {
     g_player_fov[ id ] = fov;
 
     if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
-        set_task( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, "b");
+        set_task_ex( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, SetTask_Repeat);
     }
 
 }
 
 public count_fps( task_id ) {
 
+    client_print(id, print_chat, "hello!");
     new id = task_id - PLAYER_TASK_OFFSET;
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
@@ -66,7 +68,7 @@ public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
         get_msg_arg_string(2, input, charsmax(input) );
         console_print(0, message);
-        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov, g_player_fps_count[ lookingAt ]);
+        format(message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ]);
         set_msg_arg_string( 2, message );
  
     }
