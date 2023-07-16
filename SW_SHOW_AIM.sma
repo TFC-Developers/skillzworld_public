@@ -23,8 +23,6 @@ public plugin_init( ) {
 
 public client_PreThink( id ) {
 
-    client_print(id, print_chat, "wow");
-
     if(is_user_connected(id) && !task_exists(PLAYER_TASK_OFFSET + id)) {
         set_task( 1.0, "count_fps", PLAYER_TASK_OFFSET + id, "", 0, "b");
     }
