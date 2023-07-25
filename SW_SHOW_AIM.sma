@@ -69,8 +69,8 @@ public playerID( const mid ) {
         get_msg_arg_string( 2, input, charsmax(input) );
         format( message, charsmax( message ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
         set_msg_arg_string( 2, message );
-        client_print(playerId, print_chat, "id: %d , fps: %d , fov: %d", lookingAt, g_player_fps_count[ lookingAt ], g_player_fov[ lookingAt ] )
-        client_print(playerId, print_chat, input);
+        client_print(0, print_chat, "id: %d , fps: %d , fov: %d", lookingAt, g_player_fps_count[ lookingAt ], g_player_fov[ lookingAt ] )
+        client_print(0, print_chat, input);
     }
 
 }
