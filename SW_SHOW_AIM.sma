@@ -42,6 +42,7 @@ public count_fps( params[], id ) {
 
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
+    client_print(id, print_chat, "i am player: %d", id);
 
 }
 
@@ -59,7 +60,7 @@ public client_disconnected( id, bool:drop, message[], maxlen ) {
 public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
     new lookingAt = GetAimEntity(playerId);
-    client_print(playerId, print_chat, "%d", lookingAt);
+    client_print(playerId, print_chat, "id: %d , fps: %d, fov: %d", lookingAt, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
 
     if(lookingAt > 0 && lookingAt < MAX_PLAYERS + 1) {
 
