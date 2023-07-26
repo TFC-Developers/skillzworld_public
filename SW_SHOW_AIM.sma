@@ -1,79 +1,68 @@
-#include <amxmodx>
-#include <amxmisc>
-#include <engine>
-#include <fakemeta>
-#include "include/global"
+#include < amxmodx >
+#include < geoip >
 
-new message[] = "1 %%c1: %%p2 - %%h: %%i3%%%%";
+new const MESSAGE_TEAMMATE[ ] = "1 %%c1: %%p2 - %s - %%h: %%i3%%%%";
+new const MESSAGE_ENEMY   [ ] = "1 %%c1: %%p2 - %s";
 
-new g_player_fps[ MAX_PLAYERS ];
-new g_player_fps_count[ MAX_PLAYERS ];
-new g_player_fov[ MAX_PLAYERS ];
+new g_szCountry[ 33 ][ 45 ];
+new g_iMsgStatusText;
+new g_iRelation;
 
-new g_status_text;
-
-public plugin_init( ) {
-
-    register_plugin( "Show Aim Plugin", "1.0", "Skillzworld / Vancold.at"  );
-    register_event( "StatusValue", "playerID", "b", "1=2", "2>0" );
-
-    g_status_text = get_user_msgid( "StatusText" );
-
-    for( new i = 0; i < MAX_PLAYERS; i++) {
-        g_player_fps[ i ] = 0;
-        g_player_fps_count[ i ] = 0;
-        g_player_fov[ i ] = 0;
-    }
-
+public plugin_init( )
+{
+	register_plugin( "Aim Info + Country", "2.0", "xPaw" );
+	
+	register_event( "StatusValue", "EventStatusValue_Relation", "b", "1=1" );
+	register_event( "StatusValue", "EventStatusValue_PlayerID", "b", "1=2", "2>0" );
+	
+	g_iMsgStatusText = get_user_msgid( "StatusText" );
 }
 
-public client_PreThink( id ) {
-
-    new fov = 0;
-    fov = floatround( entity_get_float( id, EV_FL_fov ) );
-
-    g_player_fps[ id ] ++;
-    g_player_fov[ id ] = fov;
-
-    if( is_user_connected( id ) && !task_exists( id ) ) {
-        set_task( 1.0, "count_fps", id, "", 0, "b" );
-    }
-
+public EventStatusValue_Relation( const id )
+{
+	g_iRelation = read_data( 2 );
 }
 
-public count_fps( params[], id ) {
-
-    g_player_fps_count[ id ] = g_player_fps[ id ];
-    g_player_fps[ id ] = 1;
-
+public EventStatusValue_PlayerID( const id )
+{
+	if( !g_iRelation )
+	{
+		return;
+	}
+	
+	new iPlayer = read_data( 2 );
+	
+	if( !g_szCountry[ iPlayer ][ 0 ] )
+	{
+		g_iRelation = 0;
+		return;
+	}
+	
+	new szMessage[ 80 ];
+	formatex( szMessage, 79, g_iRelation == 1 ? MESSAGE_TEAMMATE : MESSAGE_ENEMY, g_szCountry[ iPlayer ] );
+	
+	g_iRelation = 0;
+	
+	message_begin( MSG_ONE, g_iMsgStatusText, _, id );
+	{
+		write_byte( 0 );
+		write_string( szMessage );
+	}
+	message_end( );
 }
 
-
-public client_disconnected( id, bool: drop, message[], maxlen ) {
-
-    g_player_fps[ id ] = 0;
-    g_player_fov[ id ] = 0;
-    g_player_fps_count[ id ] = 0;
-
-    if( task_exists( id ) ) {
-        remove_task( id );
-    }
+public client_putinserver( id )
+{
+	new szIP[ 16 ];
+	get_user_ip( id, szIP, 15, 1 );
+	
+	if( geoip_country( szIP, g_szCountry[ id ], 44 ) == 5 && g_szCountry[ id ][ 0 ] == 'e' )
+	{
+		g_szCountry[ id ][ 0 ] = EOS;
+	}
 }
 
-public playerID( const id ) {
-
-    new lookingAt = read_data( 2 );
-    new output[ 512 ];
-
-    client_print(id, print_console, "lol");
-
-    format( output, charsmax( output ) , "%s  FOV: %d  FPS: %d", message, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
-    
-    message_begin( MSG_ONE, g_status_text, _, id );
-    {
-        write_byte( 0 );
-        write_string( output );
-    } 
-    message_end( );
-
+public client_disconnect( id )
+{
+	g_szCountry[ id ][ 0 ] = EOS;
 }
