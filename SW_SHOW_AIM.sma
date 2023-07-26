@@ -63,19 +63,17 @@ public client_disconnected( id, bool: drop, message[], maxlen ) {
 public playerID( const id ) {
 
     new lookingAt = read_data( 2 );
+    new output[ 512 ];
 
-    if( lookingAt > 0 && lookingAt < MAX_PLAYERS + 1 ) {
+    client_print(id, print_console, "lol");
 
-        static output[ 512 ];
-
-        format( output, charsmax( output ) , "%s  FOV: %d  FPS: %d", message, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
-        
-        message_begin( MSG_ONE, g_status_text, _, id );
-        {
-            write_byte( 0 );
-            write_string( output );
-        } 
-        message_end( );
-    }
+    format( output, charsmax( output ) , "%s  FOV: %d  FPS: %d", message, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
+    
+    message_begin( MSG_ONE, g_status_text, _, id );
+    {
+        write_byte( 0 );
+        write_string( output );
+    } 
+    message_end( );
 
 }
