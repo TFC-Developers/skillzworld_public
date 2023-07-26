@@ -59,6 +59,7 @@ public client_disconnected( id, bool:drop, message[], maxlen ) {
 public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
     new lookingAt = GetAimEntity(playerId);
+    client_print(0, print_console, "%d", lookingAt);
 
     if(lookingAt > 0 && lookingAt < MAX_PLAYERS + 1) {
 
