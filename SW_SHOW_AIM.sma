@@ -42,7 +42,6 @@ public count_fps( params[], id ) {
 
     g_player_fps_count[ id ] = g_player_fps[ id ];
     g_player_fps[ id ] = 0;
-    client_print(id, print_chat, "i am player: %d", id);
 
 }
 
