@@ -62,8 +62,10 @@ public ovewrite_statustext( msg_id, msg_dest, playerId ) {
 
     if(lookingAt > 0 && lookingAt < MAX_PLAYERS + 1) {
 
-        new output[ 512 ];
-        format(output, charsmax( output ) , "%s  FOV: %d  FPS: %d", MESSAGE_TEAMMATE, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
+        new output[ 512 ], input [ 256 ];
+        get_msg_arg_string(2, input, charsmax(input) );
+
+        format(output, charsmax( output ) , "%s  FOV: %d  FPS: %d", input, g_player_fov[ lookingAt ], g_player_fps_count[ lookingAt ] );
         set_msg_arg_string( 2, output );
  
     }
